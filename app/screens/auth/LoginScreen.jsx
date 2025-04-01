@@ -135,6 +135,7 @@ const LoginScreen = ({navigation}) => {
         <InputComponent
           value={email}
           placeholder="Email"
+          
           onChange={val => {
             setEmail(val);
             setEmailError('');
