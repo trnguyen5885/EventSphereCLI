@@ -16,6 +16,8 @@ import {
   EventSearchScreen,
   ProfileEdit,
 } from './app/screens';
+import Review from './app/screens/review/Review'
+import RatingAndReview from './app/screens/review/RatingAndReview'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 
@@ -32,7 +34,7 @@ const App = () => {
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName="Drawer">
+          initialRouteName="Review">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
@@ -45,6 +47,8 @@ const App = () => {
           <Stack.Screen name="UserTickets" component={UserTicketsScreen} />
           <Stack.Screen name="ListTicket" component={ListTicket} />
           <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
+          <Stack.Screen name="Review" component={Review} />
+          <Stack.Screen name="RatingAndReview" component={RatingAndReview} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
