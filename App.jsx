@@ -4,7 +4,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import {
   WelcomeScreen,
-  LoginScreen,
   RegisterScreen,
   EventDetailScreen,
   TicketEventScreen,
@@ -15,8 +14,10 @@ import {
   EventCategoryScreen,
   EventSearchScreen,
   ProfileEdit,
+  ProfileScreen
 } from './app/screens';
 import Review from './app/screens/review/Review'
+import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
@@ -47,6 +48,7 @@ const App = () => {
           <Stack.Screen name="UserTickets" component={UserTicketsScreen} />
           <Stack.Screen name="ListTicket" component={ListTicket} />
           <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
+          <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           <Stack.Screen name="Review" component={Review} />
           <Stack.Screen name="RatingAndReview" component={RatingAndReview} />
         </Stack.Navigator>

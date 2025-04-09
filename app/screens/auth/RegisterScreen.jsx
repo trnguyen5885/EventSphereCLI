@@ -1,6 +1,13 @@
-import {StyleSheet} from 'react-native';
+import {
+  StyleSheet,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import React, {useEffect, useState} from 'react';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ButtonComponent,
   ContainerComponent,
@@ -10,49 +17,55 @@ import {
   SpaceComponent,
   TextComponent,
 } from '../../components';
+import {Call, Lock, Sms, User} from 'iconsax-react-native';
+import LoadingModal from '../../modals/LoadingModal';
+import {appColors} from '../../constants/appColors';
+import {AxiosInstance} from '../../services';
 
-import {Lock, Sms, User} from 'iconsax-react-native';
-import { appColors } from '../../constants/appColors';
-import SocialLogin from './Components/SocialLogin';
-import { AxiosInstance } from '../../services';
-  
 const RegisterScreen = ({navigation}) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 🔹 Theo dõi người dùng nhập liệu để ẩn lỗi khi nhập đúng
-  useEffect(() => {
-    let tempErrors = {...errors};
-
-    if (username.trim()) delete tempErrors.username;
-    if (email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      delete tempErrors.email;
-    if (password.trim() && password.length >= 6) delete tempErrors.password;
-    if (confirmPassword.trim() && confirmPassword === password)
-      delete tempErrors.confirmPassword;
-
-    setErrors(tempErrors);
-  }, [username, email, password, confirmPassword]);
-
-  // 🔹 Kiểm tra lỗi đầu vào
   const validateForm = () => {
     let tempErrors = {};
-    if (!username.trim()) tempErrors.username = 'Vui lòng nhập Username';
+
+    if (!username.trim()) {
+      tempErrors.username = 'Vui lòng nhập Username';
+    } else if (username.length < 3 || username.length > 20) {
+      tempErrors.username = 'Tên người dùng phải từ 3 đến 20 ký tự';
+    } else if (!/^[a-zA-ZÀ-ỹ0-9_ ]+$/.test(username)) {
+      tempErrors.username = 'Tên người dùng không được chứa kí tự đặc biệt';
+    }
+
     if (!email.trim()) {
       tempErrors.email = 'Vui lòng nhập Email';
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) tempErrors.email = 'Email không hợp lệ';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      tempErrors.email = 'Email không hợp lệ';
+    }
+
+    if (!phoneNumber.trim()) {
+      tempErrors.phoneNumber = 'Vui lòng nhập Số điện thoại';
+    } else if (!/^(0[3|5|7|8|9])\d{8,9}$/.test(phoneNumber)) {
+      tempErrors.phoneNumber = 'Số điện thoại không hợp lệ';
     }
 
     if (!password.trim()) {
       tempErrors.password = 'Vui lòng nhập Mật khẩu';
-    } else if (password.length < 6) {
-      tempErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    } else if (password.length < 6 || password.length > 28) {
+      tempErrors.password = 'Mật khẩu phải có từ 6 đến 28 ký tự';
+    } else if (!/[A-Z]/.test(password)) {
+      tempErrors.password = 'Mật khẩu phải chứa ít nhất một chữ cái in hoa';
+    } else if (!/[a-z]/.test(password)) {
+      tempErrors.password = 'Mật khẩu phải chứa ít nhất một chữ cái in thường';
+    } else if (!/[0-9]/.test(password)) {
+      tempErrors.password = 'Mật khẩu phải chứa ít nhất một chữ số';
+    } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      tempErrors.password = 'Mật khẩu phải chứa ít nhất một ký tự đặc biệt';
     }
 
     if (!confirmPassword.trim()) {
@@ -62,105 +75,129 @@ const RegisterScreen = ({navigation}) => {
     }
 
     setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0; // Trả về true nếu không có lỗi
+    return Object.keys(tempErrors).length === 0;
   };
 
-  // 🔹 Xử lý đăng ký tài khoản
   const handleRegister = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
     try {
-      const body = { username, email, password };
-      const res = await AxiosInstance().post("users/login", body);
+      const body = {username, email, password, phoneNumber};
+      const res = await AxiosInstance().post('users/register', body, 'post');
 
-      if (res.status === 200 || res.status === 201) {
-        navigation.navigate("Login");
-      } else if (res.status === 400) {
-        console.log("⚠️ Email đã tồn tại!");
+      if (res.status) {
+        console.log(res.message);
+        navigation.navigate('Login');
       }
     } catch (error) {
-      navigation.navigate("Login");
+      setErrors(prev => ({...prev, email: 'Email đã tồn tại'}));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <ContainerComponent isImageBackground isScroll back>
-        <SectionComponent>
-          <TextComponent size={24} title text="Sign Up" />
-          <SpaceComponent height={21} />
-          <InputComponent
-            value={username}
-            placeholder="Username"
-            onChange={val => setUsername(val)}
-            allowClear
-            affix={<User size={22} color={appColors.gray} />}
-          />
-          {errors.username && (
-            <TextComponent color="red" text={errors.username} />
-          )}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{flex: 1}}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={{flexGrow: 1}}>
+          <ContainerComponent isImageBackground isScroll back>
+            <SectionComponent>
+              <TextComponent size={24} title text="Sign Up" />
+              <SpaceComponent height={21} />
 
-          <InputComponent
-            value={email}
-            placeholder="@abc@gmail.com"
-            onChange={val => setEmail(val)}
-            allowClear
-            affix={<Sms size={22} color={appColors.gray} />}
-          />
-          {errors.email && <TextComponent color="red" text={errors.email} />}
+              <InputComponent
+                value={username}
+                placeholder="Username"
+                onChange={val => setUsername(val)}
+                allowClear
+                affix={<User size={22} color={appColors.gray} />}
+              />
+              {errors.username && (
+                <TextComponent color="red" text={errors.username} />
+              )}
+              <SpaceComponent height={5} />
 
-          <InputComponent
-            value={password}
-            placeholder="Password"
-            onChange={val => setPassword(val)}
-            isPassword
-            allowClear
-            affix={<Lock size={22} color={appColors.gray} />}
-          />
-          {errors.password && (
-            <TextComponent color="red" text={errors.password} />
-          )}
+              <InputComponent
+                value={email}
+                placeholder="@abc@gmail.com"
+                onChange={val => setEmail(val)}
+                allowClear
+                affix={<Sms size={22} color={appColors.gray} />}
+              />
+              {errors.email && (
+                <TextComponent color="red" text={errors.email} />
+              )}
+              <SpaceComponent height={5} />
 
-          <InputComponent
-            value={confirmPassword}
-            placeholder="Confirm Password"
-            onChange={val => setConfirmPassword(val)}
-            isPassword
-            allowClear
-            affix={<Lock size={22} color={appColors.gray} />}
-          />
-          {errors.confirmPassword && (
-            <TextComponent color="red" text={errors.confirmPassword} />
-          )}
-        </SectionComponent>
-        <SpaceComponent height={16} />
-        <SectionComponent>
-          <ButtonComponent
-            onPress={() => console.log('Hello World')}
-            text="SIGN UP"
-            type="primary"
-          />
-        </SectionComponent>
+              <InputComponent
+                value={phoneNumber}
+                placeholder="Phone Number"
+                keyboardType="numeric"
+                maxLength={10}
+                onChange={val => setPhoneNumber(val)}
+                allowClear
+                affix={<Call size={22} color={appColors.gray} />}
+              />
+              {errors.phoneNumber && (
+                <TextComponent color="red" text={errors.phoneNumber} />
+              )}
+              <SpaceComponent height={5} />
 
-        {/* <SocialLogin /> */}
+              <InputComponent
+                value={password}
+                placeholder="Password"
+                onChange={val => setPassword(val)}
+                isPassword
+                allowClear
+                affix={<Lock size={22} color={appColors.gray} />}
+              />
+              {errors.password && (
+                <TextComponent color="red" text={errors.password} />
+              )}
+              <SpaceComponent height={5} />
 
-        <SectionComponent>
-          <RowComponent justify="center">
-            <TextComponent text="Already have an account?" />
-            <ButtonComponent
-              type="link"
-              text="Sign in"
-              onPress={() => navigation.navigate('Login')}
-            />
-          </RowComponent>
-        </SectionComponent>
+              <InputComponent
+                value={confirmPassword}
+                placeholder="Confirm Password"
+                onChange={val => setConfirmPassword(val)}
+                isPassword
+                allowClear
+                affix={<Lock size={22} color={appColors.gray} />}
+              />
+              {errors.confirmPassword && (
+                <TextComponent color="red" text={errors.confirmPassword} />
+              )}
+              <SpaceComponent height={5} />
+            </SectionComponent>
 
-        {/* <LoadingModal visible={isLoading} /> */}
-      </ContainerComponent>
-    </>
+            <SpaceComponent height={16} />
+            <SectionComponent>
+              <ButtonComponent
+                onPress={handleRegister}
+                text="SIGN UP"
+                type="primary"
+              />
+            </SectionComponent>
+
+            <SectionComponent>
+              <RowComponent justify="center">
+                <TextComponent text="Already have an account?" />
+                <ButtonComponent
+                  type="link"
+                  text=" Sign in"
+                  onPress={() => navigation.navigate('Login')}
+                />
+              </RowComponent>
+            </SectionComponent>
+
+            <LoadingModal visible={isLoading} />
+          </ContainerComponent>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 

@@ -1,7 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
-import React from 'react'
-
+import React, { useState } from 'react'
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import Feather from 'react-native-vector-icons/Feather';
 const Review = () => {
+    const [selectedTag, setSelectedTag] = useState('Đã tham gia');
+    const [rating, setRating] = useState(0);
+
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
@@ -15,41 +19,70 @@ const Review = () => {
                 >
                     {/* info */}
                     <View style={styles.infoContainer}>
-                        <View style={styles.avatarContainer}></View>
-                        <View style={styles.detailInfoContainer}></View>
+                        <View style={styles.avatarContainer}>
+                            <Feather name="image" size={80} color="black" />
+                        </View>
+
+                        {/* tên sự kiện, đánh giá trung bình */}
+                        <View style={styles.detailInfoContainer}>
+                            <Text style={styles.detailInfoName}>Sĩ đẹp trai vl hehehe</Text>
+                            <Text style={styles.detailInfoRate}>
+                                <AntDesign name="star" size={18} color="grey" /> 9.5
+                            </Text>
+                        </View>
                     </View>
 
                     {/* trạng thái đánh giá */}
                     <View style={styles.otherActionButtonsContainer}>
-                        <TouchableOpacity style={styles.otherActionButtons}>
-                            <Text>Chưa tham gia</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.otherActionButtons}>
-                            <Text>Đã tham gia</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.otherActionButtons}>
-                            <Text>Sắp tham gia</Text>
-                        </TouchableOpacity>
+                        {['Chưa tham gia', 'Sắp tham gia', 'Đã tham gia'].map((tag, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[
+                                    styles.otherActionButtons,
+                                    selectedTag === tag && styles.activeTag,
+                                ]}
+                                onPress={() => setSelectedTag(tag)}
+                            >
+                                <Text style={[
+                                    styles.tagText,
+                                    selectedTag === tag && styles.activeTagText
+                                ]}>
+                                    {tag}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
 
                     {/* đánh giá sao + comment */}
                     <View style={styles.ratingContainer}>
-                        <Text>Đánh giá của bạn</Text>
-                        <View style={styles.starsContainer}>
-                            {[1, 2, 3, 4, 5].map((_, index) => (
-                                <TouchableOpacity key={index} style={styles.stars}>
-                                    {/* tui set cứng ngôi sao 
-                                    vì chưa biết là buil lại rồi sài thư viện gì 
-                                    nên ai làm chức năng sau thêm thư viện với icon lại giúp tui nha */}
-                                    <Text style={{ fontSize: 24 }}>⭐</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {/* Điều kiện: chỉ hiển thị nếu chọn "Đã tham gia" */}
+                        {selectedTag === 'Đã tham gia' && (
+                            <View>
+                                <Text>Đánh giá của bạn</Text>
+                                <View style={styles.starsContainer}>
+                                    {[1, 2, 3, 4, 5].map((value, index) => (
+                                        <TouchableOpacity
+                                            key={index}
+                                            onPress={() => setRating(value)}
+                                            style={styles.stars}
+                                        >
+                                            <AntDesign
+                                                name="star"
+                                                size={24}
+                                                color={value <= rating ? '#facc15' : 'grey'} // vàng khi được chọn
+                                            />
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
 
+                        {/* Luôn hiển thị phần chọn ảnh */}
                         <TouchableOpacity style={styles.imageUploadButton}>
-                            {/* image upload button */}
+                            <Feather name="image" size={60} color="black" />
                         </TouchableOpacity>
 
+                        {/* Luôn hiển thị ô comment */}
                         <TextInput
                             style={styles.comment}
                             placeholder='Đánh giá của bạn về sự kiện'
@@ -61,7 +94,7 @@ const Review = () => {
                 {/* nút Submit */}
                 <View style={styles.submitContainer}>
                     <TouchableOpacity style={styles.submitButton}>
-                        <Text>Đánh giá</Text>
+                        <Text style={{ fontWeight: 'bold', fontSize: 18, color: 'white' }}>Đánh giá</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -76,7 +109,7 @@ const styles = StyleSheet.create({
     mainContentContainer: {
         flex: 1,
         paddingHorizontal: 20,
-        paddingTop: 15,
+        paddingVertical: 30,
         backgroundColor: '#fff',
     },
 
@@ -97,18 +130,28 @@ const styles = StyleSheet.create({
         flex: 2,
         height: 80,
         borderRadius: 10,
-        backgroundColor: 'grey',
+        justifyContent:'center',
+        alignItems:'center'
     },
 
     // Khung chứa thông tin chi tiết như tên, ngày, v.v.
     detailInfoContainer: {
         flex: 8,
         height: 80,
-        backgroundColor: 'grey',
         marginLeft: 10,
         borderRadius: 10,
+        justifyContent: 'center'
     },
 
+    // Tên sự kiện
+    detailInfoName: {
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+
+    detailInfoRate: {
+        fontSize: 18
+    },
     // Nhóm nút chọn trạng thái (chưa tham gia, đã tham gia, ...)
     otherActionButtonsContainer: {
         flexDirection: 'row',
@@ -118,7 +161,7 @@ const styles = StyleSheet.create({
 
     // Style cho từng nút trạng thái
     otherActionButtons: {
-        backgroundColor: 'grey',
+        backgroundColor: '#E5E7EB',
         padding: 10,
         borderRadius: 10,
         marginTop: 10,
@@ -145,17 +188,13 @@ const styles = StyleSheet.create({
     imageUploadButton: {
         width: 60,
         height: 60,
-        backgroundColor: 'pink',
         marginVertical: 10,
         borderRadius: 10,
     },
 
     // Ô nhập bình luận của người dùng
     comment: {
-        height: 100,
-        borderWidth: 1,
-        borderColor: 'grey',
-        borderRadius: 10,
+        minHeight: 100,
         padding: 10,
         textAlignVertical: 'top', // giúp text bắt đầu từ trên cùng
     },
@@ -171,11 +210,23 @@ const styles = StyleSheet.create({
 
     // Nút submit đánh giá
     submitButton: {
-        backgroundColor: '#38ff90',
+        backgroundColor: '#22C55E',
         padding: 15,
         borderRadius: 50,
         width: 200,
         alignItems: 'center',
     },
+    activeTag: {
+        backgroundColor: '#22C55E', // màu nền tag khi chọn
+    },
+
+    activeTagText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    tagText: {
+        color: '#111827', // màu mặc định
+    },
+
 })
 

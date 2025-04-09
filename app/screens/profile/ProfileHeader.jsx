@@ -5,27 +5,43 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AxiosInstance } from '../../services';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 
 const ProfileHeader = () => {
 
   const [name, setName] = useState("");
+  const [image, setImage] = useState("");
   
   
-  useEffect(() => {
-    const getUserInfo = async () => {
-      const userID = await AsyncStorage.getItem("userId");
-      const response = await AxiosInstance().get(`users/${userID}`);
-      setName(response.data.username);
-    };
-    getUserInfo();
-  },[]);
+  useFocusEffect(
+    useCallback(() => {
+      const getUserInfo = async () => {
+        try {
+          const userID = await AsyncStorage.getItem("userId");
+          if (userID) {
+            const response = await AxiosInstance().get(`users/${userID}`);
+            setName(response.data.username);
+            setImage(response.data.picUrl);
+            console.log(response.data.username);
+            console.log(response.data.picUrl);
+            
+          }
+        } catch (error) {
+          console.log("Lỗi khi lấy thông tin người dùng:", error);
+        }
+      };
+
+      getUserInfo();
+    }, [])
+  );
 
 
   return (
     <View >
       <View style={styles.profileAVTContainer}>
-          <Image style={styles.profileAVT} source={require('../../../assets/images/profileAVT.png')}></Image>
+          <Image style={styles.profileAVT} source={{ uri: image || "https://via.placeholder.com/150" }}></Image>
         </View>
         <View style={styles.nameContainer}>
           <TextComponent
@@ -80,11 +96,12 @@ const styles = StyleSheet.create({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 0
+        marginTop: 20
       },
       profileAVT: {
-        width: 96,
-        height: 96,
+        width: 100,
+        height: 100,
+        borderRadius: 50
       },
       nameContainer: {
         width: '100%',
