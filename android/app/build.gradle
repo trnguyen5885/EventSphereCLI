@@ -84,6 +84,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        missingDimensionStrategy 'react-native-camera', 'general'
     }
     signingConfigs {
         debug {
@@ -106,6 +107,7 @@ android {
         }
     }
 }
+def hermesEnabled = project.hasProperty("hermesEnabled") ? project.getProperty("hermesEnabled") : "false"
 
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin

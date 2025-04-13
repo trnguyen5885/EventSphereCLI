@@ -11,15 +11,16 @@ import { useCallback } from 'react';
 
 const ProfileHeader = () => {
 
-  const [name, setName] = useState("");
-  const [image, setImage] = useState("");
+  const [name, setName] = useState('');
+  const [image, setImage] = useState('');
   
   
   useFocusEffect(
     useCallback(() => {
       const getUserInfo = async () => {
         try {
-          const userID = await AsyncStorage.getItem("userId");
+          const userID = await AsyncStorage.getItem('userId');
+          console.log(userID);
           if (userID) {
             const response = await AxiosInstance().get(`users/${userID}`);
             setName(response.data.username);
@@ -29,7 +30,7 @@ const ProfileHeader = () => {
             
           }
         } catch (error) {
-          console.log("Lỗi khi lấy thông tin người dùng:", error);
+          console.log('Lỗi khi lấy thông tin người dùng:', error);
         }
       };
 
@@ -41,7 +42,7 @@ const ProfileHeader = () => {
   return (
     <View >
       <View style={styles.profileAVTContainer}>
-          <Image style={styles.profileAVT} source={{ uri: image || "https://via.placeholder.com/150" }}></Image>
+          <Image style={styles.profileAVT} source={{ uri: image ?  image : 'https://avatar.iran.liara.run/public' }} />
         </View>
         <View style={styles.nameContainer}>
           <TextComponent

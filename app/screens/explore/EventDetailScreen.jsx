@@ -18,6 +18,7 @@ import { ButtonComponent, CircleComponent, RowComponent, TextComponent } from '.
 import { appColors } from '../..//constants/appColors';
 import { formatDate } from '../..//services/index';
 import { formatPrice } from '../../services/utils/price';
+import RatingAndReview from '../review/RatingAndReview';
 
 const EventDetailScreen = ({navigation , route}) => {
     const { id } = route.params;
@@ -56,7 +57,8 @@ const EventDetailScreen = ({navigation , route}) => {
         return () => {
             setDetailEvent([])
         }
-    },[])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[]);
 
 
 
@@ -67,10 +69,10 @@ const EventDetailScreen = ({navigation , route}) => {
             <StatusBar animated backgroundColor={appColors.primary} />
             <RowComponent  onPress={handleNavigation} styles = {{columnGap: 25}}>
                 <Ionicons name="chevron-back" size={26} color="white" />
-            
+
                 <Text style = {styles.headerTitle} >Chi tiết sự kiện</Text>
             </RowComponent>
-            
+
             <TouchableOpacity style={styles.bookmarkButton}>
                 <Ionicons name="bookmark-outline" size={24} color="white" />
             </TouchableOpacity>
@@ -106,6 +108,8 @@ const EventDetailScreen = ({navigation , route}) => {
                  {detailEvent.description}
               </Text>
             </View>
+
+            <RatingAndReview detailEventId={detailEvent._id} />
         </ScrollView>
 
            <View>
