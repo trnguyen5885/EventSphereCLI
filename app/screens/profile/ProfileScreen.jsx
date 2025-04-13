@@ -17,11 +17,6 @@ const getRandomColor = () => {
 };
 const ProfileScreen = ({navigation}) => {
   const interest = ["Thể thao", "Âm nhạc", "Giải trí", "Kịch", "Hội thảo", "Khác"];
-  
-
-
-
-
   return (
     <ScrollView showsVerticalScrollIndicator={true}
       contentContainerStyle={{ flexGrow: 1 }}>
