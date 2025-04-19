@@ -90,7 +90,7 @@ const Review = ({navigation,route}) => {
     const handlePostReview = async () => {
         setIsLoading(true);
         try {
-            const response = await AxiosInstance().post('/previewEvent/post', {
+            const response = await AxiosInstance().post('preview/post', {
                 userId: userInfo.userId,
                 eventId: detailEventId,
                 comment: comment,
@@ -114,7 +114,7 @@ const Review = ({navigation,route}) => {
             console.log(e);
             setIsLoading(false)
         } finally {
-            setIsLoading(true)
+            setIsLoading(false)
         }
     }
 

@@ -13,7 +13,7 @@ const RatingAndReview = ({detailEventId}) => {
      const socketRef = useRef(null);
 
      useEffect(() => {
-        socketRef.current = io(appInfo.BASE_URL, {
+        socketRef.current = io(appInfo.BASE_URL_NOAPI, {
             transports: ['websocket'],
           });
 
@@ -33,7 +33,7 @@ const RatingAndReview = ({detailEventId}) => {
       useEffect(() => {
         const getListReviewDetailEvent = async () => {
             try {
-                const response = await AxiosInstance().get(`/previewEvent/${detailEventId}`);
+                const response = await AxiosInstance().get(`preview/${detailEventId}`);
                 setListReivew(response.data);
             } catch(e) {
                 console.log(e);
