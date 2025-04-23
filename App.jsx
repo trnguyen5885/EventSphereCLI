@@ -19,6 +19,7 @@ import {
 import Review from './app/screens/review/Review'
 import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview'
+import Filter from './app/screens/filter/Filter'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 
@@ -35,7 +36,7 @@ const App = () => {
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName="Review">
+          initialRouteName="Filter">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
@@ -51,6 +52,7 @@ const App = () => {
           <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           <Stack.Screen name="Review" component={Review} />
           <Stack.Screen name="RatingAndReview" component={RatingAndReview} />
+          <Stack.Screen name="Filter" component={Filter} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
