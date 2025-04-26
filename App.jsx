@@ -19,7 +19,7 @@ import {
 import Review from './app/screens/review/Review'
 import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview'
-import Filter from './app/screens/filter/Filter'
+import Filter from './app/screens/filter/Filter';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 
@@ -36,7 +36,7 @@ const App = () => {
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName="Filter">
+          initialRouteName="Notification">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
