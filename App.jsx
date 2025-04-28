@@ -1,7 +1,7 @@
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import {
   WelcomeScreen,
   RegisterScreen,
@@ -22,16 +22,34 @@ import RatingAndReview from './app/screens/review/RatingAndReview'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
+import { HandleNotification } from './app/utils/handleNotification';
+import { createNotificationChannel, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
+import { setupNotificationNavigation } from './app/services/notification/NotificationHandler';
+
 
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
+  const navigationRef = useNavigationContainerRef();
+  useEffect(() => {
+    HandleNotification.checkNotificationPermission();
+
+    async function initNotification() {
+      await createNotificationChannel();
+      setupForegroundNotificationHandler();
+    }
+    initNotification();
+
+    const unsubscribe = setupNotificationNavigation(navigationRef);
+    return unsubscribe;
+  }, []);
   return (
+    
     // Tương tác màn hình
     <GestureHandlerRootView style={styles.root}>
       {/* Container chứa tất cả màn hàn và xử lí chuyển màn hình */}
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
