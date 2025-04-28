@@ -11,7 +11,10 @@
     "reset-android": "cd android && ./gradlew clean"
   },
   "dependencies": {
+    "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-firebase/app": "^22.0.0",
+    "@react-native-firebase/messaging": "^22.0.0",
     "@react-navigation/bottom-tabs": "^7.3.1",
     "@react-navigation/drawer": "^7.2.1",
     "@react-navigation/native": "^7.0.17",
