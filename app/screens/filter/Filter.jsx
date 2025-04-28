@@ -7,6 +7,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DatePicker from 'react-native-date-picker';
+import { useNavigation } from '@react-navigation/native';
 
 const { height } = Dimensions.get('window');
 
@@ -43,7 +44,7 @@ const Filter = ({ onClose }) => {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const typingTimeout = useRef(null);
-
+  const navigation = useNavigation();
   const toggleCategory = (id) => {
     setSelectedCategories(prev =>
       prev.includes(id) ? prev.filter(catId => catId !== id) : [...prev, id]
@@ -69,33 +70,44 @@ const Filter = ({ onClose }) => {
       .replace(/[\u0300-\u036f]/g, "") // remove diacritics
       .replace(/đ/g, "d").replace(/Đ/g, "D");
   };
-  
+
   const handleLocationInput = (text) => {
     setLocationInput(text);
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
-  
+
     typingTimeout.current = setTimeout(() => {
       const normalizedInput = removeVietnameseTones(text.toLowerCase());
-  
+
       const filtered = vietnamProvinces.filter(province => {
         const normalizedProvince = removeVietnameseTones(province.toLowerCase());
         return normalizedProvince.includes(normalizedInput);
       });
-  
+
       setLocationSuggestions(filtered);
     }, 300);
   };
-  
+
 
   const handleResetFilters = () => {
-    setSelectedCategories([]);
-    setSelectedTime('');
-    setDate(new Date());
-    setLocationInput('');
-    setLocationSuggestions([]);
-    setMinPrice('');
-    setMaxPrice('');
+    // setSelectedCategories([]);
+    // setSelectedTime('');
+    // setDate(new Date());
+    // setLocationInput('');
+    // setLocationSuggestions([]);
+    // setMinPrice('');
+    // setMaxPrice('');
   };
+
+  const handleApplyFilters = () => {
+    navigation.navigate('FiltedEventScreen', {
+      selectedCategories,
+      selectedTime,
+      selectedDate: date,
+      locationInput,
+      minPrice,
+      maxPrice,
+    });
+  }
 
   return (
     <View style={styles.overlay}>
@@ -203,9 +215,13 @@ const Filter = ({ onClose }) => {
           <TouchableOpacity style={styles.resetButton} onPress={handleResetFilters}>
             <Text style={{ fontWeight: 'bold' }}>RESET</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.applyButton} onPress={onClose}>
+          <TouchableOpacity
+            style={styles.applyButton}
+            onPress={handleApplyFilters}
+          >
             <Text style={{ color: '#fff', fontWeight: 'bold' }}>APPLY</Text>
           </TouchableOpacity>
+
         </View>
       </View>
     </View>
