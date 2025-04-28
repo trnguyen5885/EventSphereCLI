@@ -27,6 +27,7 @@
     "react": "19.0.0",
     "react-native": "0.78.1",
     "react-native-asset": "^2.1.1",
+    "react-native-confirmation-code-field": "^7.4.0",
     "react-native-gesture-handler": "^2.24.0",
     "react-native-image-crop-picker": "^0.42.0",
     "react-native-image-picker": "^8.2.0",
