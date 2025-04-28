@@ -21,6 +21,7 @@ import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
+import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -50,6 +51,7 @@ const App = () => {
           <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
           <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           <Stack.Screen name="Review" component={Review} />
+          <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
