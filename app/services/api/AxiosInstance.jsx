@@ -1,19 +1,21 @@
-import { appInfo } from '../../constants/appInfos';
-import axios from 'axios';
+import { appInfo } from "@/app/constants/appInfos";
+import { deleteTokens, getTokens, saveTokens } from "@/app/token/authTokens";
+import axios from "axios";
 
-const AxiosInstance = (token = '', contentType = 'application/json') => {
+const AxiosInstance = (contentType = 'application/json') => {
     const axiosInstance = axios.create({
-        baseURL: appInfo.BASE_URL,
+        baseURL: appInfo.BASE_URL
     });
-    // cmd -----> ipconfig -----> IPv4 Address (192.168.1.1)
+
     axiosInstance.interceptors.request.use(
         async (config) => {
             // const token = '';
-            config.headers = {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json',
-                'Content-Type': contentType
+            const tokens = await getTokens();
+            if (tokens?.accessToken) {
+                config.headers['Authorization'] = `Bearer ${tokens.accessToken}`;
             }
+            config.headers['Content-Type'] = contentType;
+            config.headers['Accept'] = 'application/json';
             return config;
         },
         err => Promise.reject(err)
@@ -21,9 +23,30 @@ const AxiosInstance = (token = '', contentType = 'application/json') => {
 
     axiosInstance.interceptors.response.use(
         res => res.data,
-        err => Promise.reject(err)
+        async (error)=>{
+            const originalRequest = error.config;
+
+            if(error.res?.status===401 && !originalRequest._retry){
+                originalRequest._rety = true;
+                try{
+                    const tokens = await getTokens();
+
+                    const res = await axios.post(`${appInfo.BASE_URL}/users/refresh-token`,{
+                        refreshToken: tokens?.refreshToken,
+                    });
+                    const newAccessToken = res.token;
+                    await saveTokens(newAccessToken, tokens.refreshToken);
+
+                    originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+                    return axiosInstance(originalRequest);
+                }catch(refreshErr){
+                    deleteTokens();
+                    return Promise.reject(refreshErr);
+                }
+            }
+            return Promise.reject(error);
+        }
     );
     return axiosInstance;
 };
-
 export default AxiosInstance;
