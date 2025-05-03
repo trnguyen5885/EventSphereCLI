@@ -1,10 +1,126 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
-import React, { useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Feather from 'react-native-vector-icons/Feather';
-const Review = () => {
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AxiosInstance } from '../../services';
+import { appColors } from '../../constants/appColors';
+import ImagePicker from 'react-native-image-crop-picker';
+import LoadingModal from '../../modals/LoadingModal';
+
+const Review = ({navigation,route}) => {
+    const {detailEventId} = route.params;
     const [selectedTag, setSelectedTag] = useState('Đã tham gia');
     const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [userInfo, setUserInfo] = useState({
+        userId: null,
+        username: '',
+        avatar: ''
+    })
+    const [image, setImage] = useState('');
+    const [isLoading, setIsLoading] = useState(false)
+
+
+    useEffect(() => {
+        const getUserInfo = async () => {
+            const userId = await AsyncStorage.getItem('userId');
+            const response = await AxiosInstance().get(`/users/${userId}`);
+            setUserInfo({
+                userId: response.data._id,
+                username: response.data.username,
+                avatar: response.data.avatar ? response.data.avatar : 'https://avatar.iran.liara.run/public'
+            })
+        };
+        getUserInfo();
+    },[]);
+
+    // Mở thư viện chọn ảnh
+  const pickImage = async () => {
+    try {
+      const image = await ImagePicker.openPicker({
+        width: 500,
+        height: 500,
+        cropping: true, // Cho phép crop ảnh
+        mediaType: 'photo',
+      });
+  
+      console.log('Ảnh đã chọn:', image.path);
+      uploadImage(image.path);
+    } catch (error) {
+      console.log('Người dùng đã hủy chọn ảnh hoặc lỗi:', error);
+    }
+  };
+
+  // Kết nối Claudinary để tải ảnh lên
+  const uploadImage = async (imageUri) => {
+    let formData = new FormData();
+    formData.append('file', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'upload.jpg',
+    });
+    formData.append('upload_preset', 'DATN2025'); // Thay bằng upload preset của bạn
+  
+    try {
+      let response = await fetch('https://api.cloudinary.com/v1_1/ddkqz5udn/image/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      let data = await response.json();
+      console.log('Cloudinary Response:', data);
+  
+      if (data.secure_url) {
+        setImage(data.secure_url);
+        console.log('URL Ảnh:', data.secure_url);
+      } else {
+        Alert.alert('Upload thất bại!', JSON.stringify(data));
+      }
+    } catch (error) {
+      console.log('Lỗi upload:', error);
+      Alert.alert('Lỗi!', 'Không thể tải ảnh lên.');
+    }
+  };
+
+    const handlePostReview = async () => {
+        setIsLoading(true);
+        try {
+            const response = await AxiosInstance().post('preview/post', {
+                userId: userInfo.userId,
+                eventId: detailEventId,
+                comment: comment,
+                rating: rating,
+                image: image,
+
+            });
+
+            if(response.status) {
+                Alert.alert('Đánh giá thành công', 'Cảm ơn bạn đã đánh giá',
+                    [
+                        {
+                          text: 'OK',
+                          onPress: () => navigation.goBack()
+                        }
+                      ]
+                );
+                
+            }
+        } catch(e) {
+            console.log(e);
+            setIsLoading(false)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    if(isLoading) {
+        return <LoadingModal />
+    }
 
     return (
         <KeyboardAvoidingView
@@ -20,12 +136,12 @@ const Review = () => {
                     {/* info */}
                     <View style={styles.infoContainer}>
                         <View style={styles.avatarContainer}>
-                            <Feather name="image" size={80} color="black" />
+                            <Image style = {styles.avatar} source={{uri: userInfo.avatar}} />
                         </View>
 
                         {/* tên sự kiện, đánh giá trung bình */}
                         <View style={styles.detailInfoContainer}>
-                            <Text style={styles.detailInfoName}>Sĩ đẹp trai vl hehehe</Text>
+                            <Text style={styles.detailInfoName}>{userInfo.username}</Text>
                             <Text style={styles.detailInfoRate}>
                                 <AntDesign name="star" size={18} color="grey" /> 9.5
                             </Text>
@@ -45,7 +161,7 @@ const Review = () => {
                             >
                                 <Text style={[
                                     styles.tagText,
-                                    selectedTag === tag && styles.activeTagText
+                                    selectedTag === tag && styles.activeTagText,
                                 ]}>
                                     {tag}
                                 </Text>
@@ -78,7 +194,7 @@ const Review = () => {
                         )}
 
                         {/* Luôn hiển thị phần chọn ảnh */}
-                        <TouchableOpacity style={styles.imageUploadButton}>
+                        <TouchableOpacity style={styles.imageUploadButton} onPress={pickImage}>
                             <Feather name="image" size={60} color="black" />
                         </TouchableOpacity>
 
@@ -87,22 +203,23 @@ const Review = () => {
                             style={styles.comment}
                             placeholder='Đánh giá của bạn về sự kiện'
                             multiline
+                            onChangeText={(value) => setComment(value)}
                         />
                     </View>
                 </ScrollView>
 
                 {/* nút Submit */}
                 <View style={styles.submitContainer}>
-                    <TouchableOpacity style={styles.submitButton}>
+                    <TouchableOpacity style={styles.submitButton} onPress={handlePostReview}>
                         <Text style={{ fontWeight: 'bold', fontSize: 18, color: 'white' }}>Đánh giá</Text>
                     </TouchableOpacity>
                 </View>
             </View>
         </KeyboardAvoidingView>
-    )
-}
+    );
+};
 
-export default Review
+export default Review;
 
 const styles = StyleSheet.create({
     // View cha tổng chứa toàn bộ nội dung (flex layout)
@@ -127,11 +244,17 @@ const styles = StyleSheet.create({
 
     // Khung ảnh đại diện (avatar)
     avatarContainer: {
-        flex: 2,
+        flex: 3,
         height: 80,
         borderRadius: 10,
         justifyContent:'center',
-        alignItems:'center'
+        alignItems:'center',
+    },
+
+    avatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 40
     },
 
     // Khung chứa thông tin chi tiết như tên, ngày, v.v.
@@ -140,7 +263,7 @@ const styles = StyleSheet.create({
         height: 80,
         marginLeft: 10,
         borderRadius: 10,
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
 
     // Tên sự kiện
@@ -150,7 +273,7 @@ const styles = StyleSheet.create({
     },
 
     detailInfoRate: {
-        fontSize: 18
+        fontSize: 18,
     },
     // Nhóm nút chọn trạng thái (chưa tham gia, đã tham gia, ...)
     otherActionButtonsContainer: {
@@ -210,14 +333,14 @@ const styles = StyleSheet.create({
 
     // Nút submit đánh giá
     submitButton: {
-        backgroundColor: '#22C55E',
+        backgroundColor: appColors.primary,
         padding: 15,
-        borderRadius: 50,
-        width: 200,
+        borderRadius: 15,
+        width: '100%',
         alignItems: 'center',
     },
     activeTag: {
-        backgroundColor: '#22C55E', // màu nền tag khi chọn
+        backgroundColor: appColors.primary, // màu nền tag khi chọn
     },
 
     activeTagText: {
@@ -228,5 +351,5 @@ const styles = StyleSheet.create({
         color: '#111827', // màu mặc định
     },
 
-})
+});
 

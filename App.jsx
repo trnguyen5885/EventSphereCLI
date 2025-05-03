@@ -1,7 +1,10 @@
-import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import { StatusBar, StyleSheet } from 'react-native';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Screens
 import {
   WelcomeScreen,
   RegisterScreen,
@@ -14,30 +17,27 @@ import {
   EventCategoryScreen,
   EventSearchScreen,
   ProfileEdit,
-  ProfileScreen
+  ProfileScreen,
 } from './app/screens';
-import Review from './app/screens/review/Review'
+import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
-import RatingAndReview from './app/screens/review/RatingAndReview'
+import RatingAndReview from './app/screens/review/RatingAndReview';
 import Filter from './app/screens/filter/Filter';
 import FilteredEventScreen from './app/screens/filter/FilteredEventScreeen';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import DrawerNavigator from './app/navigation/DrawerNavigator';
 
+import DrawerNavigator from './app/navigation/DrawerNavigator';
+import OrganizerTabNavigator from './app/navigation/OrganizerTabNavigator';
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
   return (
-    // Tương tác màn hình
     <GestureHandlerRootView style={styles.root}>
-      {/* Container chứa tất cả màn hàn và xử lí chuyển màn hình */}
       <NavigationContainer>
         <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-          }}
-          initialRouteName="FilteredEventScreen">
+          screenOptions={{ headerShown: false }}
+          initialRouteName="OrganizerTabs"
+        >
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
@@ -55,6 +55,9 @@ const App = () => {
           <Stack.Screen name="RatingAndReview" component={RatingAndReview} />
           <Stack.Screen name="Filter" component={Filter} />
           <Stack.Screen name="FilteredEventScreen" component={FilteredEventScreen} />
+
+    
+          <Stack.Screen name="OrganizerTabs" component={OrganizerTabNavigator} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

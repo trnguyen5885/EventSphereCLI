@@ -1,44 +1,62 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
-const mockReviews = [
-    {
-        id: 1,
-        name: 'Nguyễn Văn A',
-        date: '1/1/2024',
-        rating: 5,
-        comment: 'Sự kiện rất tuyệt vời, mình đã có trải nghiệm đáng nhớ!',
-    },
-    {
-        id: 2,
-        name: 'Trần Thị B',
-        date: '2/2/2024',
-        rating: 4,
-        comment: 'Tổ chức ổn áp, chỉ hơi đông chút xíu.',
-    },
-    {
-        id: 3,
-        name: 'Lê Văn C',
-        date: '3/3/2024',
-        rating: 3,
-        comment: 'Không như kỳ vọng nhưng cũng được.',
-    },
-];
+import React, {useEffect, useRef, useState} from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image} from 'react-native';
+import { appColors } from '../../constants/appColors';
+import { TextComponent } from '../../components';
+import { appInfo } from '../../constants/appInfos';
+import { io } from 'socket.io-client';
+import { useNavigation } from '@react-navigation/native';
+import { AxiosInstance, formatDate, formatDateCreateAt } from '../../services';
 
-const RatingAndReview = () => {
+const RatingAndReview = ({detailEventId}) => {
+     const navigation = useNavigation();
+     const [listReview, setListReivew] = useState([]);
+     const socketRef = useRef(null);
+
+     useEffect(() => {
+        socketRef.current = io(appInfo.BASE_URL_NOAPI, {
+            transports: ['websocket'],
+          });
+
+        // Lắng nghe sự kiện 'newPostEvent'
+        socketRef.current.on('newPostEvent', (data) => {
+          if (data.post.eventId === detailEventId) {
+            setListReivew((prevReviews) => [data.post, ...prevReviews]);
+          }
+        });
+
+        // Dọn dẹp khi component bị hủy
+        return () => {
+          socketRef.current.disconnect();
+        };
+      }, [detailEventId]);
+
+      useEffect(() => {
+        const getListReviewDetailEvent = async () => {
+            try {
+                const response = await AxiosInstance().get(`preview/${detailEventId}`);
+                setListReivew(response.data);
+            } catch(e) {
+                console.log(e);
+            }
+        };
+
+        getListReviewDetailEvent();
+
+        return () => {
+            setListReivew([]);
+          };
+      },[detailEventId]);
+
     return (
         <View style={styles.container}>
             {/* Thanh tiêu đề */}
             <View style={styles.headerTaskbar}>
-                <TouchableOpacity>
-                    <Text style={styles.backIcon}>◀︎</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Đánh giá & Nhận xét</Text>
-                <View style={{ width: 24 }} /> {/* Placeholder cân giữa */}
+                <TextComponent text="Đánh giá và nhận xét" size={24} />
             </View>
 
             <ScrollView contentContainerStyle={styles.contentWrapper}>
                 {/* Đánh giá trung bình và biểu đồ */}
-                <View style={styles.ratingContainer}>
+                 {/* <View style={styles.ratingContainer}>
                     <View style={styles.avgRatingBox}>
                         <View style={styles.avgRatingContainer}>
                             <Text style={styles.avgRating}>9.5</Text>
@@ -50,24 +68,24 @@ const RatingAndReview = () => {
                     <View style={styles.chartContainer}>
                         <Text style={styles.placeholderText}>[ Biểu đồ đánh giá ]</Text>
                     </View>
-                </View>
+                </View> */}
 
                 {/* Đánh giá của bạn */}
-                <View style={styles.userRating}>
+                {/* <View style={styles.userRating}>
                     <Text style={styles.sectionTitle}>Đánh giá của bạn</Text>
                     <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
-                </View>
+                </View> */}
 
                 {/* Danh sách bình luận */}
                 <View style={styles.commentList}>
-                    {mockReviews.map((item) => (
-                        <View key={item.id} style={styles.commentItem}>
+                    {listReview.map((item) => (
+                        <View key={item._id} style={styles.commentItem}>
 
                             {/* Header: avatar + tên + ngày */}
                             <View style={styles.commentHeader}>
-                                <View style={styles.commentAvt} />
-                                <Text style={styles.commentName}>{item.name}</Text>
-                                <Text style={styles.commentDate}>{item.date}</Text>
+                                <Image style={styles.commentAvt} source={{uri: item.userId.picUrl ? item.userId.picUrl : 'https://avatar.iran.liara.run/public'}}  />
+                                <Text style={styles.commentName}>{item.userId.username}</Text>
+                                {/* <Text style={styles.commentDate}>{formatDateCreateAt(item.userId.createdAt)}</Text> */}    
                             </View>
 
                             {/* Số sao đánh giá */}
@@ -90,8 +108,15 @@ const RatingAndReview = () => {
                         </View>
                     ))}
                 </View>
+                <TouchableOpacity activeOpacity={0.2} onPress={() => navigation.navigate('Review',{
+                    detailEventId: detailEventId,
 
+                })} >
+                    <TextComponent styles={styles.comment} text="Đánh giá của bạn về sự kiện" />
+                </TouchableOpacity>
             </ScrollView>
+
+
         </View>
     );
 };
@@ -116,8 +141,9 @@ const styles = StyleSheet.create({
         borderColor: '#E5E5E5',
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 22,
+
+        color: appColors.text,
     },
     backIcon: {
         fontSize: 20,
@@ -126,7 +152,7 @@ const styles = StyleSheet.create({
     // Bọc nội dung chính (scroll view)
     contentWrapper: {
         paddingHorizontal: 15,
-        paddingBottom: 30,
+        paddingBottom: 10,
     },
 
     // Phần đánh giá trung bình + biểu đồ
@@ -204,7 +230,6 @@ const styles = StyleSheet.create({
         width: 35,
         height: 35,
         borderRadius: 25,
-        backgroundColor: 'grey',
     },
     commentName: {
         marginHorizontal: 10,
@@ -234,5 +259,10 @@ const styles = StyleSheet.create({
     },
     actionButtonText: {
         fontSize: 13,
+    },
+    comment: {
+        minHeight: 50,
+        padding: 10,
+        textAlignVertical: 'top', // giúp text bắt đầu từ trên cùng
     },
 });

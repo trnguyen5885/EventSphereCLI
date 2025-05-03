@@ -1,77 +1,67 @@
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { AxiosInstance } from '../../services/api/AxiosInstance'; 
+import AxiosInstance from '../../services/api/AxiosInstance';
 
 const EventFilteredScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const [eventsIscoming, setEventsIscoming] = useState([]);
-  const [eventsUpcoming, setEventsUpcoming] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  // const { selectedCategories, selectedTime, selectedDate, locationInput, minPrice, maxPrice } = route.params;
+  const { filterParams } = route.params || {};
+  const [events, setEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // const eventsMock = [
-  //   {
-  //     _id: '1',
-  //     name: 'Giải bóng đá Vô địch Quốc gia',
-  //     location: 'Hà Nội',
-  //     timeStart: new Date().getTime(),
-  //     timeEnd: new Date().getTime() + 2 * 60 * 60 * 1000,
-  //     categoryId: 'sports',
-  //     price: 50000,
-  //     avatar: 'https://source.unsplash.com/featured/?soccer',
-  //   },
-  //   {
-  //     _id: '2',
-  //     name: 'Lễ hội Âm nhạc Mùa hè',
-  //     location: 'TP. Hồ Chí Minh',
-  //     timeStart: new Date().getTime() + 24 * 60 * 60 * 1000,
-  //     timeEnd: new Date().getTime() + 26 * 60 * 60 * 1000,
-  //     categoryId: 'music',
-  //     price: 150000,
-  //     avatar: 'https://source.unsplash.com/featured/?music',
-  //   },
-  //   {
-  //     _id: '3',
-  //     name: 'Triển lãm Công nghệ 2025',
-  //     location: 'Đà Nẵng',
-  //     timeStart: new Date().getTime() + 48 * 60 * 60 * 1000,
-  //     timeEnd: new Date().getTime() + 50 * 60 * 60 * 1000,
-  //     categoryId: 'technology',
-  //     price: 100000,
-  //     avatar: 'https://source.unsplash.com/featured/?technology',
-  //   },
-  // ];
+  const {
+    selectedCategories = [],
+    selectedDate = null,
+    locationInput = '',
+    minPrice = '',
+    maxPrice = ''
+  } = filterParams || {};
 
-  const [events, setEvents] = useState(allEvents); 
+  const min = parseFloat(minPrice);
+  const max = parseFloat(maxPrice);
 
   useEffect(() => {
-  
     const getEvents = async () => {
       try {
         const response = await AxiosInstance().get('events/home');
-        console.log(e);
-        setEvents(response);
+        console.log('Response from API:', response);
+        setEvents(response.data);
       } catch (e) {
-        console.log(e);
+        console.log('Fetch error:', e);
+      } finally {
+        setIsLoading(false);
       }
     };
     getEvents();
   }, []);
 
-  const allEvents = [...eventsIscoming, ...eventsUpcoming];
+  const filteredEvents = Array.isArray(events)
+    ? events.filter(event => {
+        const matchesCategory =
+          selectedCategories.length === 0 || selectedCategories.includes(event.categories); // Sửa ở đây
 
-  const filteredEvents = allEvents.filter(event => {
-    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(event.categoryId);
-    const matchesDate = selectedDate ? (new Date(event.timeStart).toDateString() === new Date(selectedDate).toDateString()) : true;
-    const matchesLocation = locationInput ? event.location.includes(locationInput) : true;
-    const matchesPrice = (minPrice ? event.price >= minPrice : true) && (maxPrice ? event.price <= maxPrice : true);
-    return matchesCategory && matchesDate && matchesLocation && matchesPrice;
-  });
-  console.log('filteredEvents:', filteredEvents);
+        const matchesDate = selectedDate
+          ? new Date(event.timeStart).toDateString() === new Date(selectedDate).toDateString()
+          : true;
 
-  const renderItem = ({ item }: { item: any }) => {
+        const matchesLocation = locationInput
+          ? event.location?.toLowerCase().includes(locationInput.toLowerCase())
+          : true;
+
+
+        return matchesCategory && matchesDate && matchesLocation ;
+      })
+    : [];
+
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${String(
+      date.getHours()
+    ).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const renderItem = ({ item }) => {
     return (
       <TouchableOpacity style={styles.card}>
         <Image source={{ uri: item.avatar }} style={styles.avatar} />
@@ -86,24 +76,28 @@ const EventFilteredScreen = () => {
     );
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Sự kiện đã lọc</Text>
       </View>
 
-      <FlatList
-        data={filteredEvents}
-        keyExtractor={(item) => item._id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1e90ff" />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredEvents}
+          keyExtractor={(item) => item._id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Không có sự kiện phù hợp.</Text>
+          }
+        />
+      )}
     </View>
   );
 };
@@ -113,13 +107,15 @@ export default EventFilteredScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f7fa',
   },
   header: {
     height: 60,
     backgroundColor: '#1e90ff',
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 16,
+    elevation: 3,
   },
   headerTitle: {
     color: '#fff',
@@ -132,10 +128,14 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     marginBottom: 16,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     overflow: 'hidden',
-    elevation: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   avatar: {
     width: 100,
@@ -143,12 +143,13 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
-    padding: 8,
+    padding: 10,
     justifyContent: 'center',
   },
   name: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 4,
   },
   location: {
@@ -157,7 +158,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   time: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#888',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 50,
+    fontSize: 16,
   },
 });

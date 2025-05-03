@@ -89,24 +89,26 @@ const Filter = ({ onClose }) => {
 
 
   const handleResetFilters = () => {
-    // setSelectedCategories([]);
-    // setSelectedTime('');
-    // setDate(new Date());
-    // setLocationInput('');
-    // setLocationSuggestions([]);
-    // setMinPrice('');
-    // setMaxPrice('');
+    setSelectedCategories([]);
+    setSelectedTime('');
+    setDate(new Date());
+    setLocationInput('');
+    setLocationSuggestions([]);
+    setMinPrice('');
+    setMaxPrice('');
   };
 
   const handleApplyFilters = () => {
-    navigation.navigate('FiltedEventScreen', {
+    const filterParams = {
       selectedCategories,
       selectedTime,
       selectedDate: date,
       locationInput,
       minPrice,
       maxPrice,
-    });
+    };
+    console.log("data: ",filterParams);
+    navigation.navigate('FilteredEventScreen', { filterParams });
   }
 
   return (
