@@ -14,6 +14,7 @@ import {
 } from '../../components/index';
 import LoadingModal from '../../modals/LoadingModal';
 import {AxiosInstance} from '../../services';
+import { HandleNotification } from '../../utils/handleNotification';
 
 const LoginScreen = ({navigation}) => {
   const [useId, setUseId] = useState('');
@@ -100,7 +101,7 @@ const LoginScreen = ({navigation}) => {
           await AsyncStorage.removeItem('savedEmail');
           await AsyncStorage.removeItem('savedPassword');
         }
-
+        HandleNotification.checkNotificationPermission();
         navigation.navigate('Drawer');
         console.log('Thành Công');
       }
