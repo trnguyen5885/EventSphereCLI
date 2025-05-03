@@ -52,5 +52,10 @@
 	<string>Ứng dụng cần quyền truy cập thư viện ảnh để chọn hình ảnh.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Ứng dụng cần quyền truy cập camera để chụp ảnh.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Chúng tôi cần quyền truy cập vị trí của bạn để cung cấp dịch vụ định vị.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Chúng tôi cần quyền truy cập vị trí của bạn để cung cấp dịch vụ định vị.</string>
+
 </dict>
 </plist>

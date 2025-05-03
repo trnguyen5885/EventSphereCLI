@@ -1,7 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import {
   FlatList,
-  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -9,11 +8,15 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Image
+  Image,
+  Alert,
+  PermissionsAndroid,
+  Platform,
+  Linking,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { globalStyles } from '../../constants/globalStyles';
-import { appColors } from '../../constants/appColors';
+import React, {useEffect, useState} from 'react';
+import {globalStyles} from '../../constants/globalStyles';
+import {appColors} from '../../constants/appColors';
 import {
   CircleComponent,
   RowComponent,
@@ -27,17 +30,105 @@ import {
   Sort,
 } from 'iconsax-react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { fontFamilies } from '../../constants/fontFamilies';
+import {fontFamilies} from '../../constants/fontFamilies';
 import CategoriesList from '../../components/CategoriesList';
 import EventItem from '../../components/EventItem';
-import  {AxiosInstance}  from '../../services';
+import {AxiosInstance} from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
+import Geolocation from '@react-native-community/geolocation'; // Import Geolocation
+import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
+import axios from 'axios';
+import {useFocusEffect} from '@react-navigation/native';
 
 const ExploreScreen = ({navigation}) => {
   const [eventsIscoming, setEventsIscoming] = useState([]);
   const [eventsUpcoming, setEventsUpcoming] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [location, setLocation] = useState({
+    latitude: null,
+    longitude: null,
+  });
+  const [address, setAddress] = useState('');
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          checkGPSStatus(); // Kiểm tra xem GPS đã bật chưa
+        } else {
+          Alert.alert('Permission denied', 'Location permission is required');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    } else {
+      checkGPSStatus(); // iOS tự động xử lý quyền
+    }
+  };
+
+  const checkGPSStatus = () => {
+    LocationServicesDialogBox.checkLocationServicesIsEnabled({
+      message: 'GPS của bạn chưa bật. Bạn có muốn bật GPS không?',
+      ok: 'Mở',
+      cancel: 'Hủy',
+    })
+      .then(success => {
+        if (success) {
+          getLocation(); // Nếu GPS đã bật, gọi hàm lấy vị trí
+        }
+      })
+      .catch(error => {
+        Alert.alert('Lỗi', 'Vui lòng bật GPS để tiếp tục.');
+      });
+  };
+  const getAddressFromCoordinates = async (latitude, longitude) => {
+    const apiKey = 'pJ2xud8j3xprqVfQZLFKjGV51MPH60VjRuZh1i3F';
+    const url = `https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=${apiKey}`;
+    try {
+      const response = await axios.get(url, {timeout: 10000});
+      if (response?.data?.results?.length > 0) {
+        const address = response.data.results[0];
+        setAddress(address);
+        console.log('Dữ liệu địa chỉ:', address);
+      } else {
+        console.log('Không tìm thấy địa chỉ.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API Geocoding:', error);
+    }
+  };
+
+  const getLocation = () => {
+    Geolocation.getCurrentPosition(
+      position => {
+        const {latitude, longitude} = position.coords;
+        console.log('Location:', latitude, longitude);
+        // Cập nhật state
+        setLocation({latitude, longitude});
+        // Gọi API Geocoding với giá trị đúng
+        getAddressFromCoordinates(latitude, longitude);
+      },
+      error => {
+        console.log('Error getting location', error);
+      },
+      {
+        enableHighAccuracy: true,
+      },
+    );
+  };
+
+  // Gọi hàm yêu cầu quyền truy cập khi ứng dụng khởi động
+  useFocusEffect(
+    React.useCallback(() => {
+      // Yêu cầu quyền và cập nhật vị trí khi màn hình này được focus lại
+      requestLocationPermission();
+    }, []),
+  );
 
   useEffect(() => {
     // setIsLoading(true);
@@ -46,18 +137,21 @@ const ExploreScreen = ({navigation}) => {
         const response = await AxiosInstance().get('events/all');
         // console.log(response);
         const now = Date.now();
-        const ongoingEvents = response.filter(eventItem => now >= eventItem.timeStart && now <= eventItem.timeEnd);
+        const ongoingEvents = response.filter(
+          eventItem => now >= eventItem.timeStart && now <= eventItem.timeEnd,
+        );
         console.log(ongoingEvents);
         setEventsIscoming(ongoingEvents);
-        const upcomingEvents = response.filter(eventItem => eventItem.timeStart > now);
+        const upcomingEvents = response.filter(
+          eventItem => eventItem.timeStart > now,
+        );
         setEventsUpcoming(upcomingEvents);
         setIsLoading(false);
-      } catch(e) {
+      } catch (e) {
         console.log(e);
       } finally {
         // setIsLoading(false);
       }
-
     };
     getEvents();
     return () => {
@@ -71,7 +165,10 @@ const ExploreScreen = ({navigation}) => {
   // }
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled style={globalStyles.container}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
+      style={globalStyles.container}>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -86,12 +183,15 @@ const ExploreScreen = ({navigation}) => {
           borderBottomRightRadius: 40,
           paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
         }}>
-        <View style={{ marginBottom: 7, paddingHorizontal: 16 }}>
+        <View style={{marginBottom: 7, paddingHorizontal: 16}}>
           <RowComponent>
-            <TouchableOpacity onPress={() => {navigation.openDrawer();}}>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.openDrawer();
+              }}>
               <HambergerMenu size={24} color={appColors.white} />
             </TouchableOpacity>
-            <View style={[{ flex: 1, alignItems: 'center' }]}>
+            <View style={[{flex: 1, alignItems: 'center'}]}>
               <RowComponent>
                 <TextComponent
                   text="Vị trí hiện tại của bạn"
@@ -100,43 +200,50 @@ const ExploreScreen = ({navigation}) => {
                 />
               </RowComponent>
               <TextComponent
-                text="Hồ Chí Minh, Việt Nam"
+                text={
+                  address?.compound?.district && address?.compound?.province
+                    ? `${address.compound.district}, ${address.compound.province}`
+                    : 'Đang lấy vị trí của bạn...'
+                }
                 flex={0}
                 color={appColors.white}
                 font={fontFamilies.medium}
                 size={13}
               />
             </View>
-            <TouchableOpacity onPress={()=>navigation.navigate('Notification')}>
-            <CircleComponent color="#524CE0" size={36}>
-              <View>
-                <MaterialIcons
-                  name="notifications"
-                  size={24}
-                  color={appColors.white}
-                />
-                <View
-                  style={{
-                    backgroundColor: '#02E9FE',
-                    width: 10,
-                    height: 10,
-                    borderRadius: 4,
-                    borderWidth: 2,
-                    borderColor: '#524CE0',
-                    position: 'absolute',
-                    top: -2,
-                    right: -2,
-                  }}
-                />
-              </View>
-            </CircleComponent>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notification')}>
+              <CircleComponent color="#524CE0" size={36}>
+                <View>
+                  <MaterialIcons
+                    name="notifications"
+                    size={24}
+                    color={appColors.white}
+                  />
+                  <View
+                    style={{
+                      backgroundColor: '#02E9FE',
+                      width: 10,
+                      height: 10,
+                      borderRadius: 4,
+                      borderWidth: 2,
+                      borderColor: '#524CE0',
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                    }}
+                  />
+                </View>
+              </CircleComponent>
             </TouchableOpacity>
           </RowComponent>
           <SpaceComponent height={24} />
           <RowComponent>
-            <RowComponent onPress={() => {
-              navigation.navigate('Search');
-            }} styles={{ flex: 1 }}>
+            <RowComponent
+              onPress={() => {
+                navigation.navigate('Search');
+              }}
+              styles={{flex: 1}}>
               <SearchNormal1
                 variant="TwoTone"
                 size={22}
@@ -170,7 +277,6 @@ const ExploreScreen = ({navigation}) => {
         <View>
           <CategoriesList isColor={true} />
         </View>
-
       </View>
       <ScrollView
         nestedScrollEnabled
@@ -181,9 +287,13 @@ const ExploreScreen = ({navigation}) => {
             paddingTop: 25,
           },
         ]}>
-
-          <BannerComponent bannerData={eventsIscoming} />
-        <View style={[globalStyles.row, styles.paddingContent  ,{ marginTop: 15, justifyContent: 'space-between' }]}>
+        <BannerComponent bannerData={eventsIscoming} />
+        <View
+          style={[
+            globalStyles.row,
+            styles.paddingContent,
+            {marginTop: 15, justifyContent: 'space-between'},
+          ]}>
           <TextComponent text="Sự kiện đang diễn ra" size={18} title />
           <RowComponent onPress={() => {}}>
             <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
@@ -196,14 +306,25 @@ const ExploreScreen = ({navigation}) => {
           nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
           data={eventsIscoming}
-          renderItem={({ item }) => <EventItem onPress={() => {
-            navigation.navigate('Detail', {
-              id: item._id
-            });
-          }} type="card" item={item} />}
+          renderItem={({item}) => (
+            <EventItem
+              onPress={() => {
+                navigation.navigate('Detail', {
+                  id: item._id,
+                });
+              }}
+              type="card"
+              item={item}
+            />
+          )}
         />
 
-        <View style={[globalStyles.row, styles.paddingContent, { marginTop: 15, justifyContent: 'space-between' }]}>
+        <View
+          style={[
+            globalStyles.row,
+            styles.paddingContent,
+            {marginTop: 15, justifyContent: 'space-between'},
+          ]}>
           <TextComponent text="Sự kiện sắp diễn ra" size={18} title />
           <RowComponent onPress={() => {}}>
             <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
@@ -216,11 +337,17 @@ const ExploreScreen = ({navigation}) => {
           nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
           data={eventsUpcoming}
-          renderItem={({ item }) => <EventItem onPress={() => {
-            navigation.navigate('Detail', {
-              id: item._id
-            });
-          }} type="card" item={item} />}
+          renderItem={({item}) => (
+            <EventItem
+              onPress={() => {
+                navigation.navigate('Detail', {
+                  id: item._id,
+                });
+              }}
+              type="card"
+              item={item}
+            />
+          )}
         />
       </ScrollView>
     </ScrollView>
@@ -232,5 +359,5 @@ export default ExploreScreen;
 const styles = StyleSheet.create({
   paddingContent: {
     paddingHorizontal: 12,
-  }
+  },
 });

@@ -1,7 +1,10 @@
-import { StatusBar, StyleSheet, Text, View } from 'react-native';
-import React, { useEffect } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
+import {StatusBar, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect} from 'react';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import {
+  NavigationContainer,
+  useNavigationContainerRef,
+} from '@react-navigation/native';
 import {
   WelcomeScreen,
   RegisterScreen,
@@ -14,19 +17,21 @@ import {
   EventCategoryScreen,
   EventSearchScreen,
   ProfileEdit,
-  ProfileScreen
+  ProfileScreen,
 } from './app/screens';
-import Review from './app/screens/review/Review'
+import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
-import RatingAndReview from './app/screens/review/RatingAndReview'
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import MapScreen from './app/screens/map/MapScreen';
+import RatingAndReview from './app/screens/review/RatingAndReview';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
-import { HandleNotification } from './app/utils/handleNotification';
-import { createNotificationChannel, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
-import { setupNotificationNavigation } from './app/services/notification/NotificationHandler';
-
-
+import {HandleNotification} from './app/utils/handleNotification';
+import {
+  createNotificationChannel,
+  setupForegroundNotificationHandler,
+} from './app/services/notification/NotificationServices';
+import {setupNotificationNavigation} from './app/services/notification/NotificationHandler';
 
 const Stack = createNativeStackNavigator();
 
@@ -45,7 +50,6 @@ const App = () => {
     return unsubscribe;
   }, []);
   return (
-    
     // Tương tác màn hình
     <GestureHandlerRootView style={styles.root}>
       {/* Container chứa tất cả màn hàn và xử lí chuyển màn hình */}
@@ -61,6 +65,7 @@ const App = () => {
           <Stack.Screen name="Category" component={EventCategoryScreen} />
           <Stack.Screen name="Search" component={EventSearchScreen} />
           <Stack.Screen name="Detail" component={EventDetailScreen} />
+          <Stack.Screen name="Map" component={MapScreen} />
           <Stack.Screen name="Ticket" component={TicketEventScreen} />
           <Stack.Screen name="Payment" component={PaymentScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
@@ -69,7 +74,10 @@ const App = () => {
           <Stack.Screen name="ProfileEdit" component={ProfileEdit} />
           <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           <Stack.Screen name="Review" component={Review} />
-          <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
+          <Stack.Screen
+            name="OtpVerification"
+            component={OtpVerificationScreen}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
