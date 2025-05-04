@@ -1,5 +1,5 @@
-import { appInfo } from "@/app/constants/appInfos";
-import { deleteTokens, getTokens, saveTokens } from "@/app/token/authTokens";
+import { appInfo } from "../../../app/constants/appInfos";
+import { deleteTokens, getTokens, saveTokens } from "../../token/authTokens";
 import axios from "axios";
 
 const AxiosInstance = (contentType = 'application/json') => {

@@ -23,8 +23,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 import { HandleNotification } from './app/utils/handleNotification';
-import { createNotificationChannel, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
+import { createNotificationChannel, runNotificationDiagnostics, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
 import { setupNotificationNavigation } from './app/services/notification/NotificationHandler';
+import FriendScreen from './app/screens/friend/FriendScreen';
+import FriendListScreen from './app/screens/friend/FriendListScreen';
+import FriendRequestScreen from './app/screens/friend/FriendRequestScreen';
+import { getTokens } from './app/token/authTokens';
 
 
 
@@ -32,12 +36,15 @@ const Stack = createNativeStackNavigator();
 
 const App = () => {
   const navigationRef = useNavigationContainerRef();
+  const token = getTokens();
+  console.log("Tokens: "+JSON.stringify(token));
   useEffect(() => {
     HandleNotification.checkNotificationPermission();
 
     async function initNotification() {
       await createNotificationChannel();
       setupForegroundNotificationHandler();
+      runNotificationDiagnostics();
     }
     initNotification();
 
@@ -70,6 +77,9 @@ const App = () => {
           <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           <Stack.Screen name="Review" component={Review} />
           <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
+          <Stack.Screen name="FriendScreen" component={FriendListScreen} />
+          <Stack.Screen name="FriendSearchScreen" component={FriendScreen} />
+          <Stack.Screen name="FriendRequestScreen" component={FriendRequestScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

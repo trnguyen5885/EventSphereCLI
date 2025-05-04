@@ -21,7 +21,7 @@ const ProfileScreen = ({navigation}) => {
     <ScrollView showsVerticalScrollIndicator={true}
       contentContainerStyle={{ flexGrow: 1 }}>
       <View style={styles.container}>
-        <ProfileHeader />
+        <ProfileHeader onPress={()=>navigation.navigate('FriendScreen')}/>
         
         <View style={styles.editBtnContainer}>
           <ButtonComponent

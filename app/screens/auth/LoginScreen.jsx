@@ -15,7 +15,7 @@ import {
 import LoadingModal from '../../modals/LoadingModal';
 import {AxiosInstance} from '../../services';
 import { HandleNotification } from '../../utils/handleNotification';
-import { saveTokens } from '@/app/token/authTokens';
+import { saveTokens } from '../../../app/token/authTokens';
 
 const LoginScreen = ({navigation}) => {
   const [useId, setUseId] = useState('');
