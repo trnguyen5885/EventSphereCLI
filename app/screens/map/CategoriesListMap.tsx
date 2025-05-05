@@ -22,7 +22,6 @@ const CategoriesListMap = (props: Props) => {
   const [categoryIcons, setCategoryIcons] = useState<
     {id: string; icon: string}[]
   >([]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const getCategories = async () => {
@@ -36,7 +35,6 @@ const CategoriesListMap = (props: Props) => {
         createCategoryIcons(response.data);
       } catch (e) {
         console.error('Error fetching categories:', e);
-        setError('Không thể tải danh mục');
       }
     };
 
@@ -89,8 +87,7 @@ const CategoriesListMap = (props: Props) => {
       );
       navigation.navigate('Map', {eventsForCategory: validEvents});
     } catch (error) {
-      console.error('Error fetching events:', error);
-      setError('Không thể tải sự kiện');
+      // console.error('Error fetching events:', error);
     }
   };
 
@@ -121,14 +118,6 @@ const CategoriesListMap = (props: Props) => {
       </RowComponent>
     );
   };
-
-  if (error) {
-    return (
-      <View style={globalStyles.container}>
-        <TextComponent text={error} color="red" />
-      </View>
-    );
-  }
 
   return (
     <FlatList
