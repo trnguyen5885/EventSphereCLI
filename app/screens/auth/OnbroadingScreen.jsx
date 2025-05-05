@@ -5,7 +5,7 @@ import {globalStyles} from '../../constants/globalStyles';
 import {Dimensions} from 'react-native';
 import {appColors} from '../../constants/appColors';
 import {fontFamilies} from '../../constants/fontFamilies';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const OnbroadingScreen = ({navigation}) => {
   const [index, setIndex] = useState(0);
 
@@ -64,7 +64,8 @@ const OnbroadingScreen = ({navigation}) => {
           },
         ]}>
         <TouchableOpacity
-          onPress={() => {
+          onPress={async () => {
+            await AsyncStorage.setItem('isFirstLaunch', 'false');
             navigation.navigate('Login');
           }}>
           <Text
@@ -76,8 +77,13 @@ const OnbroadingScreen = ({navigation}) => {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => {
-            index < 2 ? setIndex(index + 1) : navigation.navigate('Login');
+          onPress={async () => {
+            if (index < 2) {
+              setIndex(index + 1);
+            } else {
+              await AsyncStorage.setItem('isFirstLaunch', 'false');
+              navigation.navigate('Login');
+            }
           }}>
           <Text
             style={{color: appColors.white, fontFamily: fontFamilies.medium}}>

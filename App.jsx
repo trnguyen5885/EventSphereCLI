@@ -6,7 +6,6 @@ import {
   useNavigationContainerRef,
 } from '@react-navigation/native';
 import {
-  WelcomeScreen,
   RegisterScreen,
   EventDetailScreen,
   TicketEventScreen,
@@ -21,6 +20,8 @@ import {
 } from './app/screens';
 import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
+import WelcomeScreen from './app/screens/auth/WelcomeScreen';
+import OnbroadingScreen from './app/screens/auth/OnbroadingScreen';
 import MapScreen from './app/screens/map/MapScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -58,7 +59,9 @@ const App = () => {
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName="Login">
+          initialRouteName="WelcomeScreen">
+          <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} />
+          <Stack.Screen name="Onbroading" component={OnbroadingScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />

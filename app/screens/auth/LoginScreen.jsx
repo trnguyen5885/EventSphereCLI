@@ -14,7 +14,7 @@ import {
 } from '../../components/index';
 import LoadingModal from '../../modals/LoadingModal';
 import {AxiosInstance} from '../../services';
-import { HandleNotification } from '../../utils/handleNotification';
+import {HandleNotification} from '../../utils/handleNotification';
 
 const LoginScreen = ({navigation}) => {
   const [useId, setUseId] = useState('');
@@ -87,9 +87,12 @@ const LoginScreen = ({navigation}) => {
         setIsLoading(true);
         const userId = res.data.id;
         const userToken = res.data.token;
+        const refreshToken = res.data.refreshToken;
         setUseId(userId);
         await AsyncStorage.setItem('userId', userId);
         await AsyncStorage.setItem('userToken', userToken);
+        await AsyncStorage.setItem('userToken', userToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
 
         // 🔹 Lưu email & password nếu "Remember Me" được bật
         if (isRemember) {
@@ -136,7 +139,6 @@ const LoginScreen = ({navigation}) => {
         <InputComponent
           value={email}
           placeholder="Email"
-          
           onChange={val => {
             setEmail(val);
             setEmailError('');
