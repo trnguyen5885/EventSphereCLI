@@ -27,7 +27,7 @@ const AxiosInstance = (contentType = 'application/json') => {
             const originalRequest = error.config;
 
             if(error.res?.status===401 && !originalRequest._retry){
-                originalRequest._rety = true;
+                originalRequest._retry = true;
                 try{
                     const tokens = await getTokens();
 

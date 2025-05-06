@@ -66,7 +66,7 @@ const NotificationScreen = ({ navigation }) => {
           {item.title}
           <Text style={styles.content}> {item.body}</Text>
         </Text>
-        {item.data.type === "friend" && (
+        {item?.data?.type === "friend" && (
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.rejectButton}>
               <Text style={styles.rejectText}>Reject</Text>

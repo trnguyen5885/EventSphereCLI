@@ -107,7 +107,7 @@ const ExploreScreen = ({navigation}) => {
                 size={13}
               />
             </View>
-            <TouchableOpacity onPress={()=>navigation.navigate('FriendScreen')} style={{marginRight: 8}}>
+            <TouchableOpacity onPress={()=>navigation.navigate('FriendSearchScreen')} style={{marginRight: 8}}>
               <CircleComponent color="#524CE0" size={36}>
                 <MaterialIcons
                   name="group"
