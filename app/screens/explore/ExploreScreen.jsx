@@ -71,7 +71,7 @@ const ExploreScreen = ({navigation}) => {
   // }
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled style={globalStyles.container}>
+    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}

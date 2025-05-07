@@ -6,32 +6,43 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import { AxiosInstance } from '../../../app/services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const demoNotificantions = [
-  {
-    type: 1,
-    userName: 'Castorice',
-    content: 'Invited you to her event',
-    time: 'Just now'
-  },
-  {
-    type: 2,
-    userName: 'The Herta',
-    content: 'Love your events!',
-    time: '1 hr ago'
-  },
-  {
-    type: 2,
-    userName: 'Cantarella',
-    content: 'Love your events!',
-    time: '2 hr ago'
-  },
-  {
-    type: 1,
-    userName: 'Camellya',
-    content: 'Invited you to her event',
-    time: '5 min ago'
+// Hàm định dạng thời gian
+const formatTime = (isoString) => {
+  if (!isoString) return '';
+  const now = new Date();
+  const date = new Date(isoString);
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  // Cùng ngày
+  if (
+    now.getFullYear() === date.getFullYear() &&
+    now.getMonth() === date.getMonth() &&
+    now.getDate() === date.getDate()
+  ) {
+    // Hiện giờ:phút
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
   }
-]
+  // Hôm qua
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate()
+  ) {
+    return 'Hôm qua';
+  }
+  // Trong 3 ngày gần nhất
+  if (diffDay < 4) {
+    return `${diffDay} ngày trước`;
+  }
+  // Xa hơn: hiện ngày/tháng
+  return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth()+1).toString().padStart(2, '0')}`;
+};
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
@@ -65,8 +76,8 @@ const NotificationScreen = ({ navigation }) => {
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.userName}>
           {item.title}
-          <Text style={styles.content}> {item.body}</Text>
         </Text>
+        <Text style={styles.content}> {item.body}</Text>
         {item?.data?.type === "friend" && (
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.rejectButton}>
@@ -78,7 +89,7 @@ const NotificationScreen = ({ navigation }) => {
           </View>
         )}
       </View>
-      <Text style={styles.timeText}>{item.time}</Text>
+      <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
     </View>
   );
 

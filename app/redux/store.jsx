@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers } from 'redux';
 
 import authReducer from './slices/authSlice';
+import friendRequestReducer from './slices/friendRequestSlice';
 
 const persistConfig = {
   key: 'root',
@@ -18,7 +19,10 @@ const rootReducer = combineReducers({
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: {
+    persistedReducer,
+    friendRequest: friendRequestReducer,
+  },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // tránh lỗi với non-serializable values

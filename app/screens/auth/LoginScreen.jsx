@@ -33,7 +33,7 @@ const LoginScreen = ({navigation}) => {
 
   // 🔹 Load email & password nếu "Remember Me" đã được bật
   useEffect(() => {
-      if (auth.rememberMe && auth.savedCredentials) {
+      if (auth?.rememberMe && auth?.savedCredentials) {
         setEmail(auth.savedCredentials.email);
         setPassword(auth.savedCredentials.password);
         setIsRemember(true);

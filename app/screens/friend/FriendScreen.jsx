@@ -24,6 +24,8 @@ import PendingRequestTab from './components/PendingRequestTab';
 import SentRequestTab from './components/SentRequestTab';
 import { handleSendRequest as handleSendRequestApi, handleUnfriend, fetchPendingRequests } from './services/friendApi';
 import { RowComponent } from '../../components';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPendingCount } from '../../../app/redux/slices/friendRequestSlice';
 
 const FriendScreen = () => {
   const [query, setQuery] = useState("");
@@ -34,7 +36,8 @@ const FriendScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const friendListReloadRef = useRef();
-  const [pendingCount, setPendingCount] = useState(0);
+  const dispatch = useDispatch();
+  const pendingCount = useSelector(state => state.friendRequest.pendingCount);
 
   const debouncedSearch = useCallback(
     debounce(async (text) => {
@@ -116,30 +119,8 @@ const FriendScreen = () => {
   };
 
   useEffect(() => {
-    const loadPendingCount = async () => {
-      try {
-        const res = await fetchPendingRequests();
-        setPendingCount(res.length);
-      } catch (e) {
-        setPendingCount(0);
-      }
-    };
-    loadPendingCount();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'pending') {
-      const loadPendingCount = async () => {
-        try {
-          const res = await fetchPendingRequests();
-          setPendingCount(res.length);
-        } catch (e) {
-          setPendingCount(0);
-        }
-      };
-      loadPendingCount();
-    }
-  }, [activeTab]);
+    dispatch(fetchPendingCount());
+  }, [dispatch]);
 
   return (
     <SafeAreaView style={styles.container}>
