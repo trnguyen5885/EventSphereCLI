@@ -1,5 +1,5 @@
 import { AxiosInstance } from '../../../app/services';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,8 @@ import UserItem from './components/UserItem';
 import FriendListTab from './components/FriendListTab';
 import PendingRequestTab from './components/PendingRequestTab';
 import SentRequestTab from './components/SentRequestTab';
-import { handleSendRequest as handleSendRequestApi } from './services/friendApi';
+import { handleSendRequest as handleSendRequestApi, handleUnfriend, fetchPendingRequests } from './services/friendApi';
+import { RowComponent } from '../../components';
 
 const FriendScreen = () => {
   const [query, setQuery] = useState("");
@@ -32,6 +33,8 @@ const FriendScreen = () => {
   const [activeTab, setActiveTab] = useState('friends');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const friendListReloadRef = useRef();
+  const [pendingCount, setPendingCount] = useState(0);
 
   const debouncedSearch = useCallback(
     debounce(async (text) => {
@@ -87,6 +90,8 @@ const FriendScreen = () => {
             styles={styles}
             setSelectedUser={setSelectedUser}
             setModalVisible={setModalVisible}
+            onReloadRef={friendListReloadRef}
+            ref={friendListReloadRef}
           />
         );
       case 'pending':
@@ -109,6 +114,32 @@ const FriendScreen = () => {
         return null;
     }
   };
+
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      try {
+        const res = await fetchPendingRequests();
+        setPendingCount(res.length);
+      } catch (e) {
+        setPendingCount(0);
+      }
+    };
+    loadPendingCount();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'pending') {
+      const loadPendingCount = async () => {
+        try {
+          const res = await fetchPendingRequests();
+          setPendingCount(res.length);
+        } catch (e) {
+          setPendingCount(0);
+        }
+      };
+      loadPendingCount();
+    }
+  }, [activeTab]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -183,9 +214,18 @@ const FriendScreen = () => {
               style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
               onPress={() => setActiveTab('pending')}
             >
-              <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-                Lời mời nhận
-              </Text>
+              <RowComponent>
+                <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
+                  Lời mời nhận
+                </Text>
+                {pendingCount > 0 && (
+                  <View style={{ marginLeft: 6, backgroundColor: '#FF3B30', borderRadius: 10, minWidth: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}>
+                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>
+                      {pendingCount}
+                    </Text>
+                  </View>
+                )}
+              </RowComponent>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'sent' && styles.activeTab]}
@@ -231,9 +271,12 @@ const FriendScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.confirmButton]}
-                onPress={() => {
-                  handleUnfriend(selectedUser._id);
+                onPress={async () => {
+                  await handleUnfriend(selectedUser._id);
                   setModalVisible(false);
+                  if (friendListReloadRef.current) {
+                    friendListReloadRef.current();
+                  }
                 }}
               >
                 <Text style={styles.confirmButtonText}>Xác nhận</Text>
@@ -395,7 +438,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#8E8E93',
   },
   acceptButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#2075FF',
+    padding: 10,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 100,
+  },
+  rejectButton: {
+    backgroundColor: '#E2E5E9',
+    padding: 10,
+    borderRadius: 20,
+    width: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textReject: {
+    color: '#0C2747',
+    fontSize: 14,
+    fontWeight: '600',
   },
   friendButton: {
     backgroundColor: '#5856D6',

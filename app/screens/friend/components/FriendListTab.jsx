@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, Text, View } from 'react-native';
 import { fetchFriends, handleUnfriend as apiHandleUnfriend } from '../services/friendApi';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import UserItem from './UserItem';
 
-const FriendListTab = ({ styles, setSelectedUser, setModalVisible }) => {
+const FriendListTab = forwardRef(({ styles, setSelectedUser, setModalVisible, onReloadRef }, ref) => {
   const [friends, setFriends] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,13 @@ const FriendListTab = ({ styles, setSelectedUser, setModalVisible }) => {
     }
   }, []);
 
+  // Expose loadFriends to parent via ref or callback
+  useEffect(() => {
+    if (onReloadRef) {
+      onReloadRef.current = loadFriends;
+    }
+  }, [onReloadRef, loadFriends]);
+
   useEffect(() => {
     loadFriends();
   }, [loadFriends]);
@@ -29,11 +36,6 @@ const FriendListTab = ({ styles, setSelectedUser, setModalVisible }) => {
     setRefreshing(true);
     await loadFriends();
     setRefreshing(false);
-  };
-
-  const handleUnfriendPress = (user) => {
-    setSelectedUser(user);
-    setModalVisible(true);
   };
 
   const getRelativeTime = (createdAt) => {
@@ -84,6 +86,6 @@ const FriendListTab = ({ styles, setSelectedUser, setModalVisible }) => {
       )}
     />
   );
-};
+});
 
 export default FriendListTab;

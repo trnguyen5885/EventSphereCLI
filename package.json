@@ -23,6 +23,7 @@
     "@shopify/flash-list": "^1.7.6",
     "axios": "^1.8.4",
     "iconsax-react-native": "^0.0.8",
+    "jwt-decode": "^4.0.0",
     "lodash.debounce": "^4.0.8",
     "query-string": "^9.1.1",
     "react": "19.0.0",

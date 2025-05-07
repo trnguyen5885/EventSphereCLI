@@ -1,5 +1,5 @@
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import {
@@ -29,15 +29,32 @@ import FriendScreen from './app/screens/friend/FriendScreen';
 import FriendListScreen from './app/screens/friend/FriendListScreen';
 import FriendRequestScreen from './app/screens/friend/FriendRequestScreen';
 import { getTokens } from './app/token/authTokens';
-
-
+import { getSocket, initSocket } from './app/socket/socket';
+import { jwtDecode } from 'jwt-decode';
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
   const navigationRef = useNavigationContainerRef();
-  const token = getTokens();
-  console.log("Tokens: "+JSON.stringify(token));
+  const [token, setToken] = useState(null);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const storedToken = await getTokens();
+        if (storedToken?.accessToken) {
+          const userData = jwtDecode(storedToken.accessToken); 
+          setToken({ ...storedToken, user: userData }); // gộp thêm `user`
+        }
+      } catch (err) {
+        console.error("Error loading token:", err);
+      }
+    };
+    fetchToken();
+  }, []);
+
+  console.log("Tokens: " + JSON.stringify(token?.user?.id));
   useEffect(() => {
     HandleNotification.checkNotificationPermission();
 
@@ -51,8 +68,41 @@ const App = () => {
     const unsubscribe = setupNotificationNavigation(navigationRef);
     return unsubscribe;
   }, []);
+  useEffect(() => {
+    if (token?.user?.id) {
+      initSocket(token.user._id);
+      const socket = getSocket();
+      socket.on('connect', () => {
+        console.log('Socket connected!');
+      });
+      socket.on('disconnect', () => {
+        console.log('Socket disconnected!');
+      });
+
+      const handleConnect = () => {
+        setIsSocketConnected(true);
+      };
+      const handleDisconnect = () => {
+        setIsSocketConnected(false);
+      };
+      socket.on('connect', handleConnect);
+      socket.on('disconnect', handleDisconnect);
+
+      socket.off("friendRequest");
+      socket.on("friendRequest", (data) => {
+        console.log("Friend request received:", data);
+      });
+
+      return () => {
+        socket.off('connect', handleConnect);
+        socket.off('disconnect', handleDisconnect);
+        socket.off("friendRequest");
+        socket?.disconnect();
+      };
+    }
+  }, [token]);
   return (
-    
+
     // Tương tác màn hình
     <GestureHandlerRootView style={styles.root}>
       {/* Container chứa tất cả màn hàn và xử lí chuyển màn hình */}

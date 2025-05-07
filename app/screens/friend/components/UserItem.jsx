@@ -72,7 +72,7 @@ const UserItem = ({
               <Text style={styles.buttonText}>Chấp nhận</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.rejectButton} onPress={() => handleReject && handleReject(item._id)}>
-              <Text style={styles.buttonText}>Từ chối</Text>
+              <Text style={styles.textReject}>Từ chối</Text>
             </TouchableOpacity>
           </View>
         )}
