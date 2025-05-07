@@ -27,4 +27,29 @@ export const loginOrganizer = async (email, password) => {
   }
 };
 
+export const loginUser = async (email, password) => {
+  const body = { email, password };
+  const res = await AxiosInstance().post('users/login', body);
+
+  const { status, data } = res;
+
+  if (status === 200 && data.role === 3) {
+    const { id, token, refreshToken, ...rest } = data;
+    await saveTokens(token, refreshToken);
+
+    return {
+      status: 200,
+      data: {
+        id,
+        token,
+        refreshToken,
+        role: 3,
+        ...rest,
+      },
+    };
+  } else {
+    throw new Error('Tài khoản không thuộc người dùng thông thường');
+  }
+};
+
 
