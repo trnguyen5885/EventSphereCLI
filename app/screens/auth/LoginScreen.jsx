@@ -16,6 +16,9 @@ import LoadingModal from '../../modals/LoadingModal';
 import {AxiosInstance} from '../../services';
 import { HandleNotification } from '../../utils/handleNotification';
 import { saveTokens } from '../../../app/token/authTokens';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginSuccess, setRememberMe, setSavedCredentials } from '../../redux/slices/authSlice';
+import { loginUser } from '../../services/authService';
 
 const LoginScreen = ({navigation}) => {
   const [useId, setUseId] = useState('');
@@ -25,25 +28,18 @@ const LoginScreen = ({navigation}) => {
   const [passwordError, setPasswordError] = useState('');
   const [isRemember, setIsRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch();
+  const auth = useSelector(state => state.auth);
 
   // 🔹 Load email & password nếu "Remember Me" đã được bật
   useEffect(() => {
-    const loadSavedData = async () => {
-      const savedRemember = await AsyncStorage.getItem('isRemember');
-
-      if (savedRemember === 'true') {
-        // Chỉ lấy khi isRemember được bật
+      if (auth.rememberMe && auth.savedCredentials) {
+        setEmail(auth.savedCredentials.email);
+        setPassword(auth.savedCredentials.password);
         setIsRemember(true);
-        const savedEmail = await AsyncStorage.getItem('savedEmail');
-        const savedPassword = await AsyncStorage.getItem('savedPassword');
-
-        if (savedEmail) setEmail(savedEmail);
-        if (savedPassword) setPassword(savedPassword);
       }
-    };
-
-    loadSavedData();
-  }, []);
+    }, []);
+    
   const validateInputs = () => {
     let isValid = true;
     if (!email.trim()) {
@@ -73,52 +69,32 @@ const LoginScreen = ({navigation}) => {
 
   const handleLogin = async () => {
     if (!validateInputs()) return;
-
+  
     setIsLoading(true);
-    const body = {
-      email,
-      password,
-    };
-    console.log(body);
-    console.log('Đang kết nối');
     try {
-      const res = await AxiosInstance().post('users/login', body);
-      console.log(res);
-      if (res.status === 200) {
-        setIsLoading(true);
-        const userId = res.data.id;
-        const userToken = res.data.token;
-        const refreshToken = res.data.refreshToken
-        setUseId(userId);
-        await AsyncStorage.setItem('userId', userId);
-        await saveTokens(userToken, refreshToken)
-
-        // 🔹 Lưu email & password nếu "Remember Me" được bật
-        if (isRemember) {
-          await AsyncStorage.setItem('isRemember', 'true');
-          await AsyncStorage.setItem('savedEmail', email);
-          await AsyncStorage.setItem('savedPassword', password);
-        } else {
-          await AsyncStorage.removeItem('isRemember');
-          await AsyncStorage.removeItem('savedEmail');
-          await AsyncStorage.removeItem('savedPassword');
-        }
-        HandleNotification.checkNotificationPermission();
-        navigation.navigate('Drawer');
-        console.log('Thành Công');
+      const res = await loginUser(email, password); // 👈 sử dụng loginUser
+      const { id, token, refreshToken, role, ...userData } = res.data;
+  
+      dispatch(
+        loginSuccess({
+          userId: id,
+          userData,
+          role,
+        }),
+      );
+  
+      if (isRemember) {
+        dispatch(setRememberMe(true));
+        dispatch(setSavedCredentials({ email, password }));
+      } else {
+        dispatch(setRememberMe(false));
+        dispatch(setSavedCredentials(null));
       }
+  
+      navigation.navigate('Drawer'); // hoặc navigation.reset(...)
     } catch (e) {
       console.log(e);
       setPasswordError('Email hoặc mật khẩu không chính xác');
-      // 🔹 Nếu "Remember Me" được bật, chỉ lưu email, không lưu password
-      if (isRemember) {
-        await AsyncStorage.setItem('isRemember', 'true');
-        await AsyncStorage.setItem('savedEmail', email);
-        await AsyncStorage.removeItem('savedPassword');
-      } else {
-        await AsyncStorage.removeItem('isRemember');
-        await AsyncStorage.removeItem('savedEmail');
-      }
     } finally {
       setIsLoading(false);
     }

@@ -1,7 +1,6 @@
 import notifee, { EventType, AndroidImportance } from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
-import { AppState, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { AppState } from 'react-native';
 
 // Tạo channel thông báo trên Android với debug
 export async function createNotificationChannel() {
