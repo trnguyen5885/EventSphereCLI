@@ -25,6 +25,8 @@ import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 import { HandleNotification } from './app/utils/handleNotification';
 import { createNotificationChannel, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
 import { setupNotificationNavigation } from './app/services/notification/NotificationHandler';
+import PaymentQRCodeScreen from './app/screens/payment/PaymentQRCodeScreen';
+import { appColors } from './app/constants/appColors';
 import ZaloPayPaymentScreen from './app/screens/payment/ZaloPayPaymentScreen';
 
 
@@ -64,6 +66,7 @@ const App = () => {
           <Stack.Screen name="Detail" component={EventDetailScreen} />
           <Stack.Screen name="Ticket" component={TicketEventScreen} />
           <Stack.Screen name="Payment" component={PaymentScreen} />
+          <Stack.Screen name='PaymentQRCode' component={PaymentQRCodeScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
           <Stack.Screen name="UserTickets" component={UserTicketsScreen} />
           <Stack.Screen name="ListTicket" component={ListTicket} />
