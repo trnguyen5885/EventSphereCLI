@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { ButtonComponent, TextComponent } from '../../components';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -9,7 +9,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
 
-const ProfileHeader = () => {
+const ProfileHeader = ({
+  onPress
+}) => {
 
   const [name, setName] = useState('');
   const [image, setImage] = useState('');
@@ -41,6 +43,12 @@ const ProfileHeader = () => {
 
   return (
     <View >
+      <View style={styles.friendIconContainer}>
+        <View></View>
+        <TouchableOpacity onPress={onPress}> 
+        <Ionicons name="person-add" size={24} color="black" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.profileAVTContainer}>
           <Image style={styles.profileAVT} source={{ uri: image ?  image : 'https://avatar.iran.liara.run/public' }} />
         </View>
@@ -144,5 +152,7 @@ const styles = StyleSheet.create({
         lineHeight: 23,
         color: '#747688'
       },
-
+      friendIconContainer: {
+        justifyContent: 'space-between'
+      }
 });

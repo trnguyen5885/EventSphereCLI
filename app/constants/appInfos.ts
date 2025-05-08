@@ -5,5 +5,6 @@ export const appInfo = {
         WIDTH: Dimensions.get('window').width,
         HEIGTH: Dimensions.get('window').height,
     },
-    BASE_URL: 'https://gamesphereapi.onrender.com',
+    BASE_URL: 'https://eventssphereapi.onrender.com/api',
+    BASE_URL_NOAPI: 'https://eventssphereapi.onrender.com',
 };

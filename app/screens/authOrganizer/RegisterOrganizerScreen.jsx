@@ -22,7 +22,7 @@ import LoadingModal from '../../modals/LoadingModal';
 import {appColors} from '../../constants/appColors';
 import {AxiosInstance} from '../../services';
 
-const RegisterScreen = ({navigation}) => {
+const RegisterOrganizerScreen = ({navigation}) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -83,12 +83,12 @@ const RegisterScreen = ({navigation}) => {
 
     setIsLoading(true);
     try {
-      const body = {username, email, password, phoneNumber};
+      const body = {username, email, password, phoneNumber, role: 2};
       const res = await AxiosInstance().post('users/register', body, 'post');
 
       if (res.status) {
         console.log(res.message);
-        navigation.navigate('OtpVerification', {email});
+        navigation.navigate('OtpOrganizerVerification', {email});
       }
     } catch (error) {
       setErrors(prev => ({...prev, email: 'Email đã tồn tại'}));
@@ -105,7 +105,7 @@ const RegisterScreen = ({navigation}) => {
         <ScrollView contentContainerStyle={{flexGrow: 1}}>
           <ContainerComponent isImageBackground isScroll back>
             <SectionComponent>
-              <TextComponent size={24} title text="Sign Up" />
+              <TextComponent size={24} title text="Sign Up Organizer" />
               <SpaceComponent height={21} />
 
               <InputComponent
@@ -188,7 +188,7 @@ const RegisterScreen = ({navigation}) => {
                 <ButtonComponent
                   type="link"
                   text=" Sign in"
-                  onPress={() => navigation.navigate('Login')}
+                  onPress={() => navigation.navigate('LoginOrganizer')}
                 />
               </RowComponent>
             </SectionComponent>
@@ -201,6 +201,6 @@ const RegisterScreen = ({navigation}) => {
   );
 };
 
-export default RegisterScreen;
+export default RegisterOrganizerScreen;
 
 const styles = StyleSheet.create({});
