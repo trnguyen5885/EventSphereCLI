@@ -37,14 +37,14 @@ import BannerComponent from './components/BannerComponent';
 const ExploreScreen = ({navigation}) => {
   const [eventsIscoming, setEventsIscoming] = useState([]);
   const [eventsUpcoming, setEventsUpcoming] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // setIsLoading(true);
     const getEvents = async () => {
       try {
         const response = await AxiosInstance().get('events/all');
-        // console.log(response);
+        console.log(response);
         const now = Date.now();
         const ongoingEvents = response.filter(eventItem => now >= eventItem.timeStart && now <= eventItem.timeEnd);
         console.log(ongoingEvents);
@@ -55,7 +55,7 @@ const ExploreScreen = ({navigation}) => {
       } catch(e) {
         console.log(e);
       } finally {
-        // setIsLoading(false);
+        setIsLoading(false);
       }
 
     };
@@ -66,9 +66,9 @@ const ExploreScreen = ({navigation}) => {
     };
   }, []);
 
-  // if(isLoading) {
-  //   return <LoadingModal  />;
-  // }
+  if(isLoading) {
+    return <LoadingModal  />;
+  }
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled style={globalStyles.container}>
