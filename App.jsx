@@ -71,7 +71,6 @@ const App = () => {
           <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           <Stack.Screen name="Review" component={Review} />
           <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
-          <Stack.Screen name='ZaloPay' component={ZaloPayPaymentScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
