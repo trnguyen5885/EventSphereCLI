@@ -25,6 +25,7 @@ import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 import { HandleNotification } from './app/utils/handleNotification';
 import { createNotificationChannel, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
 import { setupNotificationNavigation } from './app/services/notification/NotificationHandler';
+import ZaloPayPaymentScreen from './app/screens/payment/ZaloPayPaymentScreen';
 
 
 
@@ -54,7 +55,7 @@ const App = () => {
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName="Login">
+          initialRouteName="ZaloPay">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
@@ -70,6 +71,7 @@ const App = () => {
           <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           <Stack.Screen name="Review" component={Review} />
           <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
+          <Stack.Screen name='ZaloPay' component={ZaloPayPaymentScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
