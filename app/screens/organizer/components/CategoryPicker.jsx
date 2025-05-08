@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, FlatList, Modal } from 'react-native';
-import axios from 'axios';
-import { AxiosInstance } from '@/app/services';
+import { View, Text, ActivityIndicator, TouchableOpacity, FlatList, Modal, StyleSheet } from 'react-native';
+import AxiosInstance from '../../../services/api/AxiosInstance';
 
 const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
   const [categories, setCategories] = useState([]);
@@ -11,16 +10,16 @@ const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const axios = AxiosInstance(); // bạn có thể truyền token nếu cần: AxiosInstance(token)
-        const res = await axios.get('/categories/all'); // đường dẫn từ baseURL của bạn
-        setCategories(res.data);
+        const res = await AxiosInstance().get('categories/all');
+        setCategories(res.data); // ✅ Đảm bảo lấy đúng data nếu có res.data.data
+        console.log('Danh mục:', res.data);
       } catch (error) {
         console.error('Lỗi lấy danh mục:', error.message);
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchCategories();
   }, []);
 
@@ -31,34 +30,46 @@ const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
 
   return (
     <View style={{ marginVertical: 10 }}>
-      <Text style={{ marginBottom: 5 }}>Danh mục</Text>
+      <Text style={{ marginBottom: 6 }}>Danh mục</Text>
       <TouchableOpacity
         onPress={() => setModalVisible(true)}
-        style={{ borderWidth: 1, padding: 10, borderRadius: 5 }}>
-        <Text>{selectedCategory?.name || 'Chọn danh mục'}</Text>
+        style={styles.selectBox}
+      >
+        <Text>
+          {selectedCategory?.name || 'Chọn danh mục'}
+        </Text>
       </TouchableOpacity>
 
       <Modal visible={modalVisible} transparent={true} animationType="slide">
-        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#00000088' }}>
-          <View style={{ backgroundColor: '#fff', margin: 20, borderRadius: 10, padding: 15 }}>
-            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Chọn danh mục</Text>
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Chọn danh mục</Text>
+
             {loading ? (
               <ActivityIndicator size="large" />
             ) : (
               <FlatList
                 data={categories}
-                keyExtractor={(item) => item.data.id.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={{ padding: 10, borderBottomWidth: 1 }}
-                    onPress={() => handleSelect(item)}>
-                    <Text>{item.name}</Text>
-                  </TouchableOpacity>
-                )}
+                keyExtractor={(item) => item._id.toString()}
+                renderItem={({ item }) => {
+                  const isSelected = selectedCategory?._id === item._id;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => handleSelect(item)}
+                      style={[
+                        styles.categoryItem,
+                        isSelected && styles.categoryItemSelected,
+                      ]}
+                    >
+                      <Text style={{ color: isSelected ? '#fff' : '#000' }}>{item.name}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
               />
             )}
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={{ marginTop: 10 }}>
-              <Text style={{ color: 'red', textAlign: 'center' }}>Đóng</Text>
+
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButton}>Đóng</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -68,3 +79,45 @@ const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
 };
 
 export default CategoryPicker;
+
+const styles = StyleSheet.create({
+  selectBox: {
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 5,
+    borderColor: '#DDD',
+    backgroundColor: '#FAFAFA',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: '#00000088',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    margin: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  categoryItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderColor: '#EEE',
+    borderRadius: 5,
+  },
+  categoryItemSelected: {
+    backgroundColor: '#6366F1',
+  },
+  closeButton: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10,
+    fontWeight: '600',
+  },
+});

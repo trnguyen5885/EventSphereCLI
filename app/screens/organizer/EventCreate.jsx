@@ -17,6 +17,7 @@ import OrganizerHeaderComponent from '../../components/OrganizerHeaderComponent'
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DateTimePickerComponent from './components/DateTimePickerComponent';
 import CategoryPicker from './components/CategoryPicker';
+import TagsPicker from './components/TagsPicker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
 
@@ -31,6 +32,9 @@ const EventCreate = () => {
   const [avatarImage, setAvatarImage] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
   const [eventImages, setEventImages] = useState([]);
+
+  const [tags, setTags] = useState([]);
+
 
   console.log("avatarImage", avatarImage);
   console.log("coverImage", coverImage);
@@ -144,17 +148,15 @@ const EventCreate = () => {
           <Text style={styles.label}>Category</Text>
           <TouchableOpacity style={styles.selectInput}>
             <Icon name="list" size={16} color="#555" style={styles.iconMargin} />
-            {/* <CategoryPicker selectedCategory={category} onSelectCategory={setCategory} /> */}
+            <CategoryPicker selectedCategory={category} onSelectCategory={setCategory} />
           </TouchableOpacity>
 
 
           <Text style={styles.label}>Tags</Text>
           <TouchableOpacity style={styles.selectInput}>
             <Icon name="tags" size={16} color="#555" style={styles.iconMargin} />
-            <TextInput
-              placeholder="Nhập thẻ tag cách nhau bằng dấu phẩy"
-              placeholderTextColor="#A0A0A0"
-            />
+            <TagsPicker selectedTags={tags} onChangeTags={setTags} />
+
           </TouchableOpacity>
 
           <Text style={styles.label}>Event Date & Time</Text>
