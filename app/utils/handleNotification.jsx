@@ -1,34 +1,38 @@
-import { getMessaging, getToken, requestPermission } from '@react-native-firebase/messaging';
-import { getApp } from '@react-native-firebase/app';
+import {
+  getMessaging,
+  getToken,
+  requestPermission,
+} from '@react-native-firebase/messaging';
+import {getApp} from '@react-native-firebase/app';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AxiosInstance } from '../services';
+import {AxiosInstance} from '../services';
 
 export class HandleNotification {
   static checkNotificationPermission = async () => {
     try {
       const messaging = getMessaging(getApp());
       const authStatus = await requestPermission(messaging);
-      console.log("Notification permission status:", authStatus);
+      console.log('Notification permission status:', authStatus);
 
       if (authStatus === 1 || authStatus === 2) {
         await this.getFcmToken(messaging);
         this.listenTokenRefresh();
       } else {
-        console.log("Notification permission denied");
+        console.log('Notification permission denied');
       }
     } catch (error) {
       console.error('[ERROR] checkNotificationPermission:', error);
     }
   };
 
-  static getFcmToken = async (messaging) => {
+  static getFcmToken = async messaging => {
     try {
       const userId = await AsyncStorage.getItem('userId');
       const tokenData = await AsyncStorage.getItem('userToken');
       let currentToken = await AsyncStorage.getItem('fcmtoken');
 
       if (!userId) {
-        console.log("Chưa đăng nhập - Không gửi FCM token");
+        console.log('Chưa đăng nhập - Không gửi FCM token');
         return;
       }
 
@@ -44,18 +48,17 @@ export class HandleNotification {
         await this.updateTokenForUser(currentToken, userId, tokenData);
       }
     } catch (error) {
-      console.error('[ERROR] getFcmToken:', error);
+      // console.error('[ERROR] getFcmToken:', error);
     }
   };
 
   static updateTokenForUser = async (newToken, userId, tokenData) => {
     try {
       const axios = AxiosInstance(tokenData);
-      const body = { id: userId, fcmToken: newToken };
-      
-      const response = await axios.put('/users/fcmToken', body);
-      console.log("✅ FCM Token updated:", response.data);
+      const body = {id: userId, fcmToken: newToken};
 
+      const response = await axios.put('/users/fcmToken', body);
+      console.log('✅ FCM Token updated:', response.data);
     } catch (error) {
       console.error('[ERROR] updateTokenForUser:', error);
     }
@@ -63,9 +66,9 @@ export class HandleNotification {
 
   static listenTokenRefresh = () => {
     const messaging = getMessaging(getApp());
-    messaging.onTokenRefresh(async (refreshedToken) => {
+    messaging.onTokenRefresh(async refreshedToken => {
       try {
-        console.log("🔄 Token FCM đã được refresh:", refreshedToken);
+        console.log('🔄 Token FCM đã được refresh:', refreshedToken);
         const persistData = await AsyncStorage.getItem('persist:auth');
         if (!persistData) return;
 
