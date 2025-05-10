@@ -7,7 +7,8 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  Platform
+  Platform,
+  Image
 } from 'react-native';
 import { CardComponent, RowComponent } from '../../components';
 import { appColors } from '../../constants/appColors';
@@ -57,6 +58,7 @@ const TicketEventScreen = ({navigation, route}) => {
       const getInfoEvent = async () => {
           const response = await AxiosInstance().get(`events/detail/${id}`);
           const userId = await AsyncStorage.getItem("userId");
+          console.log(response.data)
           setEventInfo(response.data);
           setUserID(userId);
 
@@ -99,22 +101,32 @@ const TicketEventScreen = ({navigation, route}) => {
     };
 
     const confirmOrder = async() =>{
-      console.log("Event id: " + id, "User id: " + "6773f10819073b07dc2f9e3d" );
-      try{
-        const body = {
-          eventId: id,
-          userId: userID,
-          amount: formData.tickets.normal
-        };
-        const createOrder = await AxiosInstance().post("orders/createOrder", body);
-        console.log(formData.tickets.normal);
-        const totalAmount = calculateTotal();
-        navigation.navigate("Payment",{
-          id: createOrder.data,
-          total: totalAmount,
-        });
-      }catch(e){
-        console.log("Tạo đơn hàng thất bại " + e);
+      // try{
+      //   const body = {
+      //     eventId: id,
+      //     userId: userID,
+      //     amount: formData.tickets.normal
+      //   };
+      //   const createOrder = await AxiosInstance().post("orders/createOrder", body);
+      //   const totalAmount = calculateTotal();
+      //   navigation.navigate("Payment",{
+      //     id: createOrder.data,
+      //     total: totalAmount,
+      //   });
+      // }catch(e){
+      //   console.log("Tạo đơn hàng thất bại " + e);
+      // }
+
+      if(formData.paymentMethod === 'banking') {
+        navigation.navigate("PaymentQRCode", {
+          amount: eventInfo.ticketPrice
+        })
+      }
+      if(formData.paymentMethod === 'momo') {
+        console.log("Momo")
+      }
+      if(formData.paymentMethod === 'zalo') {
+        console.log("Zalo")
       }
     };
 
@@ -283,6 +295,8 @@ const TicketEventScreen = ({navigation, route}) => {
           >
             <Text style={styles.checkoutButtonText}>Thanh toán</Text>
           </TouchableOpacity>
+
+          
         </ScrollView>
       </View>
     );
@@ -435,4 +449,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
       },
+      qrImage: {
+        width: 200,
+        height: 200
+      }
 });
