@@ -12,6 +12,8 @@ const RatingAndReview = ({detailEventId}) => {
      const [listReview, setListReivew] = useState([]);
      const socketRef = useRef(null);
 
+     console.log(listReview);
+
      useEffect(() => {
         socketRef.current = io(appInfo.BASE_URL_NOAPI, {
             transports: ['websocket'],
@@ -83,9 +85,13 @@ const RatingAndReview = ({detailEventId}) => {
 
                             {/* Header: avatar + tên + ngày */}
                             <View style={styles.commentHeader}>
-                                <Image style={styles.commentAvt} source={{uri: item.userId.picUrl ? item.userId.picUrl : 'https://avatar.iran.liara.run/public'}}  />
-                                <Text style={styles.commentName}>{item.userId.username}</Text>
-                                {/* <Text style={styles.commentDate}>{formatDateCreateAt(item.userId.createdAt)}</Text> */}    
+                                <Image style={styles.commentAvt} source={{
+                                     uri:
+                                     item.userId && item.userId.picUrl
+                                       ? item.userId.picUrl
+                                       : 'https://avatar.iran.liara./public',
+                                }}  />
+                                <Text style={styles.commentName}>{item.userId && item.userId.username ? item.userId && item.userId.username : ""}</Text>  
                             </View>
 
                             {/* Số sao đánh giá */}

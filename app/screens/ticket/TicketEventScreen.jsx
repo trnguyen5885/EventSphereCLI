@@ -8,26 +8,33 @@ import {
   StyleSheet,
   SafeAreaView,
   Platform,
-  Image
+  Image,
+  NativeModules,
+  DeviceEventEmitter
 } from 'react-native';
 import { CardComponent, RowComponent } from '../../components';
 import { appColors } from '../../constants/appColors';
 import { globalStyles } from '../../constants/globalStyles';
 import { AxiosInstance } from '../../services';
-import { formatDate } from "../../services/utils/date";
+import { formatDate } from '../../services/utils/date';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import  Ionicons  from 'react-native-vector-icons/Ionicons';
+import LoadingModal from '../../modals/LoadingModal';
+
+const {ZaloPayModule} = NativeModules
 
 const TicketEventScreen = ({navigation, route}) => {
 
   const { id } = route.params;
-  const [userID, setUserID] = useState();
+  const [userInfo, setUserInfo] = useState();
+  const [isLoading, setIsLoading] = useState(false);
+  const [paymentId, setPaymentId] = useState();
 
   const [eventInfo, setEventInfo] = useState({
-      name: "",
+      name: '',
       timeStart: 0,
       timeEnd: 0,
-      location: "",
+      location: '',
       ticketPrice: 0,
   });
   const [formData, setFormData] = useState({
@@ -40,6 +47,8 @@ const TicketEventScreen = ({navigation, route}) => {
       },
       paymentMethod: ''
     });
+
+    
 
     const ticketTypes = {
       normal: {
@@ -56,11 +65,11 @@ const TicketEventScreen = ({navigation, route}) => {
   useEffect(() => {
 
       const getInfoEvent = async () => {
+          const userId = await AsyncStorage.getItem('userId');
           const response = await AxiosInstance().get(`events/detail/${id}`);
-          const userId = await AsyncStorage.getItem("userId");
-          console.log(response.data)
+          const responseUser = await AxiosInstance().get(`users/${userId}`)
           setEventInfo(response.data);
-          setUserID(userId);
+          setUserInfo(responseUser.data);
 
       };
 
@@ -70,6 +79,8 @@ const TicketEventScreen = ({navigation, route}) => {
           setEventInfo(null);
       };
   }, []);
+
+
 
     const updateTicketQuantity = (type, change) => {
       const newQuantity = formData.tickets[type] + change;
@@ -90,45 +101,79 @@ const TicketEventScreen = ({navigation, route}) => {
     };
 
     const isFormValid = () => {
-      // return formData.fullName.trim() !== '' &&
-      //        formData.phone.trim() !== '' &&
-            return (formData.tickets.normal > 0 || formData.tickets.vip > 0) &&
-             formData.paymentMethod !== '';
+            return (formData.tickets.normal > 0 || formData.tickets.vip > 0) && formData.paymentMethod !== '';
     };
 
     const handleNavigation = () => {
       navigation.goBack();
     };
 
-    const confirmOrder = async() =>{
-      // try{
-      //   const body = {
-      //     eventId: id,
-      //     userId: userID,
-      //     amount: formData.tickets.normal
-      //   };
-      //   const createOrder = await AxiosInstance().post("orders/createOrder", body);
-      //   const totalAmount = calculateTotal();
-      //   navigation.navigate("Payment",{
-      //     id: createOrder.data,
-      //     total: totalAmount,
-      //   });
-      // }catch(e){
-      //   console.log("Tạo đơn hàng thất bại " + e);
-      // }
+    const confirmOrder = async () =>{
+      setIsLoading(true);
+      if(formData.paymentMethod === 'zalo') {
+        try {
+          const totalAmount = calculateTotal();
+          // Body for Payment
+          const bodyPayment = {
+            'amount': totalAmount,
+            'urlCalbackSuccess': 'https://gamesphereapi.onrender.com/payments/callback',
+            'dataSave': 'save',
+            'description': eventInfo.name,
+            'nameUser': userInfo.username,
+        }
+          const response = await AxiosInstance().post('/payments',bodyPayment)
+          // ZALO PAY NOT RETURN DATA
+          ZaloPayModule.payOrder(response.data.zp_trans_token)
+          const bodyOrder = {
+              eventId: id,
+              userId: userInfo._id,
+              amount: formData.tickets.normal
+           };
+          const responseOrder = await AxiosInstance().post("orders/createOrder",bodyOrder);
+          
+          const bodyOrderTicket = {
+            orderId: responseOrder.data,
+            paymentId: response.data.zp_trans_token,
+          }
+          const responseOrderTicket = await AxiosInstance().post("orders/createTicket",bodyOrderTicket)
+          
+          console.log(response.data);
+          console.log(responseOrder.data);
+          console.log(responseOrderTicket.data)
+          
+
+
+          if(response.data.return_code == 1 && responseOrder.data &&  responseOrderTicket.data.ticketId) {
+            setTimeout(() => setIsLoading(false), 8000);
+            setTimeout(() => navigation.goBack(), 8000);
+            
+          } else {
+            console.log("Thanh toán không thánh công")
+          }
+
+          
+          
+        } catch(e) {
+          console.log(e);
+          setIsLoading(false)
+        }
+
+      }
 
       if(formData.paymentMethod === 'banking') {
-        navigation.navigate("PaymentQRCode", {
+        navigation.navigate('PaymentQRCode', {
           amount: eventInfo.ticketPrice
         })
       }
       if(formData.paymentMethod === 'momo') {
-        console.log("Momo")
+        console.log('Momo')
       }
-      if(formData.paymentMethod === 'zalo') {
-        console.log("Zalo")
-      }
+      
     };
+
+    if(isLoading) {
+      return <LoadingModal />;
+    }
 
       return (
         <View style={[globalStyles.container]}>
@@ -311,16 +356,16 @@ const styles = StyleSheet.create({
       },
       header: {
        flexDirection: 'row',
-       alignItems: "center",
+       alignItems: 'center',
        justifyContent: 'space-between',
        padding: 12,
        backgroundColor: appColors.primary,
-       paddingTop: Platform.OS === "ios" ? 66 : 22
+       paddingTop: Platform.OS === 'ios' ? 66 : 22
       },
       headerTitle: {
       color: appColors.white2,
       fontSize: 22,
-      fontWeight: "500" },
+      fontWeight: '500' },
       card: {
         backgroundColor: 'white',
         margin: 16,

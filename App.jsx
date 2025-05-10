@@ -27,7 +27,6 @@ import { createNotificationChannel, setupForegroundNotificationHandler } from '.
 import { setupNotificationNavigation } from './app/services/notification/NotificationHandler';
 import PaymentQRCodeScreen from './app/screens/payment/PaymentQRCodeScreen';
 import { appColors } from './app/constants/appColors';
-import ZaloPayPaymentScreen from './app/screens/payment/ZaloPayPaymentScreen';
 
 
 
@@ -57,7 +56,7 @@ const App = () => {
           screenOptions={{
             headerShown: false,
           }}
-          initialRouteName="ZaloPay">
+          initialRouteName="Login">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
