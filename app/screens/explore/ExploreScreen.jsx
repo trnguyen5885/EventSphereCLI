@@ -71,7 +71,7 @@ const ExploreScreen = ({navigation}) => {
   }
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled style={globalStyles.container}>
+    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -107,6 +107,15 @@ const ExploreScreen = ({navigation}) => {
                 size={13}
               />
             </View>
+            <TouchableOpacity onPress={()=>navigation.navigate('FriendSearchScreen')} style={{marginRight: 8}}>
+              <CircleComponent color="#524CE0" size={36}>
+                <MaterialIcons
+                  name="group"
+                  size={24}
+                  color={appColors.white}
+                />
+              </CircleComponent>
+            </TouchableOpacity>
             <TouchableOpacity onPress={()=>navigation.navigate('Notification')}>
             <CircleComponent color="#524CE0" size={36}>
               <View>

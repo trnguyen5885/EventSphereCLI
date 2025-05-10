@@ -83,8 +83,8 @@ const RatingAndReview = ({detailEventId}) => {
 
                             {/* Header: avatar + tên + ngày */}
                             <View style={styles.commentHeader}>
-                                <Image style={styles.commentAvt} source={{uri: item.userId.picUrl ? item.userId.picUrl : 'https://avatar.iran.liara.run/public'}}  />
-                                <Text style={styles.commentName}>{item.userId.username}</Text>
+                                <Image style={styles.commentAvt} source={{uri: item?.userId?.picUrl ? item?.userId?.picUrl : 'https://avatar.iran.liara.run/public'}}  />
+                                <Text style={styles.commentName}>{item?.userId?.username}</Text>
                                 {/* <Text style={styles.commentDate}>{formatDateCreateAt(item.userId.createdAt)}</Text> */}    
                             </View>
 
