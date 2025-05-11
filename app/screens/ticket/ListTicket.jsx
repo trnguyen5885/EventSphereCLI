@@ -1,6 +1,8 @@
 import { RowComponent } from '../../components';
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView,StatusBar, Platform } from 'react-native';
+import { appColors } from '../../constants/appColors';
+
 
 const ListTicket = ({ navigation, route }) => {
     const { event, user } = route.params;
@@ -8,14 +10,20 @@ const ListTicket = ({ navigation, route }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Thông tin vé sự kiện</Text>
+            <View style={styles.header}>
+                      <StatusBar animated backgroundColor={appColors.primary} />
+                      <RowComponent styles = {{columnGap: 25}}>
+                          <Text style = {styles.headerTitle} >Thông tin vé sự kiện</Text>
+                      </RowComponent>
+            </View>
             <View style={styles.ticket}>
                 <Text style={styles.cinemaName}>{event.location}</Text>
                 <Text style={styles.movieTitle}>{event.name}</Text>
-                <Image
+                {/* <Image
                     source={{ uri: event?.avatar }}
+                    resizeMode="contain"
                     style={styles.movieImage}
-                />
+                /> */}
                 <RowComponent justify={'space-between'} styles={{ width: '100%', alignItems: 'flex-start' }}>
                     <View>
                         <Text style={styles.ticketCodeLabel}>Mã đặt vé:</Text>
@@ -64,13 +72,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
-        padding: 16,
     },
     header: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 16,
-    },
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 12,
+        backgroundColor: appColors.primary,
+        paddingTop: Platform.OS === 'ios' ? 66 : 22
+           },
+    headerTitle: {
+        color: appColors.white2,
+        fontSize: 22,
+        fontWeight: '500'
+     },
     ticket: {
         backgroundColor: '#fff',
         borderRadius: 8,
@@ -130,7 +145,7 @@ const styles = StyleSheet.create({
         height: 200,
     },
     recipientInfo: {
-        marginTop: 16,
+        marginVertical: 20,
         padding: 16,
         backgroundColor: '#fff',
         borderRadius: 8,

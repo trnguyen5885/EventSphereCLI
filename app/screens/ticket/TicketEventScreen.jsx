@@ -2,15 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   Platform,
-  Image,
   NativeModules,
-  DeviceEventEmitter
+  Alert
 } from 'react-native';
 import { CardComponent, RowComponent } from '../../components';
 import { appColors } from '../../constants/appColors';
@@ -136,16 +133,25 @@ const TicketEventScreen = ({navigation, route}) => {
             paymentId: response.data.zp_trans_token,
           }
           const responseOrderTicket = await AxiosInstance().post("orders/createTicket",bodyOrderTicket)
-          
-          console.log(response.data);
-          console.log(responseOrder.data);
-          console.log(responseOrderTicket.data)
-          
 
 
           if(response.data.return_code == 1 && responseOrder.data &&  responseOrderTicket.data.ticketId) {
             setTimeout(() => setIsLoading(false), 8000);
-            setTimeout(() => navigation.goBack(), 8000);
+            setTimeout(() => {
+              Alert.alert(
+                "Thành công",
+                "Thanh toán đã được xử lý thành công!",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => {
+                      // Chỉ quay lại khi người dùng bấm OK
+                      navigation.navigate("Drawer");
+                    }
+                  }
+                ]
+              );
+            }, 8000);
             
           } else {
             console.log("Thanh toán không thánh công")
@@ -166,7 +172,8 @@ const TicketEventScreen = ({navigation, route}) => {
         })
       }
       if(formData.paymentMethod === 'momo') {
-        console.log('Momo')
+        console.log("momo")
+
       }
       
     };
