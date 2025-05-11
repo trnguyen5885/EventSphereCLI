@@ -1,16 +1,18 @@
-import { StyleSheet, Text, View,StatusBar, Platform,ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View,StatusBar, Platform,ActivityIndicator, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import React from 'react';
 import { useState } from 'react'
 import { useEffect } from 'react';
 import { appColors } from '../../constants/appColors';
 import { RowComponent } from '../../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AxiosInstance } from '../../services/api/AxiosInstance';
+import AxiosInstance  from '../../services/api/AxiosInstance';
 
 const EventScreen = ({navigation}) => {
    const [userData, setUserData] = useState(null);
    const [events, setEvents] = useState([]);
    const [loading, setLoading] = useState(true);
+
+  
 
    useEffect(()=>{
     const getTickets = async() =>{
@@ -34,7 +36,7 @@ const EventScreen = ({navigation}) => {
         return <ActivityIndicator size="large" color="#007BFF" />;
       }
   return (
-    <View>
+    <View style = {{flex: 1}}>
         <View style={styles.header}>
           <StatusBar animated backgroundColor={appColors.primary} />
           <RowComponent styles = {{columnGap: 25}}>
@@ -42,8 +44,10 @@ const EventScreen = ({navigation}) => {
           </RowComponent>
         </View>
                 <FlatList
-                  data={events}
+                  data={events.reverse()}
                   keyExtractor={(item) => item._id}
+                  contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
+                  showsVerticalScrollIndicator={false}
                   renderItem={({ item }) => {
                     return (
                       <View style={{ padding: 16, backgroundColor: 'white', marginBottom: 10, borderRadius: 8 }}>
@@ -51,7 +55,6 @@ const EventScreen = ({navigation}) => {
                         <Text>📅 Ngày: {item.eventDate}</Text>
                         <Text>🎟 Số vé: {item.tickets.length}</Text>
                         <TouchableOpacity
-                          // eslint-disable-next-line react-native/no-inline-styles
                           style={{
                             marginTop: 10,
                             padding: 10,

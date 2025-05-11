@@ -12,6 +12,8 @@ const RatingAndReview = ({detailEventId}) => {
      const [listReview, setListReivew] = useState([]);
      const socketRef = useRef(null);
 
+     console.log(listReview);
+
      useEffect(() => {
         socketRef.current = io(appInfo.BASE_URL_NOAPI, {
             transports: ['websocket'],
