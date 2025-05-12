@@ -127,7 +127,6 @@ const AppWithSocket = () => {
   }, [token]);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           screenOptions={{ headerShown: false }}
@@ -159,7 +158,6 @@ const AppWithSocket = () => {
           <Stack.Screen name="RatingAndReview" component={RatingAndReview} />
         </Stack.Navigator>
       </NavigationContainer>
-    </GestureHandlerRootView>
   );
 };
 

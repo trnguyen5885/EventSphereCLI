@@ -9,23 +9,21 @@ import friendRequestReducer from './slices/friendRequestSlice';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'], // chỉ lưu slice "auth"
+  whitelist: ['auth'],
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  friendRequest: friendRequestReducer, 
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    persistedReducer,
-    friendRequest: friendRequestReducer,
-  },
+  reducer: persistedReducer, 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // tránh lỗi với non-serializable values
+      serializableCheck: false,
     }),
 });
 
