@@ -48,7 +48,7 @@ const DateTimePickerComponent = ({ onTimeChange }) => {
     const timeEnd = toUnixTimestamp(finalEnd);
 
     onTimeChange({ timeStart, timeEnd });
-  }, [startDate, startTime, endDate, endTime]);
+  }, [startDate, startTime, endDate, endTime, onTimeChange]);
 
   return (
     <View style={{ padding: 20 }}>
