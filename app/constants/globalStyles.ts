@@ -6,7 +6,6 @@ export const globalStyles = StyleSheet.create({
         flex: 1,
         backgroundColor: appColors.white,
         justifyContent: 'center',
-        alignItems: 'center',
     },
     text:{
         fontSize: 14,
