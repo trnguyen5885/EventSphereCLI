@@ -12,7 +12,6 @@ const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
       try {
         const res = await AxiosInstance().get('categories/all');
         setCategories(res.data); // ✅ Đảm bảo lấy đúng data nếu có res.data.data
-        console.log('Danh mục:', res.data);
       } catch (error) {
         console.error('Lỗi lấy danh mục:', error.message);
       } finally {
@@ -25,6 +24,7 @@ const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
 
   const handleSelect = (item) => {
     onSelectCategory(item);
+    
     setModalVisible(false);
   };
 
