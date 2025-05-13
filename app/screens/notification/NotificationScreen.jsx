@@ -14,41 +14,8 @@ import { AxiosInstance } from '../../../app/services';
 import { RowComponent } from '../../components';
 import { appColors } from '../../constants/appColors';
 import { useSelector } from 'react-redux';
-
-const formatTime = (isoString) => {
-  if (!isoString) return '';
-  const now = new Date();
-  const date = new Date(isoString);
-  const diffMs = now - date;
-  const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (
-    now.getFullYear() === date.getFullYear() &&
-    now.getMonth() === date.getMonth() &&
-    now.getDate() === date.getDate()
-  ) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  }
-
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (
-    date.getFullYear() === yesterday.getFullYear() &&
-    date.getMonth() === yesterday.getMonth() &&
-    date.getDate() === yesterday.getDate()
-  ) {
-    return 'Hôm qua';
-  }
-
-  if (diffDay < 4) {
-    return `${diffDay} ngày trước`;
-  }
-
-  return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}`;
-};
-
+import InviteNotiComponent from './components/InviteNotiComponent';
+import { formatTime } from './components/formatTime';
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
   const userId = useSelector((state) => state.auth?.userId);
@@ -68,33 +35,19 @@ const NotificationScreen = ({ navigation }) => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  const renderButtons = (type) => (
-    <View style={styles.buttonRow}>
-      <TouchableOpacity style={styles.rejectButton}>
-        <Text style={styles.rejectText}>Từ chối</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.acceptButton}>
-        <Text style={styles.acceptText}>Đồng ý</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   const renderItem = ({ item }) => (
-    <View style={styles.notificationCard}>
-      <Image source={require('../../../assets/images/adaptive-icon.png')} style={styles.avatar} />
-      <View style={{ flex: 1, marginLeft: 10 }}>
-        <RowComponent justify="space-between">
-          <Text style={styles.userName}>{item.title}</Text>
-          <TouchableOpacity>
-            <Entypo name="dots-three-vertical" size={14} color={appColors.text} />
-          </TouchableOpacity>
-        </RowComponent>
-        <Text style={styles.content} numberOfLines={2}>
-          {item.body}
-        </Text>
-        {(item.type === 'friend' || item.type === 'invite') && renderButtons(item.type)}
-        <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
-      </View>
+    <View>
+      {item.type === 'invite' && 
+        <InviteNotiComponent 
+          avatar={'https://avatar.iran.liara.run/public'}
+          body={item.body}
+          createdAt={item.createdAt}
+          title={item.title}
+          inviteId={item.data.inviteId}
+          onResponded={fetchNotifications}
+        />
+      }
+  
     </View>
   );
 

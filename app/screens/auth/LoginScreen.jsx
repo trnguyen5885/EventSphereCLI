@@ -90,7 +90,7 @@ const LoginScreen = ({navigation}) => {
         dispatch(setRememberMe(false));
         dispatch(setSavedCredentials(null));
       }
-  
+      HandleNotification.checkNotificationPermission();
       navigation.navigate('Drawer'); // hoặc navigation.reset(...)
     } catch (e) {
       console.log(e);
