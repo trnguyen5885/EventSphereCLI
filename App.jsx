@@ -29,6 +29,7 @@ import OtpOrganizerVerificationScreen from './app/screens/authOrganizer/OtpOrgan
 
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 import OrganizerTabs from './app/screens/organizer/OrganizerTabs';
+import ProfileEditOrganizer from './app/screens/organizer/ProfileEditOrganizer';
 
 import { HandleNotification } from './app/utils/handleNotification';
 import { createNotificationChannel, runNotificationDiagnostics, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
@@ -107,7 +108,9 @@ const App = () => {
               <Stack.Screen name="FriendSearchScreen" component={FriendScreen} />
               <Stack.Screen name="FriendRequestScreen" component={FriendRequestScreen} />
               <Stack.Screen name="OrganizerTabs" component={OrganizerTabs} />
+              <Stack.Screen name="ProfileEditOrganizer" component={ProfileEditOrganizer} />
               <Stack.Screen name="RatingAndReview" component={RatingAndReview} />
+
             </Stack.Navigator>
           </NavigationContainer>
         </GestureHandlerRootView>

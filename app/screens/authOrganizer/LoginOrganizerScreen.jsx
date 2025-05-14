@@ -84,6 +84,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
             userData: response.data,
           })
         );
+        console.log('Login success:', response.data);
 
         // Lưu thông tin ghi nhớ tài khoản nếu cần
         if (isRemember) {

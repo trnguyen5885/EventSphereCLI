@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import EventDasboard from './EventDashboard';
 import EventManagement from './EventManagement';
 import EventCreate from './EventCreate';
+import ProfileOrganizerScreen from './ProfileOrganizerScreen';
 import Icon from 'react-native-vector-icons/Feather';
 import { Text } from 'react-native';
 
@@ -17,6 +18,7 @@ const OrganizerTabs = () => {
           if (route.name === 'Dashboard') iconName = 'grid';
           else if (route.name === 'Manage Events') iconName = 'calendar';
           else if (route.name === 'Create Event') iconName = 'bell';
+          else if (route.name === 'Profile') iconName = 'user';
 
           return <Icon name={iconName} size={20} color={color} />;
         },
@@ -37,6 +39,7 @@ const OrganizerTabs = () => {
       <Tab.Screen name="Dashboard" component={EventDasboard} />
       <Tab.Screen name="Manage Events" component={EventManagement} />
       <Tab.Screen name="Create Event" component={EventCreate} />
+      <Tab.Screen name="Profile" component={ProfileOrganizerScreen} />
     </Tab.Navigator>
   );
 };
