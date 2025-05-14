@@ -14,15 +14,13 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  friendRequest: friendRequestReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    persistedReducer,
-    friendRequest: friendRequestReducer,
-  },
+  reducer: persistedReducer, // ✅ truyền trực tiếp
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // tránh lỗi với non-serializable values
