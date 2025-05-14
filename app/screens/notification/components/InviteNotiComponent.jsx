@@ -12,6 +12,7 @@ const InviteNotiComponent = ({
     inviteId,
     createdAt,
     onResponded,
+    status
 }) => {
     const handleAccept = async () => {
         try {
@@ -45,14 +46,19 @@ const InviteNotiComponent = ({
                 <Text style={styles.content} numberOfLines={2}>
                     {body}
                 </Text>
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity style={styles.rejectButton}>
-                        <Text style={styles.rejectText}>Từ chối</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
-                        <Text style={styles.acceptText}>Đồng ý</Text>
-                    </TouchableOpacity>
-                </View>
+                {
+                    status === 'pending' && (
+                        <View style={styles.buttonRow}>
+                        <TouchableOpacity style={styles.rejectButton}>
+                            <Text style={styles.rejectText}>Từ chối</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
+                            <Text style={styles.acceptText}>Đồng ý</Text>
+                        </TouchableOpacity>
+                    </View>
+                    )
+                }
+                
                 <Text style={styles.timeText}>{formatTime(createdAt)}</Text>
             </View>
         </View>

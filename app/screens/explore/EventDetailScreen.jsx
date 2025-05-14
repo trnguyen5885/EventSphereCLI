@@ -38,7 +38,7 @@ const EventDetailScreen = ({ navigation, route }) => {
     'timeStart': 0,
     'location': ''
   });
-  
+
   // Đảm bảo sheetRef được khởi tạo đúng cách
   const sheetRef = useRef(null);
 
@@ -50,13 +50,21 @@ const EventDetailScreen = ({ navigation, route }) => {
     // Thêm kiểm tra và log để debug
     console.log('handleInviteList called');
     console.log('sheetRef current:', sheetRef.current);
-    
+
     // Kiểm tra nếu sheetRef.current và present method tồn tại
     if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
       sheetRef.current?.expand();
       console.log('sheetRef.current', sheetRef.current)
     } else {
       console.error('Bottom sheet reference or present method is not available');
+    }
+  }
+
+  const handleInvite = async () => {
+    try {
+      await AxiosInstance().post(`/friends/join/${id}`);
+    } catch (error) {
+      console.log('Error inviting to event:', error);
     }
   }
 
@@ -79,7 +87,7 @@ const EventDetailScreen = ({ navigation, route }) => {
   }, []);
 
   return (
-    <View style={{flex: 1}}>
+    <View style={{ flex: 1 }}>
       <View style={[globalStyles.container]}>
         <View style={styles.header}>
           <StatusBar animated backgroundColor={appColors.primary} />
@@ -130,20 +138,27 @@ const EventDetailScreen = ({ navigation, route }) => {
         </ScrollView>
 
         <View>
-          <ButtonComponent onPress={() => {
-            navigation.navigate('Ticket', {
-              id: detailEvent._id
-            })
-          }} text={`Mua vé với giá ${formatPrice(detailEvent.ticketPrice)}`} type="primary"
-            icon={
-              <CircleComponent color={appColors.white}>
-                <Ionicons name="arrow-forward" size={20} color={appColors.primary} />
-              </CircleComponent>} iconFlex="right" />
+          <RowComponent>
+            <ButtonComponent onPress={handleInvite} text={"Tham gia "} type="primary"
+              icon={
+                <CircleComponent color={appColors.white}>
+                  <Ionicons name="invite" size={20} color={appColors.primary} />
+                </CircleComponent>} iconFlex="right" />
+            <ButtonComponent onPress={() => {
+              navigation.navigate('Ticket', {
+                id: detailEvent._id
+              })
+            }} text={`Mua vé với giá ${formatPrice(detailEvent.ticketPrice)}`} type="primary"
+              icon={
+                <CircleComponent color={appColors.white}>
+                  <Ionicons name="arrow-forward" size={20} color={appColors.primary} />
+                </CircleComponent>} iconFlex="right" />
+          </RowComponent>
         </View>
       </View>
-      
+
       {/* Đảm bảo truyền ref đúng và đầy đủ props cần thiết */}
-      <ListInviteComponent 
+      <ListInviteComponent
         sheetRef={sheetRef}
         eventId={detailEvent._id}
       />

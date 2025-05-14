@@ -43,8 +43,9 @@ const NotificationScreen = ({ navigation }) => {
           body={item.body}
           createdAt={item.createdAt}
           title={item.title}
-          inviteId={item.data.inviteId}
+          inviteId={item.data?.inviteId}
           onResponded={fetchNotifications}
+          status={item.data?.status}
         />
       }
   

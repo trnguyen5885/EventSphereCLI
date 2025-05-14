@@ -143,7 +143,7 @@ const ProfileEdit = ({ navigation }) => {
   }
 
   return (
-    <View style={globalStyles.container}>
+    <View>
       <KeyboardAvoidingView>
         <ScrollView>
           <View style={styles.header}>
