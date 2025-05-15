@@ -9,7 +9,7 @@ import friendRequestReducer from './slices/friendRequestSlice';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'], // chỉ lưu slice "auth"
+  whitelist: ['auth', 'friendRequest'], // chỉ lưu slice "auth" và "friendRequest"
 };
 
 const rootReducer = combineReducers({
