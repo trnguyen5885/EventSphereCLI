@@ -1,4 +1,5 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Platform, Image, FlatList } from 'react-native';
+
 import React, { useEffect, useState } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Entypo from 'react-native-vector-icons/Entypo';

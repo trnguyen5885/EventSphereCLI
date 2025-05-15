@@ -66,7 +66,7 @@ const OnbroadingScreen = ({navigation}) => {
         <TouchableOpacity
           onPress={async () => {
             await AsyncStorage.setItem('isFirstLaunch', 'false');
-            navigation.navigate('Login');
+            navigation.navigate('RoleSelection');
           }}>
           <Text
             style={{
@@ -82,7 +82,7 @@ const OnbroadingScreen = ({navigation}) => {
               setIndex(index + 1);
             } else {
               await AsyncStorage.setItem('isFirstLaunch', 'false');
-              navigation.navigate('Login');
+              navigation.navigate('RoleSelection');
             }
           }}>
           <Text

@@ -1,8 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import {View, Switch, Text, Image} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {appColors} from '../../constants/appColors';
-import {Lock, Sms} from 'iconsax-react-native';
+import {View, Switch, Image} from 'react-native';
+
 import {
   ContainerComponent,
   SectionComponent,
@@ -11,31 +9,32 @@ import {
   ButtonComponent,
   SpaceComponent,
   InputComponent,
-} from '../../components/index';
+} from '../../components';
+import {Lock, Sms} from 'iconsax-react-native';
 import LoadingModal from '../../modals/LoadingModal';
-import {AxiosInstance} from '../../services';
-import {HandleNotification} from '../../utils/handleNotification';
-import {saveTokens} from '../../../app/token/authTokens';
+import {appColors} from '../../constants/appColors';
+import {loginOrganizer} from '../../services/authService';
+
 import {useDispatch, useSelector} from 'react-redux';
 import {
   loginSuccess,
   setRememberMe,
   setSavedCredentials,
 } from '../../redux/slices/authSlice';
-import {loginUser} from '../../services/authService';
 
-const LoginScreen = ({navigation}) => {
-  const [useId, setUseId] = useState('');
+const LoginOrganizerScreen = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [isRemember, setIsRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const dispatch = useDispatch();
   const auth = useSelector(state => state.auth);
-  console.log('LoginScreen 37 | auth: ', auth);
-  // 🔹 Load email & password nếu "Remember Me" đã được bật
+  console.log('LoginOrganizerScreen 34 | auth: ', auth);
+  const [isRemember, setIsRemember] = useState(false);
+  const [res, setRes] = useState({});
+
   useEffect(() => {
     if (auth.rememberMe && auth.savedCredentials) {
       setEmail(auth.savedCredentials.email);
@@ -49,14 +48,11 @@ const LoginScreen = ({navigation}) => {
     if (!email.trim()) {
       setEmailError('Vui lòng nhập email');
       isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('Email không hợp lệ');
+      isValid = false;
     } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setEmailError('Email không hợp lệ');
-        isValid = false;
-      } else {
-        setEmailError('');
-      }
+      setEmailError('');
     }
 
     if (!password.trim()) {
@@ -68,37 +64,50 @@ const LoginScreen = ({navigation}) => {
     } else {
       setPasswordError('');
     }
+
     return isValid;
   };
 
   const handleLogin = async () => {
     if (!validateInputs()) return;
-
     setIsLoading(true);
+
     try {
-      const res = await loginUser(email, password); // 👈 sử dụng loginUser
-      const {id, token, refreshToken, role, ...userData} = res.data;
+      const response = await loginOrganizer(email, password); // Gọi API đăng nhập
 
-      dispatch(
-        loginSuccess({
-          userId: id,
-          userData,
-          role,
-        }),
-      );
+      if (response.status === 200) {
+        const {id, token, refreshToken, role, ...userData} = response.data;
+        console.log('LoginOrganizer 80 | respone: ', response);
+        if (role !== 2) {
+          setPasswordError('Tài khoản không phải nhà tổ chức');
+          return;
+        }
+        console.log('Role:', role);
+        // Lưu dữ liệu người dùng vào redux
+        dispatch(
+          loginSuccess({
+            userId: id,
+            userData: response.data,
+            role,
+          }),
+        );
 
-      if (isRemember) {
-        dispatch(setRememberMe(true));
-        dispatch(setSavedCredentials({email, password}));
+        // Lưu thông tin ghi nhớ tài khoản nếu cần
+        if (isRemember) {
+          dispatch(setRememberMe(true));
+          dispatch(setSavedCredentials({email, password}));
+        } else {
+          dispatch(setRememberMe(false));
+          dispatch(setSavedCredentials({email: '', password: ''}));
+        }
+
+        // Điều hướng sang màn hình chính
+        navigation.navigate('OrganizerTabs');
       } else {
-        dispatch(setRememberMe(false));
-        dispatch(setSavedCredentials(null));
+        setPasswordError('Đăng nhập thất bại');
       }
-
-      navigation.navigate('Drawer'); // hoặc navigation.reset(...)
-    } catch (e) {
-      console.log(e);
-      setPasswordError('Email hoặc mật khẩu không chính xác');
+    } catch (error) {
+      setPasswordError(error.message || 'Đăng nhập thất bại');
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +122,7 @@ const LoginScreen = ({navigation}) => {
             source={require('../../../assets/images/icon-avatar.png')}
           />
         </RowComponent>
-        <TextComponent size={24} title text="Sign in" />
+        <TextComponent size={24} title text="Organizer Sign in" />
         <SpaceComponent height={16} />
         <InputComponent
           value={email}
@@ -141,36 +150,33 @@ const LoginScreen = ({navigation}) => {
         {passwordError ? (
           <TextComponent color="red" text={passwordError} />
         ) : null}
-        <SpaceComponent height={5} />
-        <RowComponent justify="space-between">
-          <RowComponent onPress={() => setIsRemember(!isRemember)}>
-            <Switch
-              trackColor={{true: appColors.primary}}
-              thumbColor={appColors.white}
-              value={isRemember}
-              onChange={() => setIsRemember(!isRemember)}
-            />
-            <TextComponent text="Remember me" />
-          </RowComponent>
-          <ButtonComponent
-            text="Forgot Password?"
-            onPress={() => navigation.navigate('ForgotPassword')}
-            type="text"
+        <RowComponent
+          onPress={() => {
+            setIsRemember(!isRemember);
+            dispatch(setRememberMe(!isRemember));
+          }}>
+          <Switch
+            trackColor={{true: appColors.primary}}
+            thumbColor={appColors.white}
+            value={isRemember}
+            onChange={() => {
+              const newVal = !isRemember;
+              setIsRemember(newVal);
+              dispatch(setRememberMe(newVal));
+            }}
           />
+          <TextComponent text="Remember me" />
         </RowComponent>
-      </SectionComponent>
-      <SpaceComponent height={16} />
-      <SectionComponent>
+        <SpaceComponent height={16} />
         <ButtonComponent onPress={handleLogin} text="SIGN IN" type="primary" />
       </SectionComponent>
-      {/* <SocialLogin /> */}
       <SectionComponent>
         <RowComponent justify="center">
           <TextComponent text="Don't have an account?" />
           <ButtonComponent
             type="link"
             text=" Sign up"
-            onPress={() => navigation.navigate('Register')}
+            onPress={() => navigation.navigate('RegisterOrganizer')}
           />
         </RowComponent>
       </SectionComponent>
@@ -179,4 +185,4 @@ const LoginScreen = ({navigation}) => {
   );
 };
 
-export default LoginScreen;
+export default LoginOrganizerScreen;

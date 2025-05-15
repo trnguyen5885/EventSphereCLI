@@ -165,6 +165,7 @@ const ExploreScreen = ({navigation}) => {
   // }
 
   return (
+    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
     <ScrollView
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled

@@ -12,44 +12,57 @@ import {globalStyles} from '../../constants/globalStyles';
 import {SpaceComponent} from '../../components';
 import {appColors} from '../../constants/appColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useSelector} from 'react-redux';
 
 const WelcomeScreen = ({navigation}) => {
+  const auth = useSelector(state => state.auth);
   useEffect(() => {
-    const checkAppStatus = async () => {
-      try {
-        const isFirstLaunch = await AsyncStorage.getItem('isFirstLaunch');
-        const userId = await AsyncStorage.getItem('userId');
-        const token = await AsyncStorage.getItem('token');
+    console.log('🏁 WelcomeScreen - auth state:', auth);
+    const checkFirstLaunch = async () => {
+      const isFirstLaunch = await AsyncStorage.getItem('isFirstLaunch');
+      console.log('📦 isFirstLaunch:', isFirstLaunch);
 
-        setTimeout(() => {
-          if (!isFirstLaunch) {
-            // Nếu là lần đầu tiên
-            navigation.replace('Onbroading');
-          } else if (token) {
-            // Nếu đã đăng nhập trước đó
-            navigation.replace('Drawer');
+      setTimeout(async () => {
+        if (isFirstLaunch === 'false') {
+          if (auth.isAuthenticated && auth.rememberMe) {
+            if (auth.userRole === 3) {
+              console.log(
+                'WelcomeScreen 30 | Điều hướng vào Home của người dùng',
+              );
+              navigation.replace('Drawer');
+            } else if (auth.userRole === 2) {
+              console.log(
+                'WelcomeScreen 33 | Điều hướng vào Home của nhà tổ chức',
+              );
+              navigation.replace('OrganizerTabs');
+            } else {
+              console.log(
+                'WelcomeScreen 37 | Vai trò không xác định. Điều hướng đến chọn vai trò hoặc Login',
+              );
+              navigation.replace('RoleSelection');
+            }
           } else {
-            // Nếu chưa đăng nhập
-            navigation.replace('Login');
+            console.log(
+              'WelcomeScreen 42 | Không xác thực hoặc không ghi nhớ đăng nhập',
+            );
+            navigation.replace('RoleSelection');
           }
-        }, 3000);
-      } catch (error) {
-        console.log('Lỗi kiểm tra trạng thái app:', error);
-        navigation.replace('Login'); // fallback nếu lỗi
-      }
+        } else {
+          console.log('WelcomeScreen 51 | Lần đầu mở app');
+          await AsyncStorage.setItem('isFirstLaunch', 'false');
+          navigation.replace('Onbroading');
+        }
+      }, 2000);
     };
 
-    checkAppStatus();
+    checkFirstLaunch();
   }, [navigation]);
-
   return (
     <ImageBackground
-      style={{
-        justifyContent: 'center',
-        alignItems: 'center',
-        flex: 1,
-        backgroundColor: appColors.white,
-      }}
+      style={[
+        globalStyles.container,
+        {justifyContent: 'center', alignItems: 'center'},
+      ]}
       source={require('../../../assets/images/splash-img.png')}
       imageStyle={{flex: 1}}>
       <Image
