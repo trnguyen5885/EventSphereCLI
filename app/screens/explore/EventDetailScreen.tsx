@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -25,11 +25,13 @@ import {formatDate} from '../../services/index';
 import {formatPrice} from '../../services/utils/price';
 import RatingAndReview from '../review/RatingAndReview';
 import {EventModel} from '@/app/models';
+import ListInviteComponent from './components/ListInviteComponent';
+import InviteComponent from './components/InviteComponent';
 
 const EventDetailScreen = ({navigation, route}: any) => {
   const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
-
+  const sheetRef = useRef<any>(null);
   const handleNavigation = () => {
     navigation.goBack();
   };
@@ -51,6 +53,20 @@ const EventDetailScreen = ({navigation, route}: any) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleInviteList = () => {
+    // Thêm kiểm tra và log để debug
+    console.log('handleInviteList called');
+    console.log('sheetRef current:', sheetRef.current);
+
+    // Kiểm tra nếu sheetRef.current và present method tồn tại
+    if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
+      sheetRef.current?.expand();
+      console.log('sheetRef.current', sheetRef.current)
+    } else {
+      console.error('Bottom sheet reference or present method is not available');
+    }
+  }
 
   return (
     <View style={[globalStyles.container]}>
@@ -104,6 +120,9 @@ const EventDetailScreen = ({navigation, route}: any) => {
               </View>
             </View>
           </View>
+          <View style={{ width: '100%', alignItems: 'center' }}>
+              <InviteComponent onPress={handleInviteList} />
+            </View>
         </ImageBackground>
         <View style={styles.aboutSection}>
           <TextComponent text="Thông tin sự kiện" size={24} />
@@ -134,6 +153,10 @@ const EventDetailScreen = ({navigation, route}: any) => {
           iconFlex="right"
         />
       </View>
+      <ListInviteComponent
+        sheetRef={sheetRef}
+        eventId={detailEvent?._id}
+      />
     </View>
   );
 };
