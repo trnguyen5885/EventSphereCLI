@@ -1,105 +1,62 @@
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Platform, Image, FlatList } from 'react-native';
-
-import React, { useEffect, useState } from 'react';
+import {
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
+  FlatList,
+} from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { AxiosInstance } from '../../../app/services';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Hàm định dạng thời gian
-const formatTime = (isoString) => {
-  if (!isoString) return '';
-  const now = new Date();
-  const date = new Date(isoString);
-  const diffMs = now - date;
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  // Cùng ngày
-  if (
-    now.getFullYear() === date.getFullYear() &&
-    now.getMonth() === date.getMonth() &&
-    now.getDate() === date.getDate()
-  ) {
-    // Hiện giờ:phút
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  }
-  // Hôm qua
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (
-    date.getFullYear() === yesterday.getFullYear() &&
-    date.getMonth() === yesterday.getMonth() &&
-    date.getDate() === yesterday.getDate()
-  ) {
-    return 'Hôm qua';
-  }
-  // Trong 3 ngày gần nhất
-  if (diffDay < 4) {
-    return `${diffDay} ngày trước`;
-  }
-  // Xa hơn: hiện ngày/tháng
-  return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth()+1).toString().padStart(2, '0')}`;
-};
+import { useSelector } from 'react-redux';
+import InviteNotiComponent from './components/InviteNotiComponent';
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
-  useEffect(() => {  
-    const fetchNoti = async () => {
-      try {
-        const userId = await AsyncStorage.getItem("userId");
-        if (userId) {
-          const body = {
-            userId: userId
-          }
-          console.log("Body: " + JSON.stringify(body));
-          const res = await AxiosInstance().post("/users/getNotification", body);
-          setNotifications(res.data);
-        }
-        else {
-          console.error("Không tìm thấy userId trong AsyncStorage");
-        }
-      } catch (e) {
-        console.error("Lỗi khi tải thông báo: ", e);
-      }
-    }
-    fetchNoti();
-  }, []);
+  const userId = useSelector((state) => state.auth?.userId);
 
-  console.log("Noti: " + notifications);
+  const fetchNotifications = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const res = await AxiosInstance().post('/users/getNotification', { userId });
+      setNotifications(res.data);
+    } catch (error) {
+      console.error('Lỗi khi tải thông báo:', error);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const renderItem = ({ item }) => (
-    <View style={styles.notificationCard}>
-      <Image source={require('../../../assets/images/adaptive-icon.png')} style={styles.avatar} />
-      <View style={{ flex: 1, marginLeft: 10 }}>
-        <Text style={styles.userName}>
-          {item.title}
-        </Text>
-        <Text style={styles.content}> {item.body}</Text>
-        {item?.data?.type === "friend" && (
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.rejectButton}>
-              <Text style={styles.rejectText}>Reject</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.acceptButton}>
-              <Text style={styles.acceptText}>Accept</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-      <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
+    <View>
+      {item.type === 'invite' && 
+        <InviteNotiComponent 
+          avatar={'https://avatar.iran.liara.run/public'}
+          body={item.body}
+          createdAt={item.createdAt}
+          title={item.title}
+          inviteId={item.data?.inviteId}
+          onResponded={fetchNotifications}
+          status={item.data?.status}
+        />
+      }
+  
     </View>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.headerSection}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Ionicons name="arrow-back" size={24} color="black" />
           <Text style={styles.headerTitle}>Notification</Text>
-        </View>
+        </TouchableOpacity>
         <Entypo name="dots-three-vertical" size={24} color="black" />
       </View>
 
@@ -111,9 +68,10 @@ const NotificationScreen = ({ navigation }) => {
       ) : (
         <FlatList
           data={notifications}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item, index) => item._id || index.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
@@ -127,60 +85,59 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingVertical: 10,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
   },
   headerSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     height: 50,
+    marginBottom: 20,
   },
   headerTitle: {
     fontSize: 24,
     marginLeft: 10,
-    fontWeight: '500'
+    fontWeight: '500',
   },
   mainContentSection: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   noneNotificationText: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10
+    marginTop: 10,
   },
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: '#eee'
+    borderColor: '#eee',
   },
   avatar: {
     width: 45,
     height: 45,
     borderRadius: 25,
-    backgroundColor: '#ddd'
+    backgroundColor: '#ddd',
   },
   userName: {
     fontWeight: 'bold',
-    fontSize: 16
+    fontSize: 16,
   },
   content: {
     fontWeight: 'normal',
   },
   timeText: {
-    position: 'absolute',
-    right: 0,
-    top: 10,
     fontSize: 12,
-    color: 'gray'
+    color: 'gray',
+    marginTop: 10,
   },
   buttonRow: {
     flexDirection: 'row',
     marginTop: 8,
-    gap: 10
+    gap: 10,
   },
   rejectButton: {
     borderWidth: 1,
@@ -190,7 +147,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   rejectText: {
-    color: '#000'
+    color: '#000',
   },
   acceptButton: {
     backgroundColor: '#4F46E5',
@@ -199,6 +156,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   acceptText: {
-    color: '#fff'
-  }
+    color: '#fff',
+  },
 });
