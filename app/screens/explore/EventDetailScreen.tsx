@@ -55,11 +55,6 @@ const EventDetailScreen = ({navigation, route}: any) => {
   }, []);
 
   const handleInviteList = () => {
-    // Thêm kiểm tra và log để debug
-    console.log('handleInviteList called');
-    console.log('sheetRef current:', sheetRef.current);
-
-    // Kiểm tra nếu sheetRef.current và present method tồn tại
     if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
       sheetRef.current?.expand();
       console.log('sheetRef.current', sheetRef.current)
@@ -121,7 +116,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
             </View>
           </View>
           <View style={{ width: '100%', alignItems: 'center' }}>
-              <InviteComponent onPress={handleInviteList} />
+              <InviteComponent onPress={handleInviteList} eventId = {id}/>
             </View>
         </ImageBackground>
         <View style={styles.aboutSection}>
