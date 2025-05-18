@@ -29,6 +29,7 @@ import OtpOrganizerVerificationScreen from './app/screens/authOrganizer/OtpOrgan
 
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 import OrganizerTabs from './app/screens/organizer/OrganizerTabs';
+import ProfileEditOrganizer from './app/screens/organizer/ProfileEditOrganizer';
 
 import { HandleNotification } from './app/utils/handleNotification';
 import { createNotificationChannel, runNotificationDiagnostics, setupForegroundNotificationHandler } from './app/services/notification/NotificationServices';
@@ -41,6 +42,8 @@ import { getSocket, initSocket } from './app/socket/socket';
 import { jwtDecode } from 'jwt-decode';
 import LoginOrganizerScreen from './app/screens/authOrganizer/LoginOrganizerScreen';
 import RegisterOrganizerScreen from './app/screens/authOrganizer/RegisterOrganizerScreen';
+import EventDetailOrganizer from './app/screens/organizer/EventDetailOrganizer';
+import EventEdit from './app/screens/organizer/EventEdit';
 
 import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
@@ -157,6 +160,10 @@ const AppWithSocket = () => {
           <Stack.Screen name="FriendRequestScreen" component={FriendRequestScreen} />
           <Stack.Screen name="OrganizerTabs" component={OrganizerTabs} />
           <Stack.Screen name="RatingAndReview" component={RatingAndReview} />
+          <Stack.Screen name="ProfileEditOrganizer" component={ProfileEditOrganizer} />
+          <Stack.Screen name="EventDetailOrganizer" component={EventDetailOrganizer} />
+          <Stack.Screen name="EventEdit" component={EventEdit} />
+
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
