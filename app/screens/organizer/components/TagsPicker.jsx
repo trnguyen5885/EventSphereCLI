@@ -1,45 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, FlatList, Modal, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Modal, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import AxiosInstance from '../../../services/api/AxiosInstance';
 
-const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+const defaultTags = [
+  'Lễ hội', 'Âm nhạc', 'Công nghệ', 'Giải trí', 'Thể thao',
+  'Hội thảo', 'Startup', 'Lịch sử', 'Thời trang', 'Ẩm thực', 
+  'Jack', 'Jack 3 con', 'Dách', 'J97', 'Fandom',
+];
+
+const TagsPicker = ({ selectedTags = [], onChangeTags }) => {
   const [modalVisible, setModalVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await AxiosInstance().get('categories/all');
-        setCategories(res.data);
-      } catch (error) {
-        console.error('Lỗi lấy danh mục:', error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
-  }, []);  // <-- đây là điểm quan trọng
-
-
-  const handleSelect = (item) => {
-    onSelectCategory(item);
-    setModalVisible(false);
+  const toggleTag = (tag) => {
+    if (selectedTags.includes(tag)) {
+      onChangeTags(selectedTags.filter(t => t !== tag));
+    } else {
+      onChangeTags([...selectedTags, tag]);
+    }
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        onPress={() => {
-          console.log('Click vào chọn danh mục');
-          setModalVisible(true);
-        }}
+        onPress={() => setModalVisible(true)}
         style={styles.selectBox}
       >
         <Text style={styles.selectText}>
-          {selectedCategory?.name || 'Chọn danh mục'}
+          {selectedTags.length > 0
+            ? selectedTags.join(', ')
+            : 'Chọn tags'}
         </Text>
         <Icon name="chevron-down" size={14} color="#666" />
       </TouchableOpacity>
@@ -48,42 +37,35 @@ const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn danh mục</Text>
+              <Text style={styles.modalTitle}>Chọn Tags</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Icon name="times" size={20} color="#333" />
               </TouchableOpacity>
             </View>
-
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#6366F1" />
-                <Text style={styles.loadingText}>Đang tải danh mục...</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={categories}
-                keyExtractor={(item) => item._id.toString()}
-                renderItem={({ item }) => {
-                  const isSelected = selectedCategory?._id === item._id;
-                  return (
-                    <TouchableOpacity
-                      onPress={() => handleSelect(item)}
-                      style={[
-                        styles.itemRow,
-                        isSelected && styles.itemSelected,
-                      ]}
-                    >
-                      <Text style={[styles.itemText, isSelected && styles.selectedText]}>{item.name}</Text>
-                      {isSelected && <Icon name="check" size={16} color="#fff" style={styles.checkIcon} />}
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            )}
-
+            
+            <FlatList
+              data={defaultTags}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => {
+                const isSelected = selectedTags.includes(item);
+                return (
+                  <TouchableOpacity
+                    onPress={() => toggleTag(item)}
+                    style={[
+                      styles.itemRow,
+                      isSelected && styles.itemSelected,
+                    ]}
+                  >
+                    <Text style={[styles.itemText, isSelected && styles.selectedText]}>{item}</Text>
+                    {isSelected && <Icon name="check" size={16} color="#fff" style={styles.checkIcon} />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+            
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.confirmButton}
+              <TouchableOpacity 
+                style={styles.confirmButton} 
                 onPress={() => setModalVisible(false)}
               >
                 <Text style={styles.confirmButtonText}>Xác nhận</Text>
@@ -96,7 +78,7 @@ const CategoryPicker = ({ selectedCategory, onSelectCategory }) => {
   );
 };
 
-export default CategoryPicker;
+export default TagsPicker;
 
 const styles = StyleSheet.create({
   container: {
@@ -138,14 +120,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#222',
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#666',
   },
   itemRow: {
     flexDirection: 'row',
