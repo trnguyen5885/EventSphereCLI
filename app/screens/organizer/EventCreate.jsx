@@ -241,9 +241,8 @@ const EventCreate = () => {
     setImages([]);
 
     // Reset thời gian về thời gian hiện tại
-    const now = new Date();
-    setTimeStart(now.getTime());
-    setTimeEnd(now.getTime());
+    setTimeStart(new Date());
+    setTimeEnd(new Date());
 
     // Reset vị trí và địa chỉ
     setLatitude(null);
