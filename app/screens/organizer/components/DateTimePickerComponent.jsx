@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const DateTimePickerComponent = ({ onTimeChange, initialStart, initialEnd }) => {
-  const [startDate, setStartDate] = useState(initialStart ? new Date(initialStart) : new Date());
-  const [startTime, setStartTime] = useState(initialStart ? new Date(initialStart) : new Date());
-  const [endDate, setEndDate] = useState(initialEnd ? new Date(initialEnd) : new Date());
-  const [endTime, setEndTime] = useState(initialEnd ? new Date(initialEnd) : new Date());
+  const toDateOrNow = (value) => {
+    return value ? new Date(Number(value)) : new Date();
+  };
+
+  const [startDate, setStartDate] = useState(toDateOrNow(initialStart));
+  const [startTime, setStartTime] = useState(toDateOrNow(initialStart));
+  const [endDate, setEndDate] = useState(toDateOrNow(initialEnd));
+  const [endTime, setEndTime] = useState(toDateOrNow(initialEnd));
+
+  useEffect(() => {
+    setStartDate(toDateOrNow(initialStart));
+    setStartTime(toDateOrNow(initialStart));
+    setEndDate(toDateOrNow(initialEnd));
+    setEndTime(toDateOrNow(initialEnd));
+  }, [initialStart, initialEnd]);
+
+
+  const prevTimeStartRef = useRef(null);
+  const prevTimeEndRef = useRef(null);
+
 
 
   const [showPicker, setShowPicker] = useState({
@@ -45,13 +61,11 @@ const DateTimePickerComponent = ({ onTimeChange, initialStart, initialEnd }) => 
     return time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // ⏱️ Mỗi khi thay đổi date/time thì gọi hàm gửi về EventCreate
   useEffect(() => {
     const finalStart = combineDateTime(startDate, startTime);
     const finalEnd = combineDateTime(endDate, endTime);
 
     if (finalEnd < finalStart) {
-      // Chỉ cập nhật nếu ngày giờ kết thúc thực sự khác ngày giờ bắt đầu
       if (
         endDate.getTime() !== startDate.getTime() ||
         endTime.getHours() !== startTime.getHours() ||
@@ -59,12 +73,24 @@ const DateTimePickerComponent = ({ onTimeChange, initialStart, initialEnd }) => 
       ) {
         setEndDate(startDate);
         setEndTime(startTime);
-        return; // Tránh gọi onTimeChange khi đang cập nhật lại state
+        return;
       }
     } else {
-      onTimeChange({ timeStart: finalStart.getTime(), timeEnd: finalEnd.getTime() });
+      const newTimeStart = finalStart.getTime();
+      const newTimeEnd = finalEnd.getTime();
+
+      // ✅ So sánh tránh cập nhật liên tục
+      if (
+        newTimeStart !== prevTimeStartRef.current ||
+        newTimeEnd !== prevTimeEndRef.current
+      ) {
+        prevTimeStartRef.current = newTimeStart;
+        prevTimeEndRef.current = newTimeEnd;
+        onTimeChange({ timeStart: newTimeStart, timeEnd: newTimeEnd });
+      }
     }
   }, [startDate, startTime, endDate, endTime, onTimeChange]);
+
 
 
   return (

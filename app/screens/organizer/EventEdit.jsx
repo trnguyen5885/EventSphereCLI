@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -50,7 +50,10 @@ const EventEdit = () => {
     const [avatar, setAvatar] = useState(null);
     const [banner, setBanner] = useState(null);
     const [images, setImages] = useState([]);
-    
+
+    const [timeStart, setTimeStart] = useState(null);
+    const [timeEnd, setTimeEnd] = useState(null);
+
 
 
     const [form, setForm] = useState({
@@ -72,6 +75,16 @@ const EventEdit = () => {
         timeStart: '',
         timeEnd: '',
     });
+
+    const handleTimeChange = useCallback(({ timeStart, timeEnd }) => {
+        const newStart = new Date(timeStart);
+        const newEnd = new Date(timeEnd);
+        setFormattedTime({
+            timeStart: formatDate(newStart),
+            timeEnd: formatDate(newEnd),
+        });
+    }, []);
+
 
 
     const formatDate = (timestamp) => {
@@ -331,8 +344,8 @@ const EventEdit = () => {
                 description: form.description,
                 ticketPrice: parseInt(form.ticketPrice),
                 ticketQuantity: parseInt(form.ticketQuantity),
-                timeStart: Math.floor(timeRange.timeStart.getTime() / 1000), // ms → s
-                timeEnd: Math.floor(timeRange.timeEnd.getTime() / 1000),
+                timeStart,
+                timeEnd,
                 categories: form.category,
                 tags: selectedTags,
                 latitude: coordinates.latitude,
@@ -425,23 +438,15 @@ const EventEdit = () => {
             />
 
             <Text style={styles.label}>Thời gian sự kiện</Text>
-            {/* <DateTimePickerComponent
-                initialStart={timeRange.timeStart}
-                initialEnd={timeRange.timeEnd}
+            <DateTimePickerComponent
+                initialStart={eventData?.timeStart}
+                initialEnd={eventData?.timeEnd}
                 onTimeChange={({ timeStart, timeEnd }) => {
-                    if (
-                        timeStart !== timeRange.timeStart.getTime() ||
-                        timeEnd !== timeRange.timeEnd.getTime()
-                    ) {
-                        const newStart = new Date(timeStart);
-                        const newEnd = new Date(timeEnd);
-                        setFormattedTime({
-                            timeStart: formatDate(newStart),
-                            timeEnd: formatDate(newEnd),
-                        });
-                    }
+                    setTimeStart(timeStart);
+                    setTimeEnd(timeEnd);
                 }}
-            /> */}
+            />
+
 
             <Text style={styles.label}>Địa điểm tổ chức</Text>
             <AddressSelector address={address} setAddress={setAddress} />
