@@ -143,21 +143,21 @@ const LoginOrganizerScreen = ({ navigation }) => {
           affix={<Lock size={22} color={appColors.gray} />}
         />
         {passwordError ? <TextComponent color="red" text={passwordError} /> : null}
-        <RowComponent onPress={() => {
-          setIsRemember(!isRemember);
-          dispatch(setRememberMe(!isRemember));
-        }}>
-          <Switch
-            trackColor={{ true: appColors.primary }}
-            thumbColor={appColors.white}
-            value={isRemember}
-            onChange={() => {
-              const newVal = !isRemember;
-              setIsRemember(newVal);
-              dispatch(setRememberMe(newVal));
-            }}
+        <RowComponent justify="space-between">
+          <RowComponent onPress={() => setIsRemember(!isRemember)}>
+            <Switch
+              trackColor={{ true: appColors.primary }}
+              thumbColor={appColors.white}
+              value={isRemember}
+              onChange={() => setIsRemember(!isRemember)}
+            />
+            <TextComponent text="Remember me" />
+          </RowComponent>
+          <ButtonComponent
+            text="Forgot Password?"
+            onPress={() => navigation.navigate('ForgotPassword')}
+            type="text"
           />
-          <TextComponent text="Remember me" />
         </RowComponent>
         <SpaceComponent height={16} />
         <ButtonComponent onPress={handleLogin} text="SIGN IN" type="primary" />
