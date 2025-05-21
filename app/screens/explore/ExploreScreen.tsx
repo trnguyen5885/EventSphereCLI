@@ -1,5 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import {
+  Alert,
   FlatList,
   Platform,
   ScrollView,
@@ -7,10 +8,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  PermissionsAndroid,
+  Linking,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { globalStyles } from '../../constants/globalStyles';
-import { appColors } from '../../constants/appColors';
+import React, {useEffect, useState, useCallback} from 'react';
+import {globalStyles} from '../../constants/globalStyles';
+import {appColors} from '../../constants/appColors';
 import {
   CircleComponent,
   RowComponent,
@@ -30,14 +33,129 @@ import EventItem from '../../components/EventItem';
 import { AxiosInstance } from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
-import { EventModel } from '@/app/models';
+import Geolocation from '@react-native-community/geolocation'; // Import Geolocation
+import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
+import {useFocusEffect} from '@react-navigation/native';
+import axios from 'axios';
+import {EventModel} from '@/app/models';
 
 const ExploreScreen = ({ navigation }: any) => {
   const [eventsIscoming, setEventsIscoming] = useState<EventModel[]>();
   const [eventsUpcoming, setEventsUpcoming] = useState<EventModel[]>();
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
   const [isLoading, setIsLoading] = useState(true);
+  const [location, setLocation] = useState<{
+    latitude: number | null;
+    longitude: number | null;
+  }>({
+    latitude: null,
+    longitude: null,
+  });
+  const [address, setAddress] = useState<{
+    compound?: {
+      district?: string;
+      province?: string;
+    };
+  }>();
 
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          checkGPSStatus(); // Kiểm tra xem GPS đã bật chưa
+        } else {
+          Alert.alert(
+            'Quyền bị từ chối',
+            'Vui lòng cấp quyền vị trí để tiếp tục',
+            [
+              {
+                text: 'Thử lại',
+                onPress: () => requestLocationPermission(), // Gọi lại chính nó
+              },
+              {
+                text: 'Hủy',
+                style: 'cancel',
+              },
+            ],
+            {cancelable: false},
+          );
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    } else {
+      checkGPSStatus(); // iOS tự động xử lý quyền
+    }
+  };
+
+  const checkGPSStatus = () => {
+    LocationServicesDialogBox.checkLocationServicesIsEnabled({
+      message: 'GPS của bạn chưa bật. Bạn có muốn bật GPS không?',
+      ok: 'Mở',
+      cancel: 'Hủy',
+    })
+      .then((success: any) => {
+        if (success) {
+          getLocation(); // Nếu GPS đã bật, gọi hàm lấy vị trí
+        }
+      })
+      .catch((error: any) => {
+        Alert.alert('Lỗi', 'Vui lòng bật GPS để tiếp tục.');
+      });
+  };
+  const getAddressFromCoordinates = async (
+    latitude: number,
+    longitude: number,
+  ) => {
+    const apiKey = 'pJ2xud8j3xprqVfQZLFKjGV51MPH60VjRuZh1i3F';
+    const url = `https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=${apiKey}`;
+    try {
+      const response = await axios.get(url, {timeout: 10000});
+      if (response?.data?.results?.length > 0) {
+        const address = response.data.results[0];
+        setAddress(address);
+        console.log('ExploreScrenn 94 | Dữ liệu địa chỉ:', address);
+      } else {
+        console.log('Không tìm thấy địa chỉ.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API Geocoding:', error);
+    }
+  };
+
+  const getLocation = () => {
+    Geolocation.getCurrentPosition(
+      position => {
+        const {latitude, longitude} = position.coords;
+        console.log('ExploreScreen 107 | UserLocation:', latitude, longitude);
+        // Cập nhật state
+        setLocation({latitude, longitude});
+        // Gọi API Geocoding với giá trị đúng
+        getAddressFromCoordinates(latitude, longitude);
+      },
+      error => {
+        console.log('Error getting location', error);
+      },
+      {
+        enableHighAccuracy: true,
+      },
+    );
+  };
+
+  // Gọi hàm yêu cầu quyền truy cập khi ứng dụng khởi động
+  useFocusEffect(
+    React.useCallback(() => {
+      const timeout = setTimeout(() => {
+        requestLocationPermission(); // Gọi sau 5 giây
+      }, 3000);
+
+      // Cleanup nếu người dùng rời khỏi màn hình trước khi timeout
+      return () => clearTimeout(timeout);
+    }, []),
+  );
   useEffect(() => {
     // setIsLoading(true);
     const getEvents = async () => {
@@ -97,7 +215,6 @@ const ExploreScreen = ({ navigation }: any) => {
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
       />
-
       <View
         style={{
           backgroundColor: appColors.primary,
@@ -108,27 +225,30 @@ const ExploreScreen = ({ navigation }: any) => {
         }}>
         <View style={{ marginBottom: 7, paddingHorizontal: 16 }}>
           <RowComponent>
-            <TouchableOpacity
-              onPress={() => {
-                navigation.openDrawer();
-              }}>
+            <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
             </TouchableOpacity>
-            <View style={[{ flex: 1, alignItems: 'center' }]}>
-              <RowComponent>
+            <View style={{flex: 1, alignItems: 'center'}}>
+              <TouchableOpacity onPress={requestLocationPermission}>
+                <RowComponent>
+                  <TextComponent
+                    text="Vị trí hiện tại của bạn"
+                    color={appColors.white2}
+                    size={12}
+                  />
+                </RowComponent>
                 <TextComponent
-                  text="Vị trí hiện tại của bạn"
-                  color={appColors.white2}
-                  size={12}
+                  text={
+                    address?.compound?.district && address?.compound?.province
+                      ? `${address.compound.district}, ${address.compound.province}`
+                      : 'Đang lấy vị trí của bạn...'
+                  }
+                  flex={0}
+                  color={appColors.white}
+                  font={fontFamilies.medium}
+                  size={13}
                 />
-              </RowComponent>
-              <TextComponent
-                text="Hồ Chí Minh, Việt Nam"
-                flex={0}
-                color={appColors.white}
-                font={fontFamilies.medium}
-                size={13}
-              />
+              </TouchableOpacity>
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('FriendSearchScreen')}
@@ -163,13 +283,12 @@ const ExploreScreen = ({ navigation }: any) => {
               </CircleComponent>
             </TouchableOpacity>
           </RowComponent>
+
           <SpaceComponent height={24} />
           <RowComponent>
             <RowComponent
-              onPress={() => {
-                navigation.navigate('Search');
-              }}
-              styles={{ flex: 1 }}>
+              onPress={() => navigation.navigate('Search')}
+              styles={{flex: 1}}>
               <SearchNormal1
                 variant="TwoTone"
                 size={22}
@@ -200,19 +319,13 @@ const ExploreScreen = ({ navigation }: any) => {
             </RowComponent>
           </RowComponent>
         </View>
-        <View>
-          <CategoriesList isColor={true} />
-        </View>
+        <CategoriesList isColor={true} />
       </View>
+
       <ScrollView
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
-        style={[
-          {
-            flex: 1,
-            paddingTop: 25,
-          },
-        ]}>
+        style={{flex: 1, paddingTop: 25}}>
         <BannerComponent bannerData={eventsIscoming} />
 
         {populateEvents && (
