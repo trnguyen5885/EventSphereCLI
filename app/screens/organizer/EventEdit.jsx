@@ -8,6 +8,8 @@ import {
     ScrollView,
     ActivityIndicator,
     Alert,
+    TouchableOpacity,
+    SafeAreaView,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AxiosInstance from '../../services/api/AxiosInstance';
@@ -18,6 +20,9 @@ import AddressSelector from './components/AddressSelector';
 import axios from 'axios';
 import ImageUploader from './components/ImageUploader';
 import { launchImageLibrary } from 'react-native-image-picker';
+import CategoryPickerEdit from './components/CategoryPickerEdit';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import IonIcon from 'react-native-vector-icons/Ionicons';
 
 const CLOUD_NAME = 'ddkqz5udn';
 const UPLOAD_PRESET = 'DATN2025';
@@ -385,118 +390,175 @@ const EventEdit = () => {
     }
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.label}>Tên sự kiện</Text>
-            <TextInput
-                style={styles.input}
-                value={form.name}
-                onChangeText={(text) => handleChange('name', text)}
-            />
-
-            <Text style={styles.label}>Mô tả</Text>
-            <TextInput
-                style={[styles.input, { height: 100 }]}
-                value={form.description}
-                onChangeText={(text) => handleChange('description', text)}
-                multiline
-            />
-
-
-            <Text style={styles.label}>Danh mục</Text>
-            <View style={styles.pickerWrapper}>
-                <Picker
-                    selectedValue={form.category}
-                    onValueChange={(itemValue) => handleChange('category', itemValue)}
+        <SafeAreaView style={styles.safeArea}>
+            {/* Header với nút quay lại */}
+            <View style={styles.header}>
+                <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={() => navigation.goBack()}
                 >
-                    {categories.map((cat) => (
-                        <Picker.Item key={cat._id} label={cat.name} value={cat._id} />
-                    ))}
-                </Picker>
+                    <IonIcon name="arrow-back" size={20} color="#333" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Chỉnh sửa sự kiện</Text>
+                <View style={styles.headerRight} />
             </View>
 
+            <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+                <Text style={styles.label}>Tên sự kiện</Text>
+                <TextInput
+                    style={styles.input}
+                    value={form.name}
+                    onChangeText={(text) => handleChange('name', text)}
+                />
 
-            <Text style={styles.label}>Tags</Text>
-            <TagsPicker
-                selectedTags={selectedTags}
-                onChangeTags={setSelectedTags}
-            />
-
-
-            <Text style={styles.label}>Giá vé</Text>
-            <TextInput
-                style={styles.input}
-                value={form.ticketPrice}
-                onChangeText={(text) => handleChange('ticketPrice', text)}
-                keyboardType="numeric"
-            />
-            <Text style={styles.label}>Số lượng vé</Text>
-            <TextInput
-                style={styles.input}
-                value={form.ticketQuantity}
-                onChangeText={(text) => handleChange('ticketQuantity', text)}
-                keyboardType="numeric"
-            />
-
-            <Text style={styles.label}>Thời gian sự kiện</Text>
-            <DateTimePickerComponent
-                initialStart={eventData?.timeStart}
-                initialEnd={eventData?.timeEnd}
-                onTimeChange={({ timeStart, timeEnd }) => {
-                    setTimeStart(timeStart);
-                    setTimeEnd(timeEnd);
-                }}
-            />
+                <Text style={styles.label}>Mô tả</Text>
+                <TextInput
+                    style={[styles.input, { height: 100 }]}
+                    value={form.description}
+                    onChangeText={(text) => handleChange('description', text)}
+                    multiline
+                />
 
 
-            <Text style={styles.label}>Địa điểm tổ chức</Text>
-            <AddressSelector address={address} setAddress={setAddress} />
-
-            <ImageUploader
-                label="Ảnh bìa"
-                image={banner}
-                onUpload={handleUploadCover}
-                onDelete={() => setBanner(null)}
-            />
-
-
-            <ImageUploader
-                label="Ảnh đại diện"
-                image={avatar}
-                onUpload={handleUploadAvatar}
-                onDelete={() => setAvatar(null)}
-            />
+                <Text style={styles.label}>Category</Text>
+                <TouchableOpacity style={styles.selectInput}>
+                    <Icon
+                        name="list"
+                        size={16}
+                        color="#555"
+                        style={styles.iconMargin}
+                    />
+                    <CategoryPickerEdit form={form} handleChange={handleChange} />
+                </TouchableOpacity>
 
 
-            <ImageUploader
-                label="Ảnh mô tả"
-                multiple
-                images={images}
-                onUpload={handleUploadMultipleImages}
-                onDelete={index => {
-                    const updated = [...images];
-                    updated.splice(index, 1);
-                    setImages(updated);
-                }}
-            />
+                <Text style={styles.label}>Tags</Text>
+                <TouchableOpacity style={styles.selectInput}>
+                    <Icon
+                        name="tags"
+                        size={16}
+                        color="#555"
+                        style={styles.iconMargin}
+                    />
+                    <TagsPicker
+                        selectedTags={selectedTags}
+                        onChangeTags={setSelectedTags}
+                    />
+                </TouchableOpacity>
 
-            <View style={{ marginTop: 20 }}>
-                <Button title="Lưu thay đổi" onPress={handleSave} color="#3B82F6" />
-            </View>
-        </ScrollView>
+
+                <Text style={styles.label}>Giá vé</Text>
+                <TextInput
+                    style={styles.input}
+                    value={form.ticketPrice}
+                    onChangeText={(text) => handleChange('ticketPrice', text)}
+                    keyboardType="numeric"
+                />
+                <Text style={styles.label}>Số lượng vé</Text>
+                <TextInput
+                    style={styles.input}
+                    value={form.ticketQuantity}
+                    onChangeText={(text) => handleChange('ticketQuantity', text)}
+                    keyboardType="numeric"
+                />
+
+                <Text style={styles.label}>Thời gian sự kiện</Text>
+                <DateTimePickerComponent
+                    initialStart={eventData?.timeStart}
+                    initialEnd={eventData?.timeEnd}
+                    onTimeChange={({ timeStart, timeEnd }) => {
+                        setTimeStart(timeStart);
+                        setTimeEnd(timeEnd);
+                    }}
+                />
+
+
+                <Text style={styles.label}>Địa điểm tổ chức</Text>
+                <AddressSelector address={address} setAddress={setAddress} />
+
+                <ImageUploader
+                    label="Ảnh bìa"
+                    image={banner}
+                    onUpload={handleUploadCover}
+                    onDelete={() => setBanner(null)}
+                />
+
+
+                <ImageUploader
+                    label="Ảnh đại diện"
+                    image={avatar}
+                    onUpload={handleUploadAvatar}
+                    onDelete={() => setAvatar(null)}
+                />
+
+
+                <ImageUploader
+                    label="Ảnh mô tả"
+                    multiple
+                    images={images}
+                    onUpload={handleUploadMultipleImages}
+                    onDelete={index => {
+                        const updated = [...images];
+                        updated.splice(index, 1);
+                        setImages(updated);
+                    }}
+                />
+
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity 
+                        style={styles.saveButton}
+                        onPress={handleSave}
+                    >
+                        <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 export default EventEdit;
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
-        padding: 16,
         backgroundColor: '#fff',
     },
-    label: {
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: 56,
+        paddingHorizontal: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e1e1e1',
+        backgroundColor: '#fff',
+    },
+    backButton: {
+        padding: 10,
+    },
+    headerTitle: {
+        fontSize: 18,
         fontWeight: 'bold',
+        color: '#333',
+    },
+    headerRight: {
+        width: 40,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    contentContainer: {
+        padding: 16,
+        paddingBottom: 100, // Thêm padding ở dưới để tránh nút bị che
+    },
+    label: {
+        marginBottom: 8,
         marginTop: 12,
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#111',
     },
     input: {
         borderWidth: 1,
@@ -517,5 +579,36 @@ const styles = StyleSheet.create({
         padding: 10,
         backgroundColor: '#F3F4F6',
         borderRadius: 6,
+    },
+    selectInput: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#DDD',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        backgroundColor: '#FAFAFA',
+    },
+    iconMargin: {
+        marginRight: 8,
+    },
+    buttonContainer: {
+        marginTop: 30,
+        marginBottom: 40, // Thêm margin ở dưới để tránh bị che
+        alignItems: 'center',
+    },
+    saveButton: {
+        backgroundColor: '#3B82F6',
+        paddingVertical: 12,
+        paddingHorizontal: 36,
+        borderRadius: 8,
+        width: '100%',
+        alignItems: 'center',
+    },
+    saveButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
