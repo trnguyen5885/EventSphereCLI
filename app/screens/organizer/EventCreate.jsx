@@ -27,6 +27,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { AxiosInstance } from '../../services';
+import { SpaceComponent } from '../../components';
 
 
 const CLOUD_NAME = 'ddkqz5udn';
@@ -326,7 +327,7 @@ const EventCreate = () => {
         </KeyboardAvoidingView>
 
         <AddressSelector address={address} setAddress={setAddress} />
-
+        <SpaceComponent height={12} />
         <ImageUploader
           label="Ảnh bìa"
           image={banner}
@@ -408,11 +409,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
+    marginBottom: 8,
+    marginTop: 12,
     fontSize: 16,
-    fontWeight: '500',
-    color: '#222',
-    marginTop: 20,
-    marginBottom: 6,
+    fontWeight: '600',
+    color: '#111',
   },
   input: {
     borderWidth: 1,
@@ -456,7 +457,7 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   button: {
-    backgroundColor: '#22C55E',
+    backgroundColor: '#6366F1',
     padding: 14,
     borderRadius: 10,
     marginTop: 30,
