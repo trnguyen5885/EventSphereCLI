@@ -1,10 +1,59 @@
 import { Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { RowComponent } from '../../../components'
+import { AxiosInstance } from '../../../services';
 
 const InviteComponent = ({
-    onPress
+    onPress,
+    eventId
 }) => {
+    const [join, setJoin] = useState(false);
+    const [event, setEvent] = useState([]);
+    
+    useEffect(() => {
+        const fetchJoined = async () => {
+            try {
+                const res = await AxiosInstance().get("friends/joined");
+                const events = res.events || [];
+                setEvent(events);
+
+                const isJoined = events.some(e => e._id === eventId);
+                setJoin(isJoined);
+                
+                console.log("Fetched events: ", events);
+            } catch (e) {
+                console.log("Error for display invite: ", e);
+            }
+        };
+        fetchJoined();
+    }, [eventId]); // Added eventId as dependency
+
+    const handleJoin = async () => {
+        try {
+            if (join) {
+                await AxiosInstance().post(`friends/unjoin/${eventId}`);
+                setJoin(false);
+            } else {
+                const body = {
+                    eventId: eventId,
+                    type: 'join'
+                }
+                await AxiosInstance().post(`friends/join/${eventId}`);
+                await AxiosInstance().post('interactions/addInteraction', body);
+                setJoin(true);
+            }
+        } catch (e) {
+            console.log("Join error: " + e);
+        }
+    }
+
+    const handlePress = () => {
+        handleJoin();
+        if (onPress) {
+            onPress();
+        }
+    };
+
     return (
         <View style={styles.container}>
             <RowComponent style={styles.content}>
@@ -14,16 +63,17 @@ const InviteComponent = ({
                     <Image source={require('../../../../assets/images/adaptive-icon.png')} style={[styles.image, styles.image2]} />
                     <Image source={require('../../../../assets/images/adaptive-icon.png')} style={[styles.image, styles.image3]} />
                 </View>
-                
+
                 {/* Text showing number of people going */}
                 <Text style={styles.goingText}>+20 Going</Text>
-                
-                {/* Invite button */}
-                <TouchableOpacity 
-                    style={styles.inviteButton}
-                    onPress={onPress}
+
+                <TouchableOpacity
+                    style={join ? styles.invitedButton : styles.inviteButton}
+                    onPress={handlePress}
                 >
-                    <Text style={styles.inviteText}>Invite</Text>
+                    <Text style={[styles.inviteText, join && styles.invitedText]}>
+                        {join ? 'Invited' : 'Invite'}
+                    </Text>
                 </TouchableOpacity>
             </RowComponent>
         </View>
@@ -40,7 +90,7 @@ const styles = StyleSheet.create({
         borderRadius: 40,
         position: 'absolute',
         bottom: -20,
-        alignSelf: 'center', 
+        alignSelf: 'center',
         alignItems: 'center',
         justifyContent: 'center',
         elevation: 8,
@@ -91,6 +141,16 @@ const styles = StyleSheet.create({
     },
     inviteText: {
         color: 'white',
+        fontWeight: '600',
+        fontSize: 16,
+    },
+    invitedButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+    },
+    invitedText: {
+        color: '#4361EE',
         fontWeight: '600',
         fontSize: 16,
     }

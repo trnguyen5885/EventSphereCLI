@@ -16,7 +16,8 @@ export interface EventModel {
     ticketQuantity: number,
     timeEnd: number,
     timeStart: number,
-    soldTicket: number
+    soldTicket: number,
+    eventId: string
 }
 
 interface MapEvent {
