@@ -7,7 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
 import { ButtonComponent, InputComponent, RowComponent } from '../../components';
-import { Lock, Sms, User } from 'iconsax-react-native';
+import { Call, Lock, Personalcard, Sms, User } from 'iconsax-react-native';
 import { AxiosInstance } from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -25,6 +25,7 @@ const ProfileEdit = ({ navigation }) => {
 
   const [name, setName] = useState(userData?.username || '');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
 
   const [image, setImage] = useState(userData?.picUrl || '');
 
@@ -34,22 +35,23 @@ const ProfileEdit = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-  const fetchUserInfo = async () => {
-    try {
-      const res = await AxiosInstance().get(`users/getUser/${userId}`);
-      const user = res.data;
-      setName(user.username);
-      setImage(user.picUrl);
-      setEmail(user.email);
-    } catch (error) {
-      console.log('Lỗi khi lấy thông tin người dùng:', error);
-    }
-  };
+    const fetchUserInfo = async () => {
+      try {
+        const res = await AxiosInstance().get(`users/getUser/${userId}`);
+        const user = res.data;
+        setName(user.username);
+        setImage(user.picUrl);
+        setEmail(user.email);
+        setPhoneNumber(user.phoneNumber || '');
+      } catch (error) {
+        console.log('Lỗi khi lấy thông tin người dùng:', error);
+      }
+    };
 
-  if (userId) {
-    fetchUserInfo();
-  }
-}, [userId]);
+    if (userId) {
+      fetchUserInfo();
+    }
+  }, [userId]);
 
   const handleNavigation = () => {
     navigation.goBack();
@@ -107,6 +109,15 @@ const ProfileEdit = ({ navigation }) => {
       Alert.alert('Lỗi', 'Tên không được để trống');
       return;
     }
+    if (!phoneNumber.trim()) {
+      Alert.alert('Lỗi', 'Số điện thoại không được để trống');
+      setIsLoading(false);
+      return;
+    } else if (!/^(0[3|5|7|8|9])\d{8,9}$/.test(phoneNumber)) {
+      Alert.alert('Lỗi', 'Số điện thoại không hợp lệ');
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
 
@@ -116,6 +127,7 @@ const ProfileEdit = ({ navigation }) => {
         id: userId,
         username: name,
         picUrl: image,
+        phoneNumber: phoneNumber,
       });
 
       // Nếu người dùng đổi mật khẩu
@@ -140,6 +152,7 @@ const ProfileEdit = ({ navigation }) => {
           ...userData,
           username: name,
           picUrl: image,
+          phoneNumber: phoneNumber,
         },
         role: 2,
       }));
@@ -190,6 +203,15 @@ const ProfileEdit = ({ navigation }) => {
               value={email}
               suffix={<Sms size={22} color={appColors.gray} />}
             />
+
+            <InputComponent
+              placeholder="Số điện thoại"
+              value={phoneNumber}
+              onChange={(text) => setPhoneNumber(text)}
+              suffix={<Personalcard size={22} color={appColors.gray} />}
+            />
+
+
 
             <InputComponent
               value={oldPassword}

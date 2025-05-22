@@ -76,6 +76,10 @@ const EventManagement = ({ navigation }) => {
       <OrganizerHeaderComponent title="Quản lý sự kiện" />
       {loading ? (
         <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 20 }} />
+      ) : events.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Bạn chưa đăng sự kiện nào</Text>
+        </View>
       ) : (
         <FlatList
           showsVerticalScrollIndicator={false}
@@ -167,4 +171,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+  },
+
 });
