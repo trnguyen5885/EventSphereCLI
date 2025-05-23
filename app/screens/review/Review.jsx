@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Feather from 'react-native-vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,8 @@ import { AxiosInstance } from '../../services';
 import { appColors } from '../../constants/appColors';
 import ImagePicker from 'react-native-image-crop-picker';
 import LoadingModal from '../../modals/LoadingModal';
+import { useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
 
 const Review = ({navigation,route}) => {
     const {detailEventId} = route.params;
@@ -20,20 +22,27 @@ const Review = ({navigation,route}) => {
     })
     const [image, setImage] = useState('');
     const [isLoading, setIsLoading] = useState(false)
+    const userId = useSelector(state => state.auth.userId);
+    const [name, setName] = useState('');
 
 
-    useEffect(() => {
-        const getUserInfo = async () => {
-            const userId = await AsyncStorage.getItem('userId');
-            const response = await AxiosInstance().get(`/users/${userId}`);
-            setUserInfo({
-                userId: response.data._id,
-                username: response.data.username,
-                avatar: response.data.avatar ? response.data.avatar : 'https://avatar.iran.liara.run/public'
-            })
-        };
-        getUserInfo();
-    },[]);
+    useFocusEffect(
+        useCallback(() => {
+          const getUserInfo = async () => {
+            try {
+              if (userId) {
+                const response = await AxiosInstance().get(`users/getUser/${userId}`);
+                setName(response.data.username);
+                setImage(response.data.picUrl);
+              }
+            } catch (error) {
+              console.log('Lỗi khi lấy thông tin người dùng:', error);
+            }
+          };
+    
+          getUserInfo();
+        }, [userId])
+      );
 
     // Mở thư viện chọn ảnh
   const pickImage = async () => {
@@ -136,12 +145,12 @@ const Review = ({navigation,route}) => {
                     {/* info */}
                     <View style={styles.infoContainer}>
                         <View style={styles.avatarContainer}>
-                            <Image style = {styles.avatar} source={{uri: userInfo.avatar}} />
+                            <Image style = {styles.avatar} source={{uri: image}} />
                         </View>
 
                         {/* tên sự kiện, đánh giá trung bình */}
                         <View style={styles.detailInfoContainer}>
-                            <Text style={styles.detailInfoName}>{userInfo.username}</Text>
+                            <Text style={styles.detailInfoName}>{name}</Text>
                             <Text style={styles.detailInfoRate}>
                                 <AntDesign name="star" size={18} color="grey" /> 9.5
                             </Text>
