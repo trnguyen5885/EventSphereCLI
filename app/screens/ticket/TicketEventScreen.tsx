@@ -18,9 +18,9 @@ import {AxiosInstance} from '../../services';
 import {formatDate} from '../../services/utils/date';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LoadingModal from '../../modals/LoadingModal';
-import {useSelector} from 'react-redux';
 import {UserModel} from '@/app/models/user/UserModel';
 import {EventModel} from '@/app/models';
+import {useSelector} from 'react-redux';
 
 const {ZaloPayModule} = NativeModules;
 
@@ -29,6 +29,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
   const [userInfo, setUserInfo] = useState<UserModel | null>();
   const [isLoading, setIsLoading] = useState(false);
   const userId = useSelector(state => state.auth.userId);
+  console.log(userId);
 
   const [eventInfo, setEventInfo] = useState<EventModel | null>(null);
   const [formData, setFormData] = useState<any>({
@@ -54,15 +55,20 @@ const TicketEventScreen = ({navigation, route}: any) => {
   };
 
   useEffect(() => {
+    if (!userId || !id) return;
     const getInfoEvent = async () => {
-      const response = await AxiosInstance().get<EventModel>(
-        `events/detail/${id}`,
-      );
-      const responseUser = await AxiosInstance().get<UserModel>(
-        `users/${userId}`,
-      );
-      setEventInfo(response.data);
-      setUserInfo(responseUser.data);
+      try {
+        const response = await AxiosInstance().get<EventModel>(
+          `events/detail/${id}`,
+        );
+        const responseUser = await AxiosInstance().get<UserModel>(
+          `users/getUser/${userId}`,
+        );
+        setEventInfo(response.data);
+        setUserInfo(responseUser.data);
+      } catch (error) {
+        console.log('Lỗi khi fetch event/user:', error);
+      }
     };
 
     getInfoEvent();
@@ -70,7 +76,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
     return () => {
       setEventInfo(null);
     };
-  }, []);
+  }, [userId, id]);
 
   const updateTicketQuantity = (type: string, change: number) => {
     const newQuantity = formData.tickets[type] + change;
