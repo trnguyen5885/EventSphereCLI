@@ -41,6 +41,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
       try {
         const response = await AxiosInstance().get(`events/detail/${id}`);
         setDetailEvent(response.data);
+        console.log('Event Detail 44 | ', detailEvent);
       } catch (e) {
         console.log(e);
       }
@@ -57,11 +58,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
   const handleInviteList = () => {
     if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
       sheetRef.current?.expand();
-      console.log('sheetRef.current', sheetRef.current)
+      console.log('sheetRef.current', sheetRef.current);
     } else {
-      console.error('Bottom sheet reference or present method is not available');
+      console.error(
+        'Bottom sheet reference or present method is not available',
+      );
     }
-  }
+  };
 
   return (
     <View style={[globalStyles.container]}>
@@ -115,9 +118,9 @@ const EventDetailScreen = ({navigation, route}: any) => {
               </View>
             </View>
           </View>
-          <View style={{ width: '100%', alignItems: 'center' }}>
-              <InviteComponent onPress={handleInviteList} eventId = {id}/>
-            </View>
+          <View style={{width: '100%', alignItems: 'center'}}>
+            <InviteComponent onPress={handleInviteList} eventId={id} />
+          </View>
         </ImageBackground>
         <View style={styles.aboutSection}>
           <TextComponent text="Thông tin sự kiện" size={24} />
@@ -148,10 +151,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
           iconFlex="right"
         />
       </View>
-      <ListInviteComponent
-        sheetRef={sheetRef}
-        eventId={detailEvent?._id}
-      />
+      <ListInviteComponent sheetRef={sheetRef} eventId={detailEvent?._id} />
     </View>
   );
 };
