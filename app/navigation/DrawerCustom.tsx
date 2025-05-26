@@ -31,8 +31,11 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingModal from "../modals/LoadingModal";
 import { CommonActions } from "@react-navigation/native";
+import { useDispatch } from 'react-redux';
+import { logout } from '../redux/slices/authSlice';
 
 const DrawerCustom = ({ navigation }: any) => {
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const size = 20;
   const color = appColors.gray;
@@ -79,19 +82,26 @@ const DrawerCustom = ({ navigation }: any) => {
     },
   ];
 
-  const handleSigout = async () => {
+  const handleSignout = async () => {
     setIsLoading(true);
     try {
+      // Xoá trong AsyncStorage
       await AsyncStorage.removeItem("userId");
+      await AsyncStorage.removeItem("savedCredentials");
+      await AsyncStorage.removeItem("rememberMe");
+
+      // Xoá trong Redux
+      dispatch(logout());
+
+      // Reset về màn Login
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
           routes: [{ name: "Login" }],
-        }),
+        })
       );
-    } catch (e) {
-      console.log(e);
-      setIsLoading(false);
+    } catch (error) {
+      console.log("Sign out failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -112,11 +122,11 @@ const DrawerCustom = ({ navigation }: any) => {
             styles={[localStyles.listItem]}
             onPress={
               item.key === "SignOut"
-                ? () => handleSigout()
+                ? () => handleSignout()
                 : () => {
-                    console.log(item.key);
-                    navigation.closeDrawer();
-                  }
+                  console.log(item.key);
+                  navigation.closeDrawer();
+                }
             }>
             {item.icon}
             <TextComponent
