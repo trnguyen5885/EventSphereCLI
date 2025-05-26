@@ -27,6 +27,7 @@ import RatingAndReview from '../review/RatingAndReview';
 import {EventModel} from '@/app/models';
 import ListInviteComponent from './components/ListInviteComponent';
 import InviteComponent from './components/InviteComponent';
+import MapPreview from '../map/MapPreview';
 
 const EventDetailScreen = ({navigation, route}: any) => {
   const {id} = route.params;
@@ -35,13 +36,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
   const handleNavigation = () => {
     navigation.goBack();
   };
-
+  console.log('geg', detailEvent);
   useEffect(() => {
     const getDetailEvent = async () => {
       try {
         const response = await AxiosInstance().get(`events/detail/${id}`);
         setDetailEvent(response.data);
-        console.log('Event Detail 44 | ', detailEvent);
+        console.log('44 ', response.data);
       } catch (e) {
         console.log(e);
       }
@@ -125,6 +126,11 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <View style={styles.aboutSection}>
           <TextComponent text="Thông tin sự kiện" size={24} />
           <Text style={styles.aboutText}>{detailEvent?.description}</Text>
+          <MapPreview
+            latitude={detailEvent?.latitude}
+            longitude={detailEvent?.longitude}
+            location_map={detailEvent?.location_map}
+          />
         </View>
 
         <RatingAndReview detailEventId={detailEvent?._id} />

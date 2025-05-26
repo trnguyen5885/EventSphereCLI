@@ -25,7 +25,6 @@ import {AxiosInstance} from '../../services';
 const RegisterScreen = ({navigation}) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -46,12 +45,6 @@ const RegisterScreen = ({navigation}) => {
       tempErrors.email = 'Vui lòng nhập Email';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       tempErrors.email = 'Email không hợp lệ';
-    }
-
-    if (!phoneNumber.trim()) {
-      tempErrors.phoneNumber = 'Vui lòng nhập Số điện thoại';
-    } else if (!/^(0[3|5|7|8|9])\d{8,9}$/.test(phoneNumber)) {
-      tempErrors.phoneNumber = 'Số điện thoại không hợp lệ';
     }
 
     if (!password.trim()) {
@@ -83,7 +76,7 @@ const RegisterScreen = ({navigation}) => {
 
     setIsLoading(true);
     try {
-      const body = {username, email, password, phoneNumber};
+      const body = {username, email, password};
       const res = await AxiosInstance().post('users/register', body, 'post');
 
       if (res.status) {
@@ -132,19 +125,6 @@ const RegisterScreen = ({navigation}) => {
               )}
               <SpaceComponent height={5} />
 
-              <InputComponent
-                value={phoneNumber}
-                placeholder="Phone Number"
-                keyboardType="numeric"
-                maxLength={10}
-                onChange={val => setPhoneNumber(val)}
-                allowClear
-                affix={<Call size={22} color={appColors.gray} />}
-              />
-              {errors.phoneNumber && (
-                <TextComponent color="red" text={errors.phoneNumber} />
-              )}
-              <SpaceComponent height={5} />
 
               <InputComponent
                 value={password}
