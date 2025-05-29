@@ -145,7 +145,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
             source={require('../../../assets/images/icon-avatar.png')}
           />
         </RowComponent>
-        <TextComponent size={24} title text="Organizer Sign in" />
+        <TextComponent size={24} title text="Đăng nhập Nhà Tổ Chức" />
         <SpaceComponent height={16} />
         <InputComponent
           value={email}
@@ -161,7 +161,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
         <SpaceComponent height={5} />
         <InputComponent
           value={password}
-          placeholder="Password"
+          placeholder="Mật khẩu"
           onChange={val => {
             setPassword(val);
             setPasswordError('');
@@ -179,23 +179,23 @@ const LoginOrganizerScreen = ({ navigation }) => {
               value={isRemember}
               onChange={() => setIsRemember(!isRemember)}
             />
-            <TextComponent text="Remember me" />
+            <TextComponent text="Ghi nhớ tài khoản" />
           </RowComponent>
           <ButtonComponent
-            text="Forgot Password?"
+            text="Quên mật khẩu?"
             onPress={() => navigation.navigate('ForgotPassword')}
             type="text"
           />
         </RowComponent>
         <SpaceComponent height={16} />
-        <ButtonComponent onPress={handleLogin} text="SIGN IN" type="primary" />
+        <ButtonComponent onPress={handleLogin} text="ĐĂNG NHẬP" type="primary" />
       </SectionComponent>
       <SectionComponent>
         <RowComponent justify="center">
-          <TextComponent text="Don't have an account?" />
+          <TextComponent text="Chưa có tài khoản?" />
           <ButtonComponent
             type="link"
-            text=" Sign up"
+            text=" Đăng ký ngay"
             onPress={() => navigation.navigate('RegisterOrganizer')}
           />
         </RowComponent>

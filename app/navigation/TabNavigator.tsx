@@ -32,11 +32,11 @@ const TabNavigator = () => {
           color = focused ? appColors.primary : appColors.gray5;
           size = 24;
           switch (route.name) {
-            case "Explore":
+            case "Khám phá":
               icon = <MaterialIcons name="explore" size={size} color={color} />;
               break;
 
-            case "Events":
+            case "Sự kiện":
               icon = (
                 <MaterialIcons
                   name="calendar-month"
@@ -45,12 +45,12 @@ const TabNavigator = () => {
                 />
               );
               break;
-            case "Map":
+            case "Địa điểm":
               icon = (
                 <MaterialIcons name="location-on" size={size} color={color} />
               );
               break;
-            case "Profile":
+            case "Thông tin":
               icon = <MaterialIcons name="person" size={size} color={color} />;
               break;
 
@@ -86,11 +86,11 @@ const TabNavigator = () => {
           );
         },
       })}>
-      <Tab.Screen name="Explore" component={ExploreScreen} />
-      <Tab.Screen name="Events" component={EventScreen} />
+      <Tab.Screen name="Khám phá" component={ExploreScreen} />
+      <Tab.Screen name="Sự kiện" component={EventScreen} />
       <Tab.Screen name="Add" component={AddEventScreen} />
-      <Tab.Screen name="Map" component={MapScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Địa điểm" component={MapScreen} />
+      <Tab.Screen name="Thông tin" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };

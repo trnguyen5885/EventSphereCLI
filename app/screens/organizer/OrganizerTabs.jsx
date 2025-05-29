@@ -2,7 +2,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import EventDasboard from './EventDashboard';
 import EventManagement from './EventManagement';
-import EventCreate from './EventCreate';
 import ProfileOrganizerScreen from './ProfileOrganizerScreen';
 import Icon from 'react-native-vector-icons/Feather';
 import { Text } from 'react-native';
@@ -15,10 +14,9 @@ const OrganizerTabs = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => {
           let iconName = '';
-          if (route.name === 'Dashboard') iconName = 'grid';
-          else if (route.name === 'Manage Events') iconName = 'calendar';
-          else if (route.name === 'Create Event') iconName = 'bell';
-          else if (route.name === 'Profile') iconName = 'user';
+          if (route.name === 'Trang chủ') iconName = 'grid';
+          else if (route.name === 'Quản lý sự kiện') iconName = 'calendar';
+          else if (route.name === 'Thông tin') iconName = 'user';
 
           return <Icon name={iconName} size={20} color={color} />;
         },
@@ -36,10 +34,9 @@ const OrganizerTabs = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Dashboard" component={EventDasboard} />
-      <Tab.Screen name="Manage Events" component={EventManagement} />
-      <Tab.Screen name="Create Event" component={EventCreate} />
-      <Tab.Screen name="Profile" component={ProfileOrganizerScreen} />
+      <Tab.Screen name="Trang chủ" component={EventDasboard} />
+      <Tab.Screen name="Quản lý sự kiện" component={EventManagement} />
+      <Tab.Screen name="Thông tin" component={ProfileOrganizerScreen} />
     </Tab.Navigator>
   );
 };
