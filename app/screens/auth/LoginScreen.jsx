@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import {View, Switch, Text, Image} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Switch, Text, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {appColors} from '../../constants/appColors';
-import {Lock, Sms} from 'iconsax-react-native';
+import { appColors } from '../../constants/appColors';
+import { Lock, Sms } from 'iconsax-react-native';
 import {
   ContainerComponent,
   SectionComponent,
@@ -13,14 +13,14 @@ import {
   InputComponent,
 } from '../../components/index';
 import LoadingModal from '../../modals/LoadingModal';
-import {AxiosInstance} from '../../services';
+import { AxiosInstance } from '../../services';
 import { HandleNotification } from '../../utils/handleNotification';
 import { saveTokens } from '../../../app/token/authTokens';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess, setRememberMe, setSavedCredentials } from '../../redux/slices/authSlice';
 import { loginUser } from '../../services/authService';
 
-const LoginScreen = ({navigation}) => {
+const LoginScreen = ({ navigation }) => {
   const [useId, setUseId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,13 +33,40 @@ const LoginScreen = ({navigation}) => {
 
   // 🔹 Load email & password nếu "Remember Me" đã được bật
   useEffect(() => {
-      if (auth?.rememberMe && auth?.savedCredentials) {
-        setEmail(auth.savedCredentials.email);
-        setPassword(auth.savedCredentials.password);
-        setIsRemember(true);
-      }
+      const autoLoginIfRemembered = async () => {
+        if (auth.rememberMe && auth.savedCredentials) {
+          const { email, password } = auth.savedCredentials;
+          setEmail(email);
+          setPassword(password);
+          setIsRemember(true);
+  
+          // Tự động đăng nhập
+          setIsLoading(true);
+          try {
+            const response = await loginUser(email, password);
+            if (response.status === 200 && response.data.role === 3) {
+              dispatch(
+                loginSuccess({
+                  userId: response.data.id,
+                  userData: response.data,
+                })
+              );
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Drawer' }],
+              });
+            }
+          } catch (e) {
+            console.log("Auto login failed:", e.message);
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      };
+  
+      autoLoginIfRemembered();
     }, []);
-    
+
   const validateInputs = () => {
     let isValid = true;
     if (!email.trim()) {
@@ -69,12 +96,12 @@ const LoginScreen = ({navigation}) => {
 
   const handleLogin = async () => {
     if (!validateInputs()) return;
-  
+
     setIsLoading(true);
     try {
       const res = await loginUser(email, password); // 👈 sử dụng loginUser
       const { id, token, refreshToken, role, ...userData } = res.data;
-  
+
       dispatch(
         loginSuccess({
           userId: id,
@@ -82,7 +109,7 @@ const LoginScreen = ({navigation}) => {
           role,
         }),
       );
-  
+
       if (isRemember) {
         dispatch(setRememberMe(true));
         dispatch(setSavedCredentials({ email, password }));
@@ -90,7 +117,7 @@ const LoginScreen = ({navigation}) => {
         dispatch(setRememberMe(false));
         dispatch(setSavedCredentials(null));
       }
-  
+
       navigation.navigate('Drawer'); // hoặc navigation.reset(...)
     } catch (e) {
       console.log(e);
@@ -105,7 +132,7 @@ const LoginScreen = ({navigation}) => {
       <SectionComponent>
         <RowComponent>
           <Image
-            style={{width: 162, height: 114}}
+            style={{ width: 162, height: 114 }}
             source={require('../../../assets/images/icon-avatar.png')}
           />
         </RowComponent>
@@ -114,7 +141,7 @@ const LoginScreen = ({navigation}) => {
         <InputComponent
           value={email}
           placeholder="Email"
-          
+
           onChange={val => {
             setEmail(val);
             setEmailError('');
@@ -142,7 +169,7 @@ const LoginScreen = ({navigation}) => {
         <RowComponent justify="space-between">
           <RowComponent onPress={() => setIsRemember(!isRemember)}>
             <Switch
-              trackColor={{true: appColors.primary}}
+              trackColor={{ true: appColors.primary }}
               thumbColor={appColors.white}
               value={isRemember}
               onChange={() => setIsRemember(!isRemember)}

@@ -52,8 +52,10 @@ import RegisterOrganizerScreen from './app/screens/authOrganizer/RegisterOrganiz
 import EventDetailOrganizer from './app/screens/organizer/EventDetailOrganizer';
 import EventEdit from './app/screens/organizer/EventEdit';
 
-import {useDispatch} from 'react-redux';
-import {fetchPendingCount} from './app/redux/slices/friendRequestSlice';
+
+import { useDispatch } from 'react-redux';
+import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
+import AuthLoadingScreen from './app/screens/auth/AuthLoadingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -190,6 +192,7 @@ const AppWithSocket = () => {
             component={EventDetailOrganizer}
           />
           <Stack.Screen name="EventEdit" component={EventEdit} />
+          <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
