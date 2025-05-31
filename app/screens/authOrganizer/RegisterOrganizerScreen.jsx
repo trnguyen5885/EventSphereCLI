@@ -99,7 +99,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
         <ScrollView contentContainerStyle={{flexGrow: 1}}>
           <ContainerComponent isImageBackground isScroll back>
             <SectionComponent>
-              <TextComponent size={24} title text="Sign Up Organizer" />
+              <TextComponent size={24} title text="Đăng ký Nhà Tổ Chức" />
               <SpaceComponent height={21} />
 
               <InputComponent
@@ -116,7 +116,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
 
               <InputComponent
                 value={email}
-                placeholder="abc@gmail.com"
+                placeholder="Email"
                 onChange={val => setEmail(val)}
                 allowClear
                 affix={<Sms size={22} color={appColors.gray} />}
@@ -128,7 +128,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
 
               <InputComponent
                 value={password}
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 onChange={val => setPassword(val)}
                 isPassword
                 allowClear
@@ -141,7 +141,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
 
               <InputComponent
                 value={confirmPassword}
-                placeholder="Confirm Password"
+                placeholder="Nhập lại mật khẩu"
                 onChange={val => setConfirmPassword(val)}
                 isPassword
                 allowClear
@@ -157,17 +157,17 @@ const RegisterOrganizerScreen = ({navigation}) => {
             <SectionComponent>
               <ButtonComponent
                 onPress={handleRegister}
-                text="SIGN UP"
+                text="ĐĂNG KÝ"
                 type="primary"
               />
             </SectionComponent>
 
             <SectionComponent>
               <RowComponent justify="center">
-                <TextComponent text="Already have an account?" />
+                <TextComponent text="Đã có tài khoản?" />
                 <ButtonComponent
                   type="link"
-                  text=" Sign in"
+                  text=" Đăng nhập ngay"
                   onPress={() => navigation.navigate('LoginOrganizer')}
                 />
               </RowComponent>

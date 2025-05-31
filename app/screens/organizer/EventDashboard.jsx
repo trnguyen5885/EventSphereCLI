@@ -81,7 +81,7 @@ const EventDasboard = () => {
   
   return (
     <View style={styles.container}>
-      <OrganizerHeaderComponent title="Dashboard" />
+      <OrganizerHeaderComponent title="Trang chủ" />
 
       {isStarted ? (
         <View style={{ flex: 1 }}>

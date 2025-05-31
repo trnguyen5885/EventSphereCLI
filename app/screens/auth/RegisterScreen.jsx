@@ -98,7 +98,7 @@ const RegisterScreen = ({navigation}) => {
         <ScrollView contentContainerStyle={{flexGrow: 1}}>
           <ContainerComponent isImageBackground isScroll back>
             <SectionComponent>
-              <TextComponent size={24} title text="Sign Up" />
+              <TextComponent size={24} title text="Đăng ký" />
               <SpaceComponent height={21} />
 
               <InputComponent
@@ -115,7 +115,7 @@ const RegisterScreen = ({navigation}) => {
 
               <InputComponent
                 value={email}
-                placeholder="abc@gmail.com"
+                placeholder="Email"
                 onChange={val => setEmail(val)}
                 allowClear
                 affix={<Sms size={22} color={appColors.gray} />}
@@ -124,11 +124,9 @@ const RegisterScreen = ({navigation}) => {
                 <TextComponent color="red" text={errors.email} />
               )}
               <SpaceComponent height={5} />
-
-
               <InputComponent
                 value={password}
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 onChange={val => setPassword(val)}
                 isPassword
                 allowClear
@@ -141,7 +139,7 @@ const RegisterScreen = ({navigation}) => {
 
               <InputComponent
                 value={confirmPassword}
-                placeholder="Confirm Password"
+                placeholder="Nhập lại mật khẩu"
                 onChange={val => setConfirmPassword(val)}
                 isPassword
                 allowClear
@@ -157,17 +155,17 @@ const RegisterScreen = ({navigation}) => {
             <SectionComponent>
               <ButtonComponent
                 onPress={handleRegister}
-                text="SIGN UP"
+                text="ĐĂNG KÝ"
                 type="primary"
               />
             </SectionComponent>
 
             <SectionComponent>
               <RowComponent justify="center">
-                <TextComponent text="Already have an account?" />
+                <TextComponent text="Đã có tài khoản?" />
                 <ButtonComponent
                   type="link"
-                  text=" Sign in"
+                  text=" Đăng nhập ngay"
                   onPress={() => navigation.navigate('Login')}
                 />
               </RowComponent>

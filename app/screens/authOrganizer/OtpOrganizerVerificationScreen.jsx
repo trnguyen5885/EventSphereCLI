@@ -123,7 +123,7 @@ const OtpOrganizerVerificationScreen = ({ navigation, route }) => {
             <TextComponent size={24} title text="Verification" />
             <SpaceComponent height={10} />
             <TextComponent
-              text={`We've sent you the verification code to organizer ${email}`}
+              text={`Chúng tôi đã gửi mã xác nhận đến nhà tổ chức ${email}`}
             />
             <SpaceComponent height={30} />
 
@@ -162,7 +162,7 @@ const OtpOrganizerVerificationScreen = ({ navigation, route }) => {
 
             <ButtonComponent
               onPress={verifyOTP}
-              text="CONTINUE"
+              text="TIẾP TỤC"
               type="primary"
               icon="arrow-right"
             />
@@ -171,7 +171,7 @@ const OtpOrganizerVerificationScreen = ({ navigation, route }) => {
 
             <View style={styles.resendContainer}>
               <TextComponent
-                text="Re-send code in "
+                text="Gửi lại mã trong "
                 style={styles.resendText}
               />
               <TouchableWithoutFeedback

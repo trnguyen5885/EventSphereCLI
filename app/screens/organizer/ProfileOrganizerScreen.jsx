@@ -62,7 +62,7 @@ const ProfileOrganizer = ({ navigation }) => {
     <ScrollView showsVerticalScrollIndicator={true}
       contentContainerStyle={{ flexGrow: 1 }}>
       <View style={styles.container}>
-        <OrganizerHeaderComponent title="Event Management" />
+        <OrganizerHeaderComponent title="Thông tin" />
         <ProfileOrganizerHeader />
 
         <View style={styles.editBtnContainer}>

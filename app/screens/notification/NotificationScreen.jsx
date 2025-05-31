@@ -55,7 +55,7 @@ const NotificationScreen = ({ navigation }) => {
       <View style={styles.headerSection}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Ionicons name="arrow-back" size={24} color="black" />
-          <Text style={styles.headerTitle}>Notification</Text>
+          <Text style={styles.headerTitle}>Thông báo</Text>
         </TouchableOpacity>
         <Entypo name="dots-three-vertical" size={24} color="black" />
       </View>
