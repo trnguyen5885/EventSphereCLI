@@ -124,7 +124,6 @@ const RegisterScreen = ({navigation}) => {
                 <TextComponent color="red" text={errors.email} />
               )}
               <SpaceComponent height={5} />
-
               <InputComponent
                 value={password}
                 placeholder="Mật khẩu"
