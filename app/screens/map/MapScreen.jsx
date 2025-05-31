@@ -194,7 +194,14 @@ const MapScreen = () => {
         {item.name}
       </Text>
       <View style={styles.eventItemContainer}>
-        <Image source={{uri: item.avatar}} style={styles.avatar} />
+        <Image
+          source={
+            item.avatar
+              ? {uri: item.avatar}
+              : require('../../../assets/images/EventData_image1.png')
+          }
+          style={styles.avatar}
+        />
         <View style={styles.textContainer}>
           <View style={[globalStyles.row, {columnGap: 5}]}>
             <View>
@@ -258,24 +265,28 @@ const MapScreen = () => {
                 }}
                 title={e.name}
                 onPress={() => {
+                  // Giữ nguyên displayedEvents để chọn chính xác vị trí
+                  setSelectedEventsList(displayedEvents);
                   const index = displayedEvents.findIndex(
                     item => item._id === e._id,
                   );
-                  const maxIndex = displayedEvents.length - 1;
 
-                  if (index !== -1 && index <= maxIndex) {
-                    setSelectedEventsList([e]);
-                    setTimeout(() => {
-                      try {
-                        eventListRef.current?.scrollToIndex({
-                          index: Math.min(index, maxIndex),
+                  setTimeout(() => {
+                    try {
+                      if (
+                        eventListRef.current &&
+                        index >= 0 &&
+                        index < displayedEvents.length
+                      ) {
+                        eventListRef.current.scrollToIndex({
+                          index,
                           animated: true,
                         });
-                      } catch (error) {
-                        console.warn('scrollToIndex error:', error);
                       }
-                    }, 500);
-                  }
+                    } catch (error) {
+                      console.warn('scrollToIndex error:', error);
+                    }
+                  }, 500);
                 }}>
                 <CustomMarker
                   icon={categoryInfo?.icon || 'apps'}
