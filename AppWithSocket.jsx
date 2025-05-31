@@ -47,6 +47,7 @@ import EventEdit from './app/screens/organizer/EventEdit';
 
 import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
+import AuthLoadingScreen from './app/screens/auth/AuthLoadingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -163,6 +164,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="ProfileEditOrganizer" component={ProfileEditOrganizer} />
           <Stack.Screen name="EventDetailOrganizer" component={EventDetailOrganizer} />
           <Stack.Screen name="EventEdit" component={EventEdit} />
+          <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
 
         </Stack.Navigator>
       </NavigationContainer>

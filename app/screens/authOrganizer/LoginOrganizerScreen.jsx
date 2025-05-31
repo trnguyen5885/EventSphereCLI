@@ -30,12 +30,40 @@ const LoginOrganizerScreen = ({ navigation }) => {
 
 
   useEffect(() => {
-    if (auth.rememberMe && auth.savedCredentials) {
-      setEmail(auth.savedCredentials.email);
-      setPassword(auth.savedCredentials.password);
-      setIsRemember(true);
-    }
+    const autoLoginIfRemembered = async () => {
+      if (auth.rememberMe && auth.savedCredentials) {
+        const { email, password } = auth.savedCredentials;
+        setEmail(email);
+        setPassword(password);
+        setIsRemember(true);
+
+        // Tự động đăng nhập
+        setIsLoading(true);
+        try {
+          const response = await loginOrganizer(email, password);
+          if (response.status === 200 && response.data.role === 2) {
+            dispatch(
+              loginSuccess({
+                userId: response.data.id,
+                userData: response.data,
+              })
+            );
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'OrganizerTabs' }],
+            });
+          }
+        } catch (e) {
+          console.log("Auto login failed:", e.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    autoLoginIfRemembered();
   }, []);
+
 
   const validateInputs = () => {
     let isValid = true;
