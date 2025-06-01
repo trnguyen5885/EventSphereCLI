@@ -9,9 +9,15 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Alert} from 'react-native';
 import {appColors} from '../../constants/appColors';
+import {AxiosInstance} from '../../services';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 // Giá vé
 const NORMAL_PRICE = 85000;
@@ -25,158 +31,165 @@ enum SeatStatus {
 
 interface Seat {
   id: string;
+  label: string;
+  row: number;
+  col: number;
+
+  price: number;
+  area: string;
   status: SeatStatus;
 }
 
 const ZoneScreen = () => {
-  const [seats, setSeats] = useState(generateSeatsData());
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [seats, setSeats] = useState<Seat[][]>([]);
+  const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const offsetX = useSharedValue(0);
+  const offsetY = useSharedValue(0);
 
-  // Generate Seats Data
-  function generateSeatsData() {
-    const rows = 10;
-    const seatsPerRow = 10;
-    const rowForVIP = 4;
-    const seatsArray: Seat[][] = [];
+  useEffect(() => {
+    fetchSeatsFromApi();
+  }, []);
 
-    for (let i = 0; i < rows; i++) {
-      const row: Seat[] = [];
-      for (let j = 0; j < seatsPerRow; j++) {
-        // Random seats
-        const isBooked = Math.random() < 0.2;
+  const fetchSeatsFromApi = async () => {
+    try {
+      const response = await AxiosInstance().get(
+        '/events/getZone/67b9d74b04009ff26421ef45',
+      );
+
+      const seatObjects = response.zones[0].layout.seats.map((item: any) => {
         let status: SeatStatus;
-        if (isBooked) {
+        if (item.status === 'booked') {
           status = SeatStatus.BOOKED;
-        } else if (i < rowForVIP) {
+        } else if (item.area === 'vip') {
           status = SeatStatus.VIP;
         } else {
           status = SeatStatus.NORMAL;
         }
-        row.push({
-          id: `${String.fromCharCode(65 + i)}${j + 1}`,
+        return {
+          id: item.seatId,
+          label: item.label,
+          row: item.row,
+          col: item.col,
+          price: item.price,
+          area: item.area,
           status,
-        });
+        };
+      });
+
+      // Group theo row
+      const grouped: Seat[][] = [];
+      for (let seat of seatObjects) {
+        const rowIndex = seat.row - 1;
+        if (!grouped[rowIndex]) grouped[rowIndex] = [];
+        grouped[rowIndex][seat.col - 1] = seat;
       }
-      seatsArray.push(row);
+
+      setSeats(grouped);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách ghế:', error);
     }
-    return seatsArray;
-  }
+  };
 
-  // Handle choose seat
-  const handleSeatPress = (rowIndex: any, colIndex: any) => {
-    const newSeats = [...seats];
-    const seat = newSeats[rowIndex][colIndex];
-
+  const handleSeatPress = (rowIndex: number, colIndex: number) => {
+    const seat = seats[rowIndex][colIndex];
     if (seat.status === SeatStatus.BOOKED) return;
 
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(seat.id)) {
-      newSelected.delete(seat.id);
+    const existingIndex = selectedSeats.findIndex(s => s.id === seat.id);
+    if (existingIndex !== -1) {
+      // Đã chọn rồi → bỏ chọn
+      const newSelected = [...selectedSeats];
+      newSelected.splice(existingIndex, 1);
+      setSelectedSeats(newSelected);
     } else {
-      newSelected.add(seat.id);
+      // Thêm vào danh sách chọn
+      setSelectedSeats([...selectedSeats, seat]);
     }
-    setSelectedIds(newSelected);
   };
 
   const totalPrice = useMemo(() => {
-    let sum = 0;
-    seats.forEach(row =>
-      row.forEach(seat => {
-        if (selectedIds.has(seat.id)) {
-          sum += seat.status === SeatStatus.VIP ? VIP_PRICE : NORMAL_PRICE;
-        }
-      }),
+    return selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+  }, [selectedSeats]);
+
+  const handleBookTicket = async () => {
+    const payload = selectedSeats.map(seat => ({
+      seatId: seat.id,
+      type: seat.area,
+    }));
+
+    const bodyData = {
+      userId: '6773f10819073b07dc2f9e3d',
+      eventId: '67b9d74b04009ff26421ef45',
+      amount: selectedSeats.length,
+      seats: payload,
+    };
+
+    const response = await AxiosInstance().post(
+      '/orders/createOrder',
+      bodyData,
     );
-    return sum;
-  }, [selectedIds, seats]);
 
-  //   // Xử lý khi xác nhận đặt vé
-  //   const handleBooking = () => {
-  //     if (selectedSeats.length === 0) {
-  //       Alert.alert('Thông báo', 'Vui lòng chọn ít nhất một ghế');
-  //       return;
-  //     }
+    console.log(response.data);
+  };
 
-  //     const seatNames = selectedSeats.map(seat => seat.id).join(', ');
-  //     Alert.alert(
-  //       'Xác nhận đặt vé',
-  //       `Bạn đã chọn ${
-  //         selectedSeats.length
-  //       } ghế: ${seatNames}\nTổng tiền: ${totalPrice.toLocaleString(
-  //         'vi-VN',
-  //       )} VND`,
-  //       [
-  //         {text: 'Hủy'},
-  //         {
-  //           text: 'Xác nhận',
-  //           onPress: () => {
-  //             // Chuyển trạng thái ghế đang chọn thành đã đặt
-  //             const newSeats = [...seats];
-  //             selectedSeats.forEach(selectedSeat => {
-  //               const rowIndex = selectedSeat.id.charCodeAt(0) - 65;
-  //               const colIndex = parseInt(selectedSeat.id.slice(1)) - 1;
-  //               newSeats[rowIndex][colIndex].status = 1;
-  //             });
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      // Không cần làm gì ở đây nếu offset đã có
+    })
+    .onUpdate(event => {
+      translateX.value = offsetX.value + event.translationX;
+      translateY.value = offsetY.value + event.translationY;
+    })
+    .onEnd(() => {
+      // Cập nhật offset khi kết thúc gesture
+      offsetX.value = translateX.value;
+      offsetY.value = translateY.value;
+    });
 
-  //             setSeats(newSeats);
-  //             setSelectedSeats([]);
-  //             setTotalPrice(0);
-  //             Alert.alert('Thành công', 'Đặt vé thành công!');
-  //           },
-  //         },
-  //       ],
-  //     );
-  //   };
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{translateX: translateX.value}, {translateY: translateY.value}],
+  }));
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.screenContainer}>
         <View style={styles.screen} />
         <Text style={styles.screenLabel}>SÂN KHẤU</Text>
       </View>
-
-      <ScrollView
-        style={styles.seatsContainer}
-        contentContainerStyle={styles.seatsContentContainer}>
-        {seats.map((row, rowIndex) => {
-          return (
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.seatsContainer, animatedStyle]}>
+          {seats.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.row}>
               {row.map((seat, colIndex) => {
-                const isSelected = selectedIds.has(seat.id);
+                const isSelected = selectedSeats.some(s => s.id === seat.id);
                 let bgColor;
                 if (seat.status === SeatStatus.BOOKED) {
                   bgColor = '#ccc';
                 } else if (isSelected) {
-                  bgColor = appColors.primary;
-                } // màu chọn
-                else if (seat.status === SeatStatus.VIP) {
+                  bgColor = '#FF6B6B';
+                } else if (seat.status === SeatStatus.VIP) {
                   bgColor = '#7C89FF';
                 } else {
                   bgColor = '#c9b6f3';
                 }
+
                 return (
                   <TouchableOpacity
                     key={colIndex}
-                    style={[
-                      styles.seat,
-                      rowIndex + 1 > 4
-                        ? {backgroundColor: '#c9b6f3'}
-                        : {backgroundColor: '#7C89FF'},
-                      ,
-                      {backgroundColor: bgColor},
-                    ]}
+                    style={[styles.seat, {backgroundColor: bgColor}]}
                     onPress={() => handleSeatPress(rowIndex, colIndex)}
                     disabled={seat.status === SeatStatus.BOOKED}>
-                    <Text style={[styles.seatLabel]}>
-                      {String.fromCharCode(65 + rowIndex) + (colIndex + 1)}
-                    </Text>
+                    <Text style={styles.seatLabel}>{seat.label}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          );
-        })}
-      </ScrollView>
+          ))}
+        </Animated.View>
+      </GestureDetector>
 
+      {/* LEGEND */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendIcon, styles.seatNormal]} />
@@ -199,13 +212,13 @@ const ZoneScreen = () => {
       <View style={styles.summaryContainer}>
         <View style={styles.summaryInfo}>
           <Text style={styles.summaryText}>
-            Đã chọn: {selectedIds.size} ghế
+            Đã chọn: {selectedSeats.length} ghế
           </Text>
           <Text style={styles.summaryPrice}>
             Tổng tiền: {totalPrice.toLocaleString('vi-VN')} VND
           </Text>
         </View>
-        <TouchableOpacity style={styles.bookButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.bookButton} onPress={handleBookTicket}>
           <Text style={styles.bookButtonText}>ĐẶT VÉ</Text>
         </TouchableOpacity>
       </View>
@@ -238,7 +251,9 @@ const styles = StyleSheet.create({
   },
   screenContainer: {
     alignItems: 'center',
-    marginVertical: 20,
+    paddingVertical: 20,
+    backgroundColor: 'white',
+    zIndex: 2,
   },
   screen: {
     width: '80%',
@@ -253,9 +268,10 @@ const styles = StyleSheet.create({
   },
   seatsContainer: {
     flex: 1,
-
+    alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 15,
+    // borderWidth: 8,
   },
   seatsContentContainer: {
     alignItems: 'center',
