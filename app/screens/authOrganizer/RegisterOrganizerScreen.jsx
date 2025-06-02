@@ -25,7 +25,6 @@ import {AxiosInstance} from '../../services';
 const RegisterOrganizerScreen = ({navigation}) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -48,11 +47,6 @@ const RegisterOrganizerScreen = ({navigation}) => {
       tempErrors.email = 'Email không hợp lệ';
     }
 
-    if (!phoneNumber.trim()) {
-      tempErrors.phoneNumber = 'Vui lòng nhập Số điện thoại';
-    } else if (!/^(0[3|5|7|8|9])\d{8,9}$/.test(phoneNumber)) {
-      tempErrors.phoneNumber = 'Số điện thoại không hợp lệ';
-    }
 
     if (!password.trim()) {
       tempErrors.password = 'Vui lòng nhập Mật khẩu';
@@ -83,7 +77,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
 
     setIsLoading(true);
     try {
-      const body = {username, email, password, phoneNumber, role: 2};
+      const body = {username, email, password, role: 2};
       const res = await AxiosInstance().post('users/register', body, 'post');
 
       if (res.status) {
@@ -105,7 +99,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
         <ScrollView contentContainerStyle={{flexGrow: 1}}>
           <ContainerComponent isImageBackground isScroll back>
             <SectionComponent>
-              <TextComponent size={24} title text="Sign Up Organizer" />
+              <TextComponent size={24} title text="Đăng ký Nhà Tổ Chức" />
               <SpaceComponent height={21} />
 
               <InputComponent
@@ -122,7 +116,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
 
               <InputComponent
                 value={email}
-                placeholder="abc@gmail.com"
+                placeholder="Email"
                 onChange={val => setEmail(val)}
                 allowClear
                 affix={<Sms size={22} color={appColors.gray} />}
@@ -133,22 +127,8 @@ const RegisterOrganizerScreen = ({navigation}) => {
               <SpaceComponent height={5} />
 
               <InputComponent
-                value={phoneNumber}
-                placeholder="Phone Number"
-                keyboardType="numeric"
-                maxLength={10}
-                onChange={val => setPhoneNumber(val)}
-                allowClear
-                affix={<Call size={22} color={appColors.gray} />}
-              />
-              {errors.phoneNumber && (
-                <TextComponent color="red" text={errors.phoneNumber} />
-              )}
-              <SpaceComponent height={5} />
-
-              <InputComponent
                 value={password}
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 onChange={val => setPassword(val)}
                 isPassword
                 allowClear
@@ -161,7 +141,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
 
               <InputComponent
                 value={confirmPassword}
-                placeholder="Confirm Password"
+                placeholder="Nhập lại mật khẩu"
                 onChange={val => setConfirmPassword(val)}
                 isPassword
                 allowClear
@@ -177,17 +157,17 @@ const RegisterOrganizerScreen = ({navigation}) => {
             <SectionComponent>
               <ButtonComponent
                 onPress={handleRegister}
-                text="SIGN UP"
+                text="ĐĂNG KÝ"
                 type="primary"
               />
             </SectionComponent>
 
             <SectionComponent>
               <RowComponent justify="center">
-                <TextComponent text="Already have an account?" />
+                <TextComponent text="Đã có tài khoản?" />
                 <ButtonComponent
                   type="link"
-                  text=" Sign in"
+                  text=" Đăng nhập ngay"
                   onPress={() => navigation.navigate('LoginOrganizer')}
                 />
               </RowComponent>

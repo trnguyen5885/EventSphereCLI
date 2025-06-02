@@ -7,7 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
 import { ButtonComponent, InputComponent, RowComponent } from '../../components';
-import { Call, Lock, Personalcard, Sms, User } from 'iconsax-react-native';
+import { Lock, Personalcard, Sms, User } from 'iconsax-react-native';
 import { AxiosInstance } from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -19,7 +19,7 @@ import { loginSuccess } from '../../redux/slices/authSlice';
 
 
 
-const ProfileEdit = ({ navigation }) => {
+const ProfileEditOrganizer = ({ navigation }) => {
   const dispatch = useDispatch();
   const { userData, userId } = useSelector((state) => state.auth);
 
@@ -211,8 +211,6 @@ const ProfileEdit = ({ navigation }) => {
               suffix={<Personalcard size={22} color={appColors.gray} />}
             />
 
-
-
             <InputComponent
               value={oldPassword}
               placeholder="Nhập mật khẩu cũ"
@@ -283,4 +281,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileEdit;
+export default ProfileEditOrganizer;

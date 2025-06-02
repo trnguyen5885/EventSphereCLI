@@ -1,108 +1,107 @@
-import { StyleSheet, Text, View, Image, FlatList, TouchableOpacity } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import OrganizerHeaderComponent from '../../components/OrganizerHeaderComponent';
+import AxiosInstance from '../../services/api/AxiosInstance';
+import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
-const events = [
-  {
-    id: '1',
-    title: 'Rock Festival',
-    date: 'Oct 20, 2023',
-    status: 'Sold Out',
-    buttonLabel: 'View',
-    image: 'https://via.placeholder.com/100x80.png?text=🎸',
-  },
-  {
-    id: '2',
-    title: 'Art Expo 2023',
-    date: 'Nov 5, 2023',
-    status: 'Open',
-    buttonLabel: 'Edit',
-    image: 'https://via.placeholder.com/100x80.png?text=🖼️',
-  },
-  {
-    id: '3',
-    title: 'Food Fiesta',
-    date: 'Dec 12, 2023',
-    status: 'Limited Tickets',
-    buttonLabel: 'Notify',
-    image: 'https://via.placeholder.com/100x80.png?text=🍔',
-  },
-  {
-    id: '1',
-    title: 'Rock Festival',
-    date: 'Oct 20, 2023',
-    status: 'Sold Out',
-    buttonLabel: 'View',
-    image: 'https://via.placeholder.com/100x80.png?text=🎸',
-  },
-  {
-    id: '2',
-    title: 'Art Expo 2023',
-    date: 'Nov 5, 2023',
-    status: 'Open',
-    buttonLabel: 'Edit',
-    image: 'https://via.placeholder.com/100x80.png?text=🖼️',
-  },
-  {
-    id: '3',
-    title: 'Food Fiesta',
-    date: 'Dec 12, 2023',
-    status: 'Limited Tickets',
-    buttonLabel: 'Notify',
-    image: 'https://via.placeholder.com/100x80.png?text=🍔',
-  },
-  {
-    id: '1',
-    title: 'Rock Festival',
-    date: 'Oct 20, 2023',
-    status: 'Sold Out',
-    buttonLabel: 'View',
-    image: 'https://via.placeholder.com/100x80.png?text=🎸',
-  },
-  {
-    id: '2',
-    title: 'Art Expo 2023',
-    date: 'Nov 5, 2023',
-    status: 'Open',
-    buttonLabel: 'Edit',
-    image: 'https://via.placeholder.com/100x80.png?text=🖼️',
-  },
-  {
-    id: '3',
-    title: 'Food Fiesta',
-    date: 'Dec 12, 2023',
-    status: 'Limited Tickets',
-    buttonLabel: 'Notify',
-    image: 'https://via.placeholder.com/100x80.png?text=🍔',
-  },
-];
 
-const EventCard = ({ title, date, status, buttonLabel, image }) => (
+const formatDate = (timestamp) => {
+  const date = new Date(
+    timestamp.toString().length === 13 ? timestamp : timestamp * 1000
+  );
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const EventCard = ({ name, timeStart, timeEnd, ticketPrice, soldTickets, image, navigation, eventId }) => (
   <View style={styles.card}>
     <View style={styles.cardLeft}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.date}>Date: {date}</Text>
-      <Text style={styles.status}>Status: {status}</Text>
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>{buttonLabel}</Text>
+      <Text style={styles.title}>{name}</Text>
+      <Text style={styles.date}>Bắt đầu: {formatDate(timeStart)}</Text>
+      <Text style={styles.date}>Kết thúc: {formatDate(timeEnd)}</Text>
+      <Text style={styles.status}>Đã bán: {soldTickets}</Text>
+      <Text style={styles.price}>Giá vé: {ticketPrice.toLocaleString()}đ</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
+      >
+        <Text style={styles.buttonText}>Chi tiết</Text>
       </TouchableOpacity>
     </View>
     <Image source={{ uri: image }} style={styles.image} />
   </View>
 );
 
-const EventManagement = () => {
+
+const EventManagement = ({ navigation }) => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+
+  const fetchEvents = async () => {
+    try {
+      const axiosJWT = AxiosInstance();
+      const res = await axiosJWT.get('users/eventOfOrganization');
+      setEvents(res.events || []);
+    } catch (error) {
+      console.error('Lỗi khi lấy sự kiện:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchEvents();
+    }, [])
+  );
+
   return (
     <View style={styles.container}>
-      <OrganizerHeaderComponent title="Event Management" />
-      <FlatList
-        showsVerticalScrollIndicator={false}
-        style={{ padding: 10 }}
-        data={events}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <EventCard {...item} />}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
+      <OrganizerHeaderComponent title="Quản lý sự kiện" />
+      {loading ? (
+        <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 20 }} />
+      ) : events.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Bạn chưa đăng sự kiện nào</Text>
+        </View>
+      ) : (
+        <FlatList
+          showsVerticalScrollIndicator={false}
+          style={{ padding: 10 }}
+          data={events}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <EventCard
+              name={item.name}
+              timeStart={item.timeStart}
+              timeEnd={item.timeEnd}
+              ticketPrice={item.ticketPrice}
+              soldTickets={item.soldTickets}
+              image={item.avatar}
+              eventId={item._id}
+              navigation={navigation}
+            />
+          )}
+
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      )}
     </View>
   );
 };
@@ -138,14 +137,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   date: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#555',
     marginTop: 4,
   },
   status: {
-    fontSize: 14,
-    color: '#999',
-    marginVertical: 4,
+    fontSize: 13,
+    color: '#777',
+    marginTop: 4,
+  },
+  price: {
+    fontSize: 13,
+    color: '#000',
+    marginTop: 4,
+    fontWeight: '500',
   },
   button: {
     borderWidth: 1,
@@ -166,4 +171,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+  },
+
 });

@@ -30,12 +30,40 @@ const LoginOrganizerScreen = ({ navigation }) => {
 
 
   useEffect(() => {
-    if (auth.rememberMe && auth.savedCredentials) {
-      setEmail(auth.savedCredentials.email);
-      setPassword(auth.savedCredentials.password);
-      setIsRemember(true);
-    }
+    const autoLoginIfRemembered = async () => {
+      if (auth.rememberMe && auth.savedCredentials) {
+        const { email, password } = auth.savedCredentials;
+        setEmail(email);
+        setPassword(password);
+        setIsRemember(true);
+
+        // Tự động đăng nhập
+        setIsLoading(true);
+        try {
+          const response = await loginOrganizer(email, password);
+          if (response.status === 200 && response.data.role === 2) {
+            dispatch(
+              loginSuccess({
+                userId: response.data.id,
+                userData: response.data,
+              })
+            );
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'OrganizerTabs' }],
+            });
+          }
+        } catch (e) {
+          console.log("Auto login failed:", e.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    autoLoginIfRemembered();
   }, []);
+
 
   const validateInputs = () => {
     let isValid = true;
@@ -117,7 +145,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
             source={require('../../../assets/images/icon-avatar.png')}
           />
         </RowComponent>
-        <TextComponent size={24} title text="Organizer Sign in" />
+        <TextComponent size={24} title text="Đăng nhập Nhà Tổ Chức" />
         <SpaceComponent height={16} />
         <InputComponent
           value={email}
@@ -133,7 +161,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
         <SpaceComponent height={5} />
         <InputComponent
           value={password}
-          placeholder="Password"
+          placeholder="Mật khẩu"
           onChange={val => {
             setPassword(val);
             setPasswordError('');
@@ -143,31 +171,31 @@ const LoginOrganizerScreen = ({ navigation }) => {
           affix={<Lock size={22} color={appColors.gray} />}
         />
         {passwordError ? <TextComponent color="red" text={passwordError} /> : null}
-        <RowComponent onPress={() => {
-          setIsRemember(!isRemember);
-          dispatch(setRememberMe(!isRemember));
-        }}>
-          <Switch
-            trackColor={{ true: appColors.primary }}
-            thumbColor={appColors.white}
-            value={isRemember}
-            onChange={() => {
-              const newVal = !isRemember;
-              setIsRemember(newVal);
-              dispatch(setRememberMe(newVal));
-            }}
+        <RowComponent justify="space-between">
+          <RowComponent onPress={() => setIsRemember(!isRemember)}>
+            <Switch
+              trackColor={{ true: appColors.primary }}
+              thumbColor={appColors.white}
+              value={isRemember}
+              onChange={() => setIsRemember(!isRemember)}
+            />
+            <TextComponent text="Ghi nhớ tài khoản" />
+          </RowComponent>
+          <ButtonComponent
+            text="Quên mật khẩu?"
+            onPress={() => navigation.navigate('ForgotPassword')}
+            type="text"
           />
-          <TextComponent text="Remember me" />
         </RowComponent>
         <SpaceComponent height={16} />
-        <ButtonComponent onPress={handleLogin} text="SIGN IN" type="primary" />
+        <ButtonComponent onPress={handleLogin} text="ĐĂNG NHẬP" type="primary" />
       </SectionComponent>
       <SectionComponent>
         <RowComponent justify="center">
-          <TextComponent text="Don't have an account?" />
+          <TextComponent text="Chưa có tài khoản?" />
           <ButtonComponent
             type="link"
-            text=" Sign up"
+            text=" Đăng ký ngay"
             onPress={() => navigation.navigate('RegisterOrganizer')}
           />
         </RowComponent>

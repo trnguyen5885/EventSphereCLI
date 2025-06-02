@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -25,20 +25,24 @@ import {formatDate} from '../../services/index';
 import {formatPrice} from '../../services/utils/price';
 import RatingAndReview from '../review/RatingAndReview';
 import {EventModel} from '@/app/models';
+import ListInviteComponent from './components/ListInviteComponent';
+import InviteComponent from './components/InviteComponent';
+import MapPreview from '../map/MapPreview';
 
 const EventDetailScreen = ({navigation, route}: any) => {
   const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
-
+  const sheetRef = useRef<any>(null);
   const handleNavigation = () => {
     navigation.goBack();
   };
-
+  console.log('geg', detailEvent);
   useEffect(() => {
     const getDetailEvent = async () => {
       try {
         const response = await AxiosInstance().get(`events/detail/${id}`);
         setDetailEvent(response.data);
+        console.log('44 ', response.data);
       } catch (e) {
         console.log(e);
       }
@@ -51,6 +55,17 @@ const EventDetailScreen = ({navigation, route}: any) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleInviteList = () => {
+    if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
+      sheetRef.current?.expand();
+      console.log('sheetRef.current', sheetRef.current);
+    } else {
+      console.error(
+        'Bottom sheet reference or present method is not available',
+      );
+    }
+  };
 
   return (
     <View style={[globalStyles.container]}>
@@ -104,10 +119,18 @@ const EventDetailScreen = ({navigation, route}: any) => {
               </View>
             </View>
           </View>
+          <View style={{width: '100%', alignItems: 'center'}}>
+            <InviteComponent onPress={handleInviteList} eventId={id} />
+          </View>
         </ImageBackground>
         <View style={styles.aboutSection}>
           <TextComponent text="Thông tin sự kiện" size={24} />
           <Text style={styles.aboutText}>{detailEvent?.description}</Text>
+          <MapPreview
+            latitude={detailEvent?.latitude}
+            longitude={detailEvent?.longitude}
+            location_map={detailEvent?.location_map}
+          />
         </View>
 
         <RatingAndReview detailEventId={detailEvent?._id} />
@@ -134,6 +157,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
           iconFlex="right"
         />
       </View>
+      <ListInviteComponent sheetRef={sheetRef} eventId={detailEvent?._id} />
     </View>
   );
 };
