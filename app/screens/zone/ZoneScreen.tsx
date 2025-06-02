@@ -19,10 +19,6 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
-// Giá vé
-const NORMAL_PRICE = 85000;
-const VIP_PRICE = 150000;
-// Mã trạng thái ghế
 enum SeatStatus {
   NORMAL = 0, // vé thường chưa đặt
   VIP = 1, // vé V.I.P chưa đặt
@@ -40,7 +36,7 @@ interface Seat {
   status: SeatStatus;
 }
 
-const ZoneScreen = () => {
+const ZoneScreen = ({navigation}) => {
   const [seats, setSeats] = useState<Seat[][]>([]);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const translateX = useSharedValue(0);
@@ -118,19 +114,10 @@ const ZoneScreen = () => {
       type: seat.area,
     }));
 
-    const bodyData = {
-      userId: '6773f10819073b07dc2f9e3d',
-      eventId: '67b9d74b04009ff26421ef45',
-      amount: selectedSeats.length,
+    navigation.navigate('Ticket', {
       seats: payload,
-    };
-
-    const response = await AxiosInstance().post(
-      '/orders/createOrder',
-      bodyData,
-    );
-
-    console.log(response.data);
+      totalPrice: totalPrice,
+    });
   };
 
   const panGesture = Gesture.Pan()
@@ -167,7 +154,7 @@ const ZoneScreen = () => {
                 if (seat.status === SeatStatus.BOOKED) {
                   bgColor = '#ccc';
                 } else if (isSelected) {
-                  bgColor = '#FF6B6B';
+                  bgColor = appColors.primary;
                 } else if (seat.status === SeatStatus.VIP) {
                   bgColor = '#7C89FF';
                 } else {
