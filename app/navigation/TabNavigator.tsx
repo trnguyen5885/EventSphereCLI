@@ -13,6 +13,7 @@ import {
 import { CircleComponent, TextComponent } from "../components";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { globalStyles } from "../constants/globalStyles";
+import PayOSQRScreen from "../screens/payment/PayOSQRScreen";
 
 const TabNavigator = () => {
   const Tab = createBottomTabNavigator();
@@ -91,6 +92,7 @@ const TabNavigator = () => {
       <Tab.Screen name="Add" component={AddEventScreen} />
       <Tab.Screen name="Địa điểm" component={MapScreen} />
       <Tab.Screen name="Thông tin" component={ProfileScreen} />
+      <Tab.Screen name="PAYOS" component={PayOSQRScreen} />
     </Tab.Navigator>
   );
 };

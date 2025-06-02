@@ -30,7 +30,7 @@ const BannerComponent = ({bannerData}: any) => {
         horizontal
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}>
-        {bannerData.map(({_id, avatar}: any) => (
+        {bannerData?.map(({_id, avatar}: any) => (
           <Pressable
             onPress={() => {
               navigation.navigate('Detail', {

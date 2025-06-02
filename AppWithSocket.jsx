@@ -51,7 +51,7 @@ import LoginOrganizerScreen from './app/screens/authOrganizer/LoginOrganizerScre
 import RegisterOrganizerScreen from './app/screens/authOrganizer/RegisterOrganizerScreen';
 import EventDetailOrganizer from './app/screens/organizer/EventDetailOrganizer';
 import EventEdit from './app/screens/organizer/EventEdit';
-
+import PayOSQRScreen from './app/screens/payment/PayOSQRScreen';
 
 import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
@@ -193,6 +193,7 @@ const AppWithSocket = () => {
           />
           <Stack.Screen name="EventEdit" component={EventEdit} />
           <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+          <Stack.Screen name="PayOSQRScreen" component={PayOSQRScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
