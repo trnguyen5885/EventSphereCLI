@@ -21,7 +21,7 @@ import {
   ProfileScreen,
   ZoneScreen,
 } from './app/screens';
-
+import SplashScreen from './app/screens/SplashScreen';
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
 import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
@@ -56,7 +56,7 @@ import OtpForgetPasswordScreen from './app/screens/auth/OtpForgetPasswordScreen'
 import ResetPasswordScreen from './app/screens/auth/ResetPasswordScreen';
 import OtpForgetPasswordOrganizerScreen from './app/screens/authOrganizer/OtpForgetPasswordOrganizerScreen';
 import ResetPasswordOrganizerScreen from './app/screens/authOrganizer/ResetPasswordOrganizerScreen';
-
+import OnbroadingScreen from './app/screens/auth/OnbroadingScreen';
 
 import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
@@ -148,7 +148,9 @@ const AppWithSocket = () => {
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           screenOptions={{headerShown: false}}
-          initialRouteName="Welcome">
+          initialRouteName="Splash">
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Onboarding" component={OnbroadingScreen} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen

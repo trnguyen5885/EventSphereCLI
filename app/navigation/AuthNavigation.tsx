@@ -1,36 +1,39 @@
-import { View, Text } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import { createStackNavigator } from '@react-navigation/stack'
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import React, {useEffect, useState} from 'react';
+import {LoginScreen} from '../screens';
+import SplashScreen from '../screens/SplashScreen';
+// import OnbroadingScreen from '../screens/auth/OnbroadingScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LoginScreen, RegisterScreen } from '../screens';
 
-const Stack = createStackNavigator();
 
-const authNavigation = () => {
+const AuthNavigator = () => {
+  const Stack = createNativeStackNavigator();
+  // const [isExistingUser, setIsExistingUser] = useState(false);
 
-    const [isExistingUser, setIsExistingUser] = useState(false);
-    useEffect(()=>{
-        checkUserExisting()
-    }, []);
+  // useEffect(() => {
+  //   checkUserExisting();
+  // }, []);
 
-    const checkUserExisting = async () => {
-        const res = await AsyncStorage.getItem('auth');
+  // const checkUserExisting = async () => {
+  //   const res = await AsyncStorage.getItem('auth');
 
-        res && setIsExistingUser(true);
-    }
+  //   res && setIsExistingUser(true);
+  // };
+
+  // console.log(isExistingUser);
 
   return (
     <Stack.Navigator
-            screenOptions={{
-                headerShown: false,
-            }}>
-            {!isExistingUser&&(
-                <Stack.Screen name="LoginScreen" component={LoginScreen} />
-            )}
-            <Stack.Screen name="LoginScreen" component={LoginScreen} />
-            <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
-        </Stack.Navigator>
-  )
-}
+      screenOptions={{
+        headerShown: false,
+      }}>
+      {/* <Stack.Screen name="OnbroadingScreen" component={OnbroadingScreen} /> */}
+      <Stack.Screen name="SplashScreen" component={SplashScreen} />
+      {/* {isExistingUser && <Stack.Screen name="OnbroadingScreen" component={OnbroadingScreen} />} */}
+      <Stack.Screen name="LoginScreen" component={LoginScreen} />
+      
+    </Stack.Navigator>
+  );
+};
 
-export default authNavigation
+export default AuthNavigator;
