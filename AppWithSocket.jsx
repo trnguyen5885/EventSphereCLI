@@ -21,7 +21,7 @@ import {
   ProfileScreen,
   ZoneScreen,
 } from './app/screens';
-
+import SplashScreen from './app/screens/SplashScreen';
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
 import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
@@ -52,7 +52,11 @@ import LoginOrganizerScreen from './app/screens/authOrganizer/LoginOrganizerScre
 import RegisterOrganizerScreen from './app/screens/authOrganizer/RegisterOrganizerScreen';
 import EventDetailOrganizer from './app/screens/organizer/EventDetailOrganizer';
 import EventEdit from './app/screens/organizer/EventEdit';
-
+import OtpForgetPasswordScreen from './app/screens/auth/OtpForgetPasswordScreen';
+import ResetPasswordScreen from './app/screens/auth/ResetPasswordScreen';
+import OtpForgetPasswordOrganizerScreen from './app/screens/authOrganizer/OtpForgetPasswordOrganizerScreen';
+import ResetPasswordOrganizerScreen from './app/screens/authOrganizer/ResetPasswordOrganizerScreen';
+import OnbroadingScreen from './app/screens/auth/OnbroadingScreen';
 
 import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
@@ -144,7 +148,9 @@ const AppWithSocket = () => {
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           screenOptions={{headerShown: false}}
-          initialRouteName="Welcome">
+          initialRouteName="Splash">
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Onboarding" component={OnbroadingScreen} />
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen
@@ -195,6 +201,10 @@ const AppWithSocket = () => {
           />
           <Stack.Screen name="EventEdit" component={EventEdit} />
           <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+          <Stack.Screen name="OtpForgetPassword" component={OtpForgetPasswordScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="OtpForgetPasswordOrganizer" component={OtpForgetPasswordOrganizerScreen} />
+          <Stack.Screen name="ResetPasswordOrganizer" component={ResetPasswordOrganizerScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

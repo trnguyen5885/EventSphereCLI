@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Switch, Image
+  View, Switch, Image,
+  Alert
 } from 'react-native';
 
 import {
@@ -11,6 +12,7 @@ import { Lock, Sms } from 'iconsax-react-native';
 import LoadingModal from '../../modals/LoadingModal';
 import { appColors } from '../../constants/appColors';
 import { loginOrganizer } from '../../services/authService';
+import { AxiosInstance } from '../../services';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess, setRememberMe, setSavedCredentials } from '../../redux/slices/authSlice';
@@ -134,6 +136,34 @@ const LoginOrganizerScreen = ({ navigation }) => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Thông báo!', 'Bạn vui lòng nhập email cần đổi mật khẩu');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await AxiosInstance().post('users/forgotPassword/request', {
+        email,
+      });
+
+      if (res.message === 'Đã gửi OTP về email') {
+        navigation.navigate('OtpForgetPasswordOrganizer', { email }); // 👈 Truyền email sang màn hình OTP
+      } else {
+        alert(res.message || 'Đã xảy ra lỗi');
+      }
+    } catch (error) {
+      if (error.response?.data?.message) {
+        Alert.alert('Thông báo', error.response.data.message); // Hiển thị thông báo như "Email chưa đăng ký"
+      } else {
+        Alert.alert('Thông báo','Email bạn nhập không đúng hoặc đã xảy ra lỗi, vui lòng thử lại!');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
 
   return (
@@ -183,7 +213,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
           </RowComponent>
           <ButtonComponent
             text="Quên mật khẩu?"
-            onPress={() => navigation.navigate('ForgotPassword')}
+            onPress={handleForgotPassword}
             type="text"
           />
         </RowComponent>
