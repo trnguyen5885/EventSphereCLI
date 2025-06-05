@@ -25,11 +25,10 @@ import {useSelector} from 'react-redux';
 const {ZaloPayModule} = NativeModules;
 
 const TicketEventScreen = ({navigation, route}: any) => {
-  const {id} = route.params;
+  const {id, totalPrice, typeBase, quantity, bookingId} = route.params;
   const [userInfo, setUserInfo] = useState<UserModel | null>();
   const [isLoading, setIsLoading] = useState(false);
   const userId = useSelector(state => state.auth.userId);
-  console.log(userId);
 
   const [eventInfo, setEventInfo] = useState<EventModel | null>(null);
   const [formData, setFormData] = useState<any>({
@@ -116,7 +115,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
         const totalAmount = calculateTotal();
         // Body for Payment
         const bodyPayment = {
-          amount: totalAmount,
+          amount: typeBase === undefined ? totalAmount : totalPrice,
           urlCalbackSuccess:
             'https://gamesphereapi.onrender.com/payments/callback',
           dataSave: 'save',
@@ -126,11 +125,15 @@ const TicketEventScreen = ({navigation, route}: any) => {
         const response = await AxiosInstance().post('/payments', bodyPayment);
         // ZALO PAY NOT RETURN DATA
         ZaloPayModule.payOrder(response.data.zp_trans_token);
+
         const bodyOrder = {
           eventId: id,
           userId: userInfo?._id,
-          amount: formData.tickets.normal,
+          bookingType: typeBase,
+          amount: typeBase === undefined ? formData.tickets.normal : quantity,
+          ...(typeBase !== undefined && {bookingId: bookingId}),
         };
+
         const responseOrder = await AxiosInstance().post(
           'orders/createOrder',
           bodyOrder,
@@ -145,11 +148,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
           bodyOrderTicket,
         );
 
-        if (
-          response.data.return_code == 1 &&
-          responseOrder.data &&
-          responseOrderTicket.data.ticketId
-        ) {
+        if (responseOrder.data && responseOrderTicket.data) {
           setTimeout(() => setIsLoading(false), 8000);
           setTimeout(() => {
             Alert.alert('Thành công', 'Thanh toán đã được xử lý thành công!', [
@@ -164,6 +163,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
           }, 8000);
         } else {
           console.log('Thanh toán không thánh công');
+          setIsLoading(false);
         }
       } catch (e) {
         console.log(e);
@@ -259,42 +259,43 @@ const TicketEventScreen = ({navigation, route}: any) => {
            </CardComponent> */}
 
         {/* Ticket Selection */}
-        <View style={styles.card}>
-          <Text style={styles.title}>Chọn loại vé</Text>
+        {typeBase === undefined ? (
+          <View style={styles.card}>
+            <Text style={styles.title}>Chọn loại vé</Text>
 
-          {/* Normal Ticket */}
-          <View style={styles.ticketType}>
-            <View style={styles.ticketInfo}>
-              <Text style={styles.ticketName}>{ticketTypes.normal.name}</Text>
-              <Text style={styles.ticketPrice}>
-                {ticketTypes.normal.price.toLocaleString('vi-VN')} VND
-              </Text>
+            {/* Normal Ticket */}
+            <View style={styles.ticketType}>
+              <View style={styles.ticketInfo}>
+                <Text style={styles.ticketName}>{ticketTypes.normal.name}</Text>
+                <Text style={styles.ticketPrice}>
+                  {ticketTypes.normal.price.toLocaleString('vi-VN')} VND
+                </Text>
+              </View>
+              <View style={styles.quantitySelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    formData.tickets.normal <= 0 && styles.buttonDisabled,
+                  ]}
+                  onPress={() => updateTicketQuantity('normal', -1)}
+                  disabled={formData.tickets.normal <= 0}>
+                  <Text style={styles.buttonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.quantity}>{formData.tickets.normal}</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    formData.tickets.normal >= 10 && styles.buttonDisabled,
+                  ]}
+                  onPress={() => updateTicketQuantity('normal', 1)}
+                  disabled={formData.tickets.normal >= 10}>
+                  <Text style={styles.buttonText}>+</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.quantitySelector}>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  formData.tickets.normal <= 0 && styles.buttonDisabled,
-                ]}
-                onPress={() => updateTicketQuantity('normal', -1)}
-                disabled={formData.tickets.normal <= 0}>
-                <Text style={styles.buttonText}>-</Text>
-              </TouchableOpacity>
-              <Text style={styles.quantity}>{formData.tickets.normal}</Text>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  formData.tickets.normal >= 10 && styles.buttonDisabled,
-                ]}
-                onPress={() => updateTicketQuantity('normal', 1)}
-                disabled={formData.tickets.normal >= 10}>
-                <Text style={styles.buttonText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
-          {/* VIP Ticket */}
-          {/*
+            {/* VIP Ticket */}
+            {/*
             <View style={styles.ticketType}>
               <View style={styles.ticketInfo}>
                 <Text style={styles.ticketName}>{ticketTypes.vip.name}</Text>
@@ -322,13 +323,14 @@ const TicketEventScreen = ({navigation, route}: any) => {
             </View>
             */}
 
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>Tổng tiền:</Text>
-            <Text style={styles.totalPrice}>
-              {calculateTotal().toLocaleString('vi-VN')} VND
-            </Text>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalLabel}>Tổng tiền:</Text>
+              <Text style={styles.totalPrice}>
+                {calculateTotal().toLocaleString('vi-VN')} VND
+              </Text>
+            </View>
           </View>
-        </View>
+        ) : null}
 
         {/* Payment Methods */}
         <View style={styles.card}>
@@ -365,9 +367,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <TouchableOpacity
           style={[
             styles.checkoutButton,
-            !isFormValid() && styles.buttonDisabled,
+            typeBase === undefined
+              ? !isFormValid() && styles.buttonDisabled
+              : null,
           ]}
-          disabled={!isFormValid()}
+          disabled={typeBase === undefined ? !isFormValid() : false}
           onPress={confirmOrder}>
           <Text style={styles.checkoutButtonText}>Thanh toán</Text>
         </TouchableOpacity>

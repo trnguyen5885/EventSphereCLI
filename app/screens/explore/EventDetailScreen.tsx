@@ -28,21 +28,20 @@ import {EventModel} from '@/app/models';
 import ListInviteComponent from './components/ListInviteComponent';
 import InviteComponent from './components/InviteComponent';
 import MapPreview from '../map/MapPreview';
+import {TypeBase} from '@/app/models/explore/ExploreModels';
 
 const EventDetailScreen = ({navigation, route}: any) => {
   const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const sheetRef = useRef<any>(null);
-  const handleNavigation = () => {
-    navigation.goBack();
-  };
+
   console.log('geg', detailEvent);
   useEffect(() => {
     const getDetailEvent = async () => {
       try {
         const response = await AxiosInstance().get(`events/detail/${id}`);
         setDetailEvent(response.data);
-        console.log('44 ', response.data);
+        console.log('Detail ', response.data);
       } catch (e) {
         console.log(e);
       }
@@ -67,11 +66,43 @@ const EventDetailScreen = ({navigation, route}: any) => {
     }
   };
 
+  const handleNavigation = (typeBase: TypeBase | undefined) => {
+    switch (typeBase) {
+      case 'seat':
+        navigation.navigate('Seats', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+        });
+        break;
+      case 'zone':
+        navigation.navigate('Zone', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+        });
+        break;
+      case 'none':
+        navigation.navigate('Ticket', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+        });
+        break;
+      default:
+        navigation.navigate('Ticket', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+        });
+    }
+  };
+
+  const handleBackNavigation = () => {
+    navigation.goBack();
+  };
+
   return (
     <View style={[globalStyles.container]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleNavigation} styles={{columnGap: 25}}>
+        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
           <Ionicons name="chevron-back" size={26} color="white" />
 
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
@@ -139,11 +170,11 @@ const EventDetailScreen = ({navigation, route}: any) => {
       <View>
         <ButtonComponent
           onPress={() => {
-            navigation.navigate('Ticket', {
-              id: detailEvent?._id,
-            });
+            handleNavigation(detailEvent?.typeBase);
           }}
-          text={`Mua vé với giá ${formatPrice(detailEvent?.ticketPrice)}`}
+          text={`Mua vé với giá ${formatPrice(
+            detailEvent?.ticketPrice ?? undefined,
+          )}`}
           type="primary"
           icon={
             <CircleComponent color={appColors.white}>

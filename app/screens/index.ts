@@ -15,7 +15,7 @@ import UserTicketsScreen from './ticket/UserTicketsScreen';
 import ListTicket from './ticket/ListTicket';
 import ProfileScreen from './profile/ProfileScreen';
 import ProfileEdit from './profile/ProfileEdit';
-import ZoneScreen from './zone/ZoneScreen';
+import SeatsScreen from './zone/SeatsScreen';
 
 export {
   // WelcomeScreen,
@@ -35,5 +35,5 @@ export {
   ListTicket,
   ProfileScreen,
   ProfileEdit,
-  ZoneScreen,
+  SeatsScreen,
 };

@@ -19,7 +19,7 @@ import {
   EventSearchScreen,
   ProfileEdit,
   ProfileScreen,
-  ZoneScreen,
+  SeatsScreen,
 } from './app/screens';
 
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
@@ -168,7 +168,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="Category" component={EventCategoryScreen} />
           <Stack.Screen name="Search" component={EventSearchScreen} />
           <Stack.Screen name="Detail" component={EventDetailScreen} />
-          <Stack.Screen name="Zone" component={ZoneScreen} />
+          <Stack.Screen name="Seats" component={SeatsScreen} />
           <Stack.Screen name="Ticket" component={TicketEventScreen} />
           <Stack.Screen name="Payment" component={PaymentScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />

@@ -36,7 +36,8 @@ interface Seat {
   status: SeatStatus;
 }
 
-const ZoneScreen = ({navigation}) => {
+const SeatsScreen = ({navigation, route}: any) => {
+  const {id, typeBase} = route.params;
   const [seats, setSeats] = useState<Seat[][]>([]);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const translateX = useSharedValue(0);
@@ -46,13 +47,15 @@ const ZoneScreen = ({navigation}) => {
 
   useEffect(() => {
     fetchSeatsFromApi();
+
+    return () => {
+      setSelectedSeats([]);
+    };
   }, []);
 
   const fetchSeatsFromApi = async () => {
     try {
-      const response = await AxiosInstance().get(
-        '/events/getZone/67b9d74b04009ff26421ef45',
-      );
+      const response = await AxiosInstance().get(`/events/getZone/${id}`);
 
       const seatObjects = response.zones[0].layout.seats.map((item: any) => {
         let status: SeatStatus;
@@ -109,15 +112,44 @@ const ZoneScreen = ({navigation}) => {
   }, [selectedSeats]);
 
   const handleBookTicket = async () => {
-    const payload = selectedSeats.map(seat => ({
-      seatId: seat.id,
-      type: seat.area,
-    }));
+    try {
+      const payload = selectedSeats.map(seat => ({
+        seatId: seat.id,
+        type: seat.area,
+      }));
 
-    navigation.navigate('Ticket', {
-      seats: payload,
-      totalPrice: totalPrice,
-    });
+      const response = await AxiosInstance().post('/zones/reserveSeats', {
+        eventId: id,
+        seats: payload,
+        totalPrice: totalPrice,
+      });
+
+      navigation.navigate('Ticket', {
+        id: id, // EventID
+        typeBase: typeBase, // typeBase Event
+        totalPrice: totalPrice,
+        quantity: selectedSeats.length,
+        bookingId: response.bookingId,
+      });
+    } catch (error) {
+      if (error.response?.status === 409) {
+        Alert.alert(
+          'Ghế đã được đặt',
+          'Một số ghế bạn chọn đã được người khác đặt. Vui lòng chọn ghế khác.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setSelectedSeats([]);
+                fetchSeatsFromApi();
+              },
+            },
+          ],
+        );
+      } else {
+        Alert.alert('Lỗi', 'Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.');
+      }
+    }
   };
 
   const panGesture = Gesture.Pan()
@@ -373,4 +405,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ZoneScreen;
+export default SeatsScreen;

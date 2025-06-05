@@ -6,9 +6,11 @@ import { appColors } from '../../constants/appColors';
 
 const ListTicket = ({ navigation, route }) => {
     const { event, user } = route.params;
-    const ticket = event?.tickets?.[0] || {};
+    const tickets = event?.tickets;
+    console.log(tickets);
 
     return (
+        <ScrollView>
         <View style={styles.container}>
             <View style={styles.header}>
                       <StatusBar animated backgroundColor={appColors.primary} />
@@ -16,7 +18,8 @@ const ListTicket = ({ navigation, route }) => {
                           <Text style = {styles.headerTitle} >Thông tin vé sự kiện</Text>
                       </RowComponent>
             </View>
-            <View style={styles.ticket}>
+            {tickets.map((ticket) => (
+                <View style={styles.ticket}>
                 <Text style={styles.cinemaName}>{event.location}</Text>
                 <Text style={styles.movieTitle}>{event.name}</Text>
                 {/* <Image
@@ -49,6 +52,7 @@ const ListTicket = ({ navigation, route }) => {
                     Đưa mã này cho nhân viên soát vé để nhận vé vào sự kiện
                 </Text>
             </View>
+            ))}
             <View style={styles.recipientInfo}>
                 <Text style={styles.recipientHeader}>Thông tin người nhận</Text>
                 <View style={styles.recipientDetail}>
@@ -65,6 +69,7 @@ const ListTicket = ({ navigation, route }) => {
                 </View>
             </View>
         </View>
+        </ScrollView>
     );
 };
 
