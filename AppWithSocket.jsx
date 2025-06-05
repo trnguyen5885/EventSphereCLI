@@ -52,6 +52,10 @@ import LoginOrganizerScreen from './app/screens/authOrganizer/LoginOrganizerScre
 import RegisterOrganizerScreen from './app/screens/authOrganizer/RegisterOrganizerScreen';
 import EventDetailOrganizer from './app/screens/organizer/EventDetailOrganizer';
 import EventEdit from './app/screens/organizer/EventEdit';
+import OtpForgetPasswordScreen from './app/screens/auth/OtpForgetPasswordScreen';
+import ResetPasswordScreen from './app/screens/auth/ResetPasswordScreen';
+import OtpForgetPasswordOrganizerScreen from './app/screens/authOrganizer/OtpForgetPasswordOrganizerScreen';
+import ResetPasswordOrganizerScreen from './app/screens/authOrganizer/ResetPasswordOrganizerScreen';
 
 
 import { useDispatch } from 'react-redux';
@@ -195,6 +199,10 @@ const AppWithSocket = () => {
           />
           <Stack.Screen name="EventEdit" component={EventEdit} />
           <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+          <Stack.Screen name="OtpForgetPassword" component={OtpForgetPasswordScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="OtpForgetPasswordOrganizer" component={OtpForgetPasswordOrganizerScreen} />
+          <Stack.Screen name="ResetPasswordOrganizer" component={ResetPasswordOrganizerScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

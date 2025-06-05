@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Switch, Text, Image } from 'react-native';
+import { View, Switch, Text, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { appColors } from '../../constants/appColors';
 import { Lock, Sms } from 'iconsax-react-native';
@@ -33,39 +33,39 @@ const LoginScreen = ({ navigation }) => {
 
   // 🔹 Load email & password nếu "Remember Me" đã được bật
   useEffect(() => {
-      const autoLoginIfRemembered = async () => {
-        if (auth.rememberMe && auth.savedCredentials) {
-          const { email, password } = auth.savedCredentials;
-          setEmail(email);
-          setPassword(password);
-          setIsRemember(true);
-  
-          // Tự động đăng nhập
-          setIsLoading(true);
-          try {
-            const response = await loginUser(email, password);
-            if (response.status === 200 && response.data.role === 3) {
-              dispatch(
-                loginSuccess({
-                  userId: response.data.id,
-                  userData: response.data,
-                })
-              );
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Drawer' }],
-              });
-            }
-          } catch (e) {
-            console.log("Auto login failed:", e.message);
-          } finally {
-            setIsLoading(false);
+    const autoLoginIfRemembered = async () => {
+      if (auth.rememberMe && auth.savedCredentials) {
+        const { email, password } = auth.savedCredentials;
+        setEmail(email);
+        setPassword(password);
+        setIsRemember(true);
+
+        // Tự động đăng nhập
+        setIsLoading(true);
+        try {
+          const response = await loginUser(email, password);
+          if (response.status === 200 && response.data.role === 3) {
+            dispatch(
+              loginSuccess({
+                userId: response.data.id,
+                userData: response.data,
+              })
+            );
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Drawer' }],
+            });
           }
+        } catch (e) {
+          console.log("Auto login failed:", e.message);
+        } finally {
+          setIsLoading(false);
         }
-      };
-  
-      autoLoginIfRemembered();
-    }, []);
+      }
+    };
+
+    autoLoginIfRemembered();
+  }, []);
 
   const validateInputs = () => {
     let isValid = true;
@@ -127,6 +127,36 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Thông báo!', 'Bạn vui lòng nhập email cần đổi mật khẩu');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await AxiosInstance().post('users/forgotPassword/request', {
+        email,
+      });
+
+      if (res.message === 'Đã gửi OTP về email') {
+        navigation.navigate('OtpForgetPassword', { email }); // 👈 Truyền email sang màn hình OTP
+      } else {
+        alert(res.message || 'Đã xảy ra lỗi');
+      }
+    } catch (error) {
+      if (error.response?.data?.message) {
+        Alert.alert('Thông báo', error.response.data.message); // Hiển thị thông báo như "Email chưa đăng ký"
+      } else {
+        Alert.alert('Thông báo', 'Email bạn nhập không đúng hoặc đã xảy ra lỗi, vui lòng thử lại!');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   return (
     <ContainerComponent isImageBackground isScroll>
       <SectionComponent>
@@ -178,9 +208,10 @@ const LoginScreen = ({ navigation }) => {
           </RowComponent>
           <ButtonComponent
             text="Quên mật khẩu?"
-            onPress={() => navigation.navigate('ForgotPassword')}
+            onPress={handleForgotPassword}
             type="text"
           />
+
         </RowComponent>
       </SectionComponent>
       <SpaceComponent height={16} />
