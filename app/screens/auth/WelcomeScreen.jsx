@@ -100,7 +100,7 @@ const WelcomeScreen = ({ navigation }) => {
             size={28} 
             title 
             text="Chào mừng bạn!" 
-            color={appColors.white}
+            color={appColors.primary || '#4A90E2'}
             styles={styles.welcomeText}
           />
           <SpaceComponent height={8} />
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'white',
   },
   headerSection: {
     flex: 1.2,
@@ -192,21 +192,21 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   logoContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
     padding: 10,
     backgroundColor: 'white',
     borderRadius: 20,
     backdropFilter: 'blur(10px)',
   },
   logo: {
-    width: 150,
-    height: 150,
+    width: 200,
+    height: 200,
   },
   welcomeText: {
     textAlign: 'center',
     fontFamily: fontFamilies.bold,
     fontWeight: '700',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
