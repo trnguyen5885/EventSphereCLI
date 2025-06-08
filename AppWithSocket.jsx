@@ -26,8 +26,6 @@ import WelcomeScreen from './app/screens/auth/WelcomeScreen';
 import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview';
-import Filter from './app/screens/filter/Filter';
-import FilteredEventScreen from './app/screens/filter/FilteredEventScreeen';
 import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 import OtpOrganizerVerificationScreen from './app/screens/authOrganizer/OtpOrganizerVerificationScreen';
 

@@ -173,7 +173,7 @@ const ExploreScreen = ({navigation}: any) => {
           (eventItem: EventModel) =>
             now >= eventItem.timeStart && now <= eventItem.timeEnd,
         );
-        setEventsIscoming(response);
+        setEventsIscoming(ongoingEvents);
         const upcomingEvents = response.filter(
           (eventItem: EventModel) => eventItem.timeStart > now,
         );

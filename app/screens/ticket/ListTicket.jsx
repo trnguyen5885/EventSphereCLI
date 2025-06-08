@@ -47,6 +47,7 @@ const ListTicket = ({ navigation, route }) => {
                 </RowComponent>
                 <View style={styles.details}>
                     <Text>Số vé: {ticket.amount || 'N/A'}</Text>
+                    <Text>Số ghế: {ticket.seat.seatId}</Text>
                 </View>
                 <Text style={styles.instruction}>
                     Đưa mã này cho nhân viên soát vé để nhận vé vào sự kiện
