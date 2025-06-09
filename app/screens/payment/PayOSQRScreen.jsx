@@ -3,9 +3,11 @@ import { View, Text, Button, ActivityIndicator, StyleSheet, Alert } from 'react-
 import QRCode from 'react-native-qrcode-svg';
 import createPaymentQRCode from '../../services/createPaymentQRCode';
 import checkPaymentStatus from '../../services/checkPaymentStatus';
+import {AxiosInstance} from '../../services';
+
 
 const PayOSQRScreen = ({ route, navigation }) => {
-  const { amount, eventName } = route.params;
+  const { amount, eventName, userId, eventId } = route.params;
   const [qrData, setQrData] = useState(null);
   const [orderCode, setOrderCode] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -22,10 +24,36 @@ const PayOSQRScreen = ({ route, navigation }) => {
           if (status === 'PAID') {
             clearInterval(interval);
 
+             const bodyOrder = {
+             eventId: eventId,
+             userId: userId,
+             amount: amount,
+            };
+
+           const responseOrder = await AxiosInstance().post('orders/createOrder',bodyOrder);
+
+           const bodyOrderTicket = {
+            orderId: responseOrder.data,
+            paymentId: "67bbc5a3ac06033b9e2ab3e9",
+          };
+
+          const responseOrderTicket = await AxiosInstance().post('orders/createTicket',bodyOrderTicket);
+
+            
+
             // ✅ Log toàn bộ response khi đã thanh toán
             console.log('✅ Thông tin đơn hàng sau thanh toán:', fullResponse);
+            console.log('Tạo vé thành công', responseOrderTicket.data)
 
-            Alert.alert('✅ Thành công', 'Bạn đã thanh toán thành công!');
+            Alert.alert('✅ Thành công', 'Bạn đã thanh toán thành công!', [
+               {
+                text: 'OK',
+                onPress: () => {
+                  // Chỉ quay lại khi người dùng bấm OK
+                  navigation.navigate('Drawer');
+                },
+              },
+            ]);
           }
         } catch (err) {
           console.log('❌ Lỗi khi kiểm tra đơn hàng:', err);
@@ -37,7 +65,8 @@ const PayOSQRScreen = ({ route, navigation }) => {
 
 
   const handleGenerateQR = async () => {
-    setLoading(true);
+    try {
+       setLoading(true);
     const result = await createPaymentQRCode(amount, eventName);
 
     setLoading(false);
@@ -47,6 +76,12 @@ const PayOSQRScreen = ({ route, navigation }) => {
       setOrderCode(result.orderCode); // cần để check status
     } else {
       Alert.alert('Lỗi', 'Không tạo được mã QR thanh toán.');
+    }
+    } catch(e) {
+      console.log(e)
+      setLoading(false)
+    } finally {
+      setLoading(false)
     }
   };
 

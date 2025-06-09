@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -11,22 +11,21 @@ import {
   NativeModules,
   Alert,
 } from 'react-native';
-import { CardComponent, RowComponent } from '../../components';
-import { appColors } from '../../constants/appColors';
-import { globalStyles } from '../../constants/globalStyles';
-import { AxiosInstance } from '../../services';
-import { formatDate } from '../../services/utils/date';
+import {CardComponent, RowComponent} from '../../components';
+import {appColors} from '../../constants/appColors';
+import {globalStyles} from '../../constants/globalStyles';
+import {AxiosInstance} from '../../services';
+import {formatDate} from '../../services/utils/date';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LoadingModal from '../../modals/LoadingModal';
-import { UserModel } from '@/app/models/user/UserModel';
-import { EventModel } from '@/app/models';
-import { useSelector } from 'react-redux';
-import PayOSQRScreen from '../payment/PayOSQRScreen';
+import {UserModel} from '@/app/models/user/UserModel';
+import {EventModel} from '@/app/models';
+import {useSelector} from 'react-redux';
 
-const { ZaloPayModule } = NativeModules;
+const {ZaloPayModule} = NativeModules;
 
-const TicketEventScreen = ({ navigation, route }: any) => {
-  const { id } = route.params;
+const TicketEventScreen = ({navigation, route}: any) => {
+  const {id} = route.params;
   const [userInfo, setUserInfo] = useState<UserModel | null>();
   const [isLoading, setIsLoading] = useState(false);
   const userId = useSelector(state => state.auth.userId);
@@ -180,11 +179,12 @@ const TicketEventScreen = ({ navigation, route }: any) => {
     if (formData.paymentMethod === 'payos') {
       const totalAmount = calculateTotal();
       navigation.navigate('PayOSQRScreen', {
-        amount: totalAmount,
         eventName: eventInfo?.name || 'Thanh toán vé',
+        eventId: id,
+        userId: userInfo?._id,
+        amount: totalAmount,
       });
     }
-
   };
 
   if (isLoading) {
@@ -194,7 +194,7 @@ const TicketEventScreen = ({ navigation, route }: any) => {
   return (
     <View style={[globalStyles.container]}>
       <View style={styles.header}>
-        <RowComponent onPress={handleNavigation} styles={{ columnGap: 25 }}>
+        <RowComponent onPress={handleNavigation} styles={{columnGap: 25}}>
           <Ionicons name="chevron-back" size={26} color="white" />
           <Text style={styles.headerTitle}>Thanh toán</Text>
         </RowComponent>
@@ -344,7 +344,7 @@ const TicketEventScreen = ({ navigation, route }: any) => {
               styles.paymentMethod,
               formData.paymentMethod === 'zalo' && styles.selectedPayment,
             ]}
-            onPress={() => setFormData({ ...formData, paymentMethod: 'zalo' })}>
+            onPress={() => setFormData({...formData, paymentMethod: 'zalo'})}>
             <Text style={styles.paymentText}>Zalo Pay</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -352,7 +352,7 @@ const TicketEventScreen = ({ navigation, route }: any) => {
               styles.paymentMethod,
               formData.paymentMethod === 'payos' && styles.selectedPayment,
             ]}
-            onPress={() => setFormData({ ...formData, paymentMethod: 'payos' })}>
+            onPress={() => setFormData({...formData, paymentMethod: 'payos'})}>
             <Text style={styles.paymentText}>PayOS</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -361,7 +361,7 @@ const TicketEventScreen = ({ navigation, route }: any) => {
               formData.paymentMethod === 'banking' && styles.selectedPayment,
             ]}
             onPress={() =>
-              setFormData({ ...formData, paymentMethod: 'banking' })
+              setFormData({...formData, paymentMethod: 'banking'})
             }>
             <Text style={styles.paymentText}>Chuyển khoản ngân hàng</Text>
           </TouchableOpacity>
