@@ -27,10 +27,10 @@ import {
   Sort,
 } from 'iconsax-react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { fontFamilies } from '../../constants/fontFamilies';
+import {fontFamilies} from '../../constants/fontFamilies';
 import CategoriesList from '../../components/CategoriesList';
 import EventItem from '../../components/EventItem';
-import { AxiosInstance } from '../../services';
+import {AxiosInstance} from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
 import Geolocation from '@react-native-community/geolocation'; // Import Geolocation
@@ -39,7 +39,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
 import {EventModel} from '@/app/models';
 
-const ExploreScreen = ({ navigation }: any) => {
+const ExploreScreen = ({navigation}: any) => {
   const [eventsIscoming, setEventsIscoming] = useState<EventModel[]>();
   const [eventsUpcoming, setEventsUpcoming] = useState<EventModel[]>();
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
@@ -197,18 +197,18 @@ const ExploreScreen = ({ navigation }: any) => {
     try {
       const body = {
         eventId: id,
-        type: "view"
-      }
+        type: 'view',
+      };
       await AxiosInstance().post('interactions/addInteraction', body);
     } catch (e) {
-      console.log("Error handle interaction: ", e)
+      console.log('Error handle interaction: ', e);
     }
-  }
+  };
 
   if (isLoading) {
     return <LoadingModal visible={true} />;
   }
-  
+
   return (
     <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
       <StatusBar
@@ -223,7 +223,7 @@ const ExploreScreen = ({ navigation }: any) => {
           borderBottomRightRadius: 40,
           paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
         }}>
-        <View style={{ marginBottom: 7, paddingHorizontal: 16 }}>
+        <View style={{marginBottom: 7, paddingHorizontal: 16}}>
           <RowComponent>
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
@@ -252,7 +252,7 @@ const ExploreScreen = ({ navigation }: any) => {
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('FriendSearchScreen')}
-              style={{ marginRight: 8 }}>
+              style={{marginRight: 8}}>
               <CircleComponent color="#524CE0" size={36}>
                 <MaterialIcons name="group" size={24} color={appColors.white} />
               </CircleComponent>
@@ -329,46 +329,45 @@ const ExploreScreen = ({ navigation }: any) => {
         <BannerComponent bannerData={eventsIscoming} />
 
         {populateEvents && (
-            <>
-              <View
-                style={[
-                  globalStyles.row,
-                  styles.paddingContent,
-                  { marginTop: 15, justifyContent: 'space-between' },
-                ]}>
-                <TextComponent text="Sự kiện nổi bật" size={18} title />
-              </View>
+          <>
+            <View
+              style={[
+                globalStyles.row,
+                styles.paddingContent,
+                {marginTop: 15, justifyContent: 'space-between'},
+              ]}>
+              <TextComponent text="Sự kiện nổi bật" size={18} title />
+            </View>
 
-              <FlatList
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-                data={populateEvents}
-                renderItem={({ item }) => (
-                  <EventItem
-                    onPress={() => {
-                      handleInteraction(item._id);
-                      navigation.navigate('Detail', {
-                        id: item.eventId,
-                      });
-                    }}
-                    type="card"
-                    item={item}
-                  />
-                )}
-              />
-            </>
-          )}
+            <FlatList
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+              data={populateEvents}
+              renderItem={({item}) => (
+                <EventItem
+                  onPress={() => {
+                    handleInteraction(item._id);
+                    navigation.navigate('Detail', {
+                      id: item.eventId,
+                    });
+                  }}
+                  type="card"
+                  item={item}
+                />
+              )}
+            />
+          </>
+        )}
 
         <View
           style={[
             globalStyles.row,
             styles.paddingContent,
-            { marginTop: 15, justifyContent: 'space-between' },
+            {marginTop: 15, justifyContent: 'space-between'},
           ]}>
-
           <TextComponent text="Sự kiện đang diễn ra" size={18} title />
-          <RowComponent onPress={() => { }}>
+          <RowComponent onPress={() => {}}>
             <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
             <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
           </RowComponent>
@@ -379,7 +378,7 @@ const ExploreScreen = ({ navigation }: any) => {
           nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
           data={eventsIscoming}
-          renderItem={({ item }) => (
+          renderItem={({item}) => (
             <EventItem
               onPress={() => {
                 handleInteraction(item._id);
@@ -399,10 +398,10 @@ const ExploreScreen = ({ navigation }: any) => {
               style={[
                 globalStyles.row,
                 styles.paddingContent,
-                { marginTop: 15, justifyContent: 'space-between' },
+                {marginTop: 15, justifyContent: 'space-between'},
               ]}>
               <TextComponent text="Sự kiện sắp diễn ra" size={18} title />
-              <RowComponent onPress={() => { }}>
+              <RowComponent onPress={() => {}}>
                 <TextComponent
                   text="Xem thêm"
                   size={16}
@@ -417,7 +416,7 @@ const ExploreScreen = ({ navigation }: any) => {
               nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
               data={eventsUpcoming}
-              renderItem={({ item }) => (
+              renderItem={({item}) => (
                 <EventItem
                   onPress={() => {
                     handleInteraction(item._id);

@@ -11,17 +11,17 @@ const UserTicketsScreen = ({navigation, route}) => {
     const [tickets, setTickets] = useState([]);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [eventsIscoming, setEventsIscoming] = useState([]);
-    const [eventsUpcoming, setEventsUpcoming] = useState([]);
+    const userId = useSelector(state => state.auth.userId);
 
     useEffect(()=>{
         const getTickets = async() =>{
             try{
-                const userId = await AsyncStorage.getItem("userId");
                 const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
                 setUserData(tickets.data.user);
                 setEvents(tickets.data.events);
+                console.log(tickets.data.events);
                 setLoading(false);
+                
   
             }catch(e){
                 console.log("Lấy vé thất bại: ", e);
@@ -30,15 +30,7 @@ const UserTicketsScreen = ({navigation, route}) => {
         getTickets();
     }, []);
 
-    if (loading) {
-        return <ActivityIndicator size="large" color="#007BFF" />;
-      }
-      const timeStart = () => {
-        const ongoingEvents = response.data.filter(eventItem => now >= eventItem.timeStart && now <= eventItem.timeEnd);
-      setEventsIscoming(ongoingEvents)
-      const upcomingEvents = response.data.filter(eventItem => eventItem.timeStart > now);
-      setEventsUpcoming(upcomingEvents);
-      }
+    if (loading) {return <ActivityIndicator size="large" color="#007BFF" />}
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: "#f5f5f5" }}>
       <FlatList

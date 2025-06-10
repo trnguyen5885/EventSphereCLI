@@ -18,6 +18,7 @@ export interface EventModel {
     timeStart: number,
     soldTicket: number,
     eventId: string
+    typeBase: TypeBase
 }
 
 interface MapEvent {
@@ -25,6 +26,6 @@ interface MapEvent {
     coordinates: Array<number>
 }
 
-export interface EventCommentModel {
-}
+export type TypeBase = 'seat' | 'zone' | 'none'
+
 

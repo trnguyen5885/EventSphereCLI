@@ -19,14 +19,13 @@ import {
   EventSearchScreen,
   ProfileEdit,
   ProfileScreen,
+  SeatsScreen,
 } from './app/screens';
 
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
 import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview';
-import Filter from './app/screens/filter/Filter';
-import FilteredEventScreen from './app/screens/filter/FilteredEventScreeen';
 import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 import OtpOrganizerVerificationScreen from './app/screens/authOrganizer/OtpOrganizerVerificationScreen';
 
@@ -167,6 +166,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="Category" component={EventCategoryScreen} />
           <Stack.Screen name="Search" component={EventSearchScreen} />
           <Stack.Screen name="Detail" component={EventDetailScreen} />
+          <Stack.Screen name="Seats" component={SeatsScreen} />
           <Stack.Screen name="Ticket" component={TicketEventScreen} />
           <Stack.Screen name="Payment" component={PaymentScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
