@@ -77,6 +77,16 @@ const TicketEventScreen = ({navigation, route}: any) => {
     };
   }, [userId, id]);
 
+  // Reset loading khi quay lại màn hình
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log("🔄 Màn hình TicketEvent được focus lại");
+      setIsLoading(false); // Reset loading state
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const updateTicketQuantity = (type: string, change: number) => {
     const newQuantity = formData.tickets[type] + change;
     if (newQuantity >= 0 && newQuantity <= 10) {
@@ -110,8 +120,9 @@ const TicketEventScreen = ({navigation, route}: any) => {
 
   const confirmOrder = async () => {
     setIsLoading(true);
-    if (formData.paymentMethod === 'zalo') {
-      try {
+    
+    try {
+      if (formData.paymentMethod === 'zalo') {
         const totalAmount = calculateTotal();
         // Body for Payment
         const bodyPayment = {
@@ -165,19 +176,29 @@ const TicketEventScreen = ({navigation, route}: any) => {
           console.log('Thanh toán không thánh công');
           setIsLoading(false);
         }
-      } catch (e) {
-        console.log(e);
-        setIsLoading(false);
       }
-    }
 
-    if (formData.paymentMethod === 'banking') {
-      navigation.navigate('PaymentQRCode', {
-        amount: eventInfo?.ticketPrice,
-      });
-    }
-    if (formData.paymentMethod === 'momo') {
-      console.log('momo');
+      if (formData.paymentMethod === 'banking') {
+        setIsLoading(false); // Reset loading trước khi navigate
+        navigation.navigate('PaymentQRCode', {
+          amount: eventInfo?.ticketPrice,
+        });
+      }
+      
+      if (formData.paymentMethod === 'payos') {
+        const totalAmount = calculateTotal();
+        setIsLoading(false); // Reset loading trước khi navigate
+        navigation.navigate('PayOSQRScreen', {
+          eventName: eventInfo?.name || 'Thanh toán vé',
+          eventId: id,
+          userId: userInfo?._id,
+          amount: totalAmount,
+        });
+      }
+    } catch (error) {
+      console.log('Lỗi khi thanh toán:', error);
+      setIsLoading(false);
+      Alert.alert('Lỗi', 'Có lỗi xảy ra trong quá trình thanh toán');
     }
   };
 
@@ -224,40 +245,6 @@ const TicketEventScreen = ({navigation, route}: any) => {
           </View>
         </CardComponent>
 
-        {/* Personal Information */}
-        {/* <CardComponent styles = {{
-                shadowColor: '#000',
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                elevation: 5,
-             }}>
-
-              <Text style={styles.title}>Thông tin cá nhân</Text>
-              <TextInput
-                  style={styles.input}
-                  placeholder="Họ và tên"
-                  value={formData.fullName}
-                  onChangeText={(text) => setFormData({...formData, fullName: text})}
-              />
-              <TextInput
-                  style={styles.input}
-                  placeholder="Số điện thoại"
-                  keyboardType="phone-pad"
-                  value={formData.phone}
-                  onChangeText={(text) => setFormData({...formData, phone: text})}
-              />
-              <TextInput
-                  style={styles.input}
-                  placeholder="Email"
-                  value={formData.email}
-                  onChangeText={(text) => setFormData({...formData, email: text})}
-              />
-           </CardComponent> */}
-
         {/* Ticket Selection */}
         {typeBase === undefined ? (
           <View style={styles.card}>
@@ -293,7 +280,6 @@ const TicketEventScreen = ({navigation, route}: any) => {
                 </TouchableOpacity>
               </View>
             </View>
-
             {/* VIP Ticket */}
             {/*
             <View style={styles.ticketType}>
@@ -346,10 +332,10 @@ const TicketEventScreen = ({navigation, route}: any) => {
           <TouchableOpacity
             style={[
               styles.paymentMethod,
-              formData.paymentMethod === 'momo' && styles.selectedPayment,
+              formData.paymentMethod === 'payos' && styles.selectedPayment,
             ]}
-            onPress={() => setFormData({...formData, paymentMethod: 'momo'})}>
-            <Text style={styles.paymentText}>Momo</Text>
+            onPress={() => setFormData({...formData, paymentMethod: 'payos'})}>
+            <Text style={styles.paymentText}>PayOS</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
