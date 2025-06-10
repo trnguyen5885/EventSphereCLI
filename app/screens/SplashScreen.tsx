@@ -15,7 +15,7 @@ import { appColors } from '../constants/appColors';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
-  const { userData } = useSelector(state => state.auth);
+  const { userData, rememberMe } = useSelector(state => state.auth); // ✅ Lấy thêm rememberMe
 
   useEffect(() => {
     const checkFirstLaunchAndNavigate = async () => {
@@ -33,7 +33,8 @@ const SplashScreen = () => {
           });
         } else {
           // Không phải lần đầu, kiểm tra đăng nhập
-          if (userData) {
+          // ✅ Chỉ tự động đăng nhập khi có userData VÀ rememberMe = true
+          if (userData && rememberMe) {
             if (userData.role === 3) {
               navigation.reset({
                 index: 0,
@@ -42,7 +43,7 @@ const SplashScreen = () => {
             } else if (userData.role === 2) {
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'LoginOrganizer' }],
+                routes: [{ name: 'OrganizerTabs' }],
               });
             } else {
               navigation.reset({
@@ -51,6 +52,7 @@ const SplashScreen = () => {
               });
             }
           } else {
+            // ✅ Nếu không có rememberMe hoặc không có userData thì về Welcome
             navigation.reset({
               index: 0,
               routes: [{ name: 'Welcome' }],
@@ -61,13 +63,13 @@ const SplashScreen = () => {
         console.error('Error checking first launch:', error);
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Login' }],
+          routes: [{ name: 'Welcome' }],
         });
       }
     };
 
     checkFirstLaunchAndNavigate();
-  }, [navigation, userData]);
+  }, [navigation, userData, rememberMe]); // ✅ Thêm rememberMe vào dependency
 
   return (
     <ImageBackground
