@@ -19,6 +19,7 @@ import { saveTokens } from '../../../app/token/authTokens';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess, setRememberMe, setSavedCredentials } from '../../redux/slices/authSlice';
 import { loginUser } from '../../services/authService';
+import SocialLogin from './Components/SocialLogin';
 
 const LoginScreen = ({navigation}) => {
   const [useId, setUseId] = useState('');
@@ -160,7 +161,7 @@ const LoginScreen = ({navigation}) => {
       <SectionComponent>
         <ButtonComponent onPress={handleLogin} text="SIGN IN" type="primary" />
       </SectionComponent>
-      {/* <SocialLogin /> */}
+      <SocialLogin navigation={navigation} />
       <SectionComponent>
         <RowComponent justify="center">
           <TextComponent text="Don't have an account?" />

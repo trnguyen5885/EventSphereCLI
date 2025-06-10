@@ -129,9 +129,19 @@ const AppWithSocket = () => {
     }
   }, [token]);
 
+  const linking = {
+    prefixes: ['demozpdk://'],
+    config: {
+      screens: {
+        Home: '../screens/explore/ExploreScreen',
+        Detail: '../screens/explore/EventDetailScreen/:id',
+      },
+    },
+  };
+
   return (
     <GestureHandlerRootView style={styles.root}>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer ref={navigationRef} linking={linking}>
         <Stack.Navigator
           screenOptions={{ headerShown: false }}
           initialRouteName="Welcome"
