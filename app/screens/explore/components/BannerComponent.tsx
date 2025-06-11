@@ -45,7 +45,7 @@ const BannerComponent = ({bannerData}: any) => {
       </ScrollView>
 
       <View style={styles.dotsContainer}>
-        {bannerData.map(
+        {bannerData?.map(
           (item: {_id: React.Key | null | undefined}, index: number) => {
             const activeDot = activeIndex === index;
             return (
