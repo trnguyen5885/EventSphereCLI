@@ -1,62 +1,55 @@
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  Image,
-  Dimensions,
-  Pressable,
-} from 'react-native';
-import React, {useState} from 'react';
-import {appColors} from '../../../constants/appColors';
+import React, {useRef} from 'react';
+import {View, Image, ImageBackground, Dimensions, Pressable, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-
+import {appColors} from '../../../constants/appColors';
+import Carousel from 'react-native-snap-carousel';
 const {width} = Dimensions.get('window');
 
 const BannerComponent = ({bannerData}: any) => {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const carouselRef = useRef<any>(null);
   const navigation = useNavigation();
 
-  const handleScroll = (event: {nativeEvent: {contentOffset: {x: any}}}) => {
-    const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const currentIndex = Math.round(contentOffsetX / width);
-    setActiveIndex(currentIndex);
+  const renderItem = ({item}: any) => {
+    return (
+      <Pressable
+        key={item._id}
+        onPress={() => {
+          navigation.navigate('Detail', {
+            id: item._id,
+          });
+        }}
+        style={styles.imageContainer}>
+        <ImageBackground 
+          style={styles.imageBackground}
+          blurRadius={10}
+          source={{uri: item.avatar}}>
+          <View style={styles.overlay}>
+            <Image style={styles.image} source={{uri: item.avatar}} />
+          </View>
+        </ImageBackground>
+      </Pressable>
+    );
   };
+
   return (
     <View style={styles.container}>
-      <ScrollView
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        pagingEnabled
-        horizontal
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}>
-        {bannerData?.map(({_id, avatar}: any) => (
-          <Pressable
-            onPress={() => {
-              navigation.navigate('Detail', {
-                id: _id,
-              });
-            }}
-            style={styles.imageContainer}
-            key={_id}>
-            <Image style={styles.image} source={{uri: avatar}} />
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <View style={styles.dotsContainer}>
-        {bannerData?.map(
-          (item: {_id: React.Key | null | undefined}, index: number) => {
-            const activeDot = activeIndex === index;
-            return (
-              <View
-                key={item._id}
-                style={[styles.dot, activeDot ? styles.activeDot : null]}
-              />
-            );
-          },
-        )}
-      </View>
+      <Carousel
+        ref={carouselRef}
+        data={bannerData}
+        renderItem={renderItem}
+        sliderWidth={width}
+        itemWidth={width * 0.8} // giảm width để có không gian cho ảnh 2 bên
+        inactiveSlideScale={0.85} // scale ảnh kế cận
+        inactiveSlideOpacity={0.6} // opacity ảnh kế cận
+        containerCustomStyle={styles.carouselContainer}
+        contentContainerCustomStyle={styles.carouselContentContainer}
+        layout="default" // đổi từ "stack" sang "default"
+        activeSlideAlignment="center" // căn giữa slide active
+        enableMomentum={false}
+        decelerationRate={0.9}
+        loop={true}
+        activeSlideOffset={20} // khoảng cách để hiển thị ảnh kế cận
+      />
     </View>
   );
 };
@@ -67,30 +60,45 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 15,
     width: width,
+    alignItems: 'center',
   },
   imageContainer: {
-    width: width,
+    width: '100%',
     height: 220,
-    padding: 5,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginHorizontal: 5, // thêm margin để tạo khoảng cách
+  },
+  imageBackground: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlay: {
+    width: '90%',
+    height: '90%',
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 5, // shadow cho Android
+    shadowColor: '#000', // shadow cho iOS
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   image: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
+    resizeMode: 'cover',
   },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
+  carouselContainer: {
+    overflow: 'visible', // để thấy ảnh kế cận
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(86, 105, 255, 0.5)',
-    marginHorizontal: 3,
-  },
-  activeDot: {
-    backgroundColor: appColors.primary,
+  carouselContentContainer: {
+    paddingVertical: 10,
+    paddingHorizontal: 10, // thêm padding ngang
   },
 });
