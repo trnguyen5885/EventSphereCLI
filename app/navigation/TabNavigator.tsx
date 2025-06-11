@@ -54,41 +54,15 @@ const TabNavigator = () => {
               icon = <MaterialIcons name="person" size={size} color={color} />;
               break;
 
-            case "Add":
-              icon = (
-                <CircleComponent
-                  size={52}
-                  styles={[
-                    globalStyles.shadow,
-                    { marginTop: Platform.OS === "ios" ? -50 : -60 },
-                  ]}>
-                  <MaterialIcons name="add" size={24} color={appColors.white} />
-                </CircleComponent>
-              );
-              break;
           }
           return icon;
         },
         tabBarIconStyle: {
           marginTop: 8,
         },
-        tabBarLabel({ focused }) {
-          return route.name === "Add" ? null : (
-            <TextComponent
-              text={route.name}
-              flex={0}
-              size={12}
-              color={focused ? appColors.primary : appColors.gray5}
-              styles={{
-                marginBottom: Platform.OS === "android" ? 12 : 0,
-              }}
-            />
-          );
-        },
       })}>
       <Tab.Screen name="Khám phá" component={ExploreScreen} />
       <Tab.Screen name="Sự kiện" component={EventScreen} />
-      <Tab.Screen name="Add" component={AddEventScreen} />
       <Tab.Screen name="Địa điểm" component={MapScreen} />
       <Tab.Screen name="Thông tin" component={ProfileScreen} />
     </Tab.Navigator>
