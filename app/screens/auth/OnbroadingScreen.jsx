@@ -1,30 +1,22 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TouchableOpacity,
-  Animated,
-  Easing,
-} from 'react-native';
 import React, {useState, useRef} from 'react';
+import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import Swiper from 'react-native-swiper';
-import {globalStyles} from '../../constants/globalStyles';
-import {Dimensions} from 'react-native';
 import {appColors} from '../../constants/appColors';
+import {appInfo} from '../../constants/appInfos';
+import {globalStyles} from '../../constants/globalStyles';
+import {TextComponent} from '../../components';
 import {fontFamilies} from '../../constants/fontFamilies';
 
-const {width, height} = Dimensions.get('window');
-
-const OnbroadingScreen = ({navigation}) => {
+const OnboardingScreen = ({navigation}) => {
   const [index, setIndex] = useState(0);
   const swiperRef = useRef(null);
 
   const handleNext = () => {
     if (index < 2) {
-      // Sử dụng scrollBy để có animation mượt mà từ phải sang trái
-      swiperRef.current?.scrollBy(1, true);
+      // Chuyển đến slide tiếp theo với hiệu ứng
+      swiperRef.current?.scrollBy(1);
     } else {
+      // Ảnh cuối cùng, chuyển đến màn hình Welcome
       navigation.navigate('Welcome');
     }
   };
@@ -38,74 +30,64 @@ const OnbroadingScreen = ({navigation}) => {
       <Swiper
         ref={swiperRef}
         style={{}}
-        showsButtons={false}
         loop={false}
-        index={index}
         onIndexChanged={num => setIndex(num)}
+        index={index}
         activeDotColor={appColors.white}
-        dotColor={appColors.gray2}
-        // Cấu hình cho animation mượt mà
-        scrollEnabled={true}
-        removeClippedSubviews={false}
-        loadMinimal={false}
-        // Tùy chỉnh animation transition
-        autoplayTimeout={0}
         showsPagination={true}
         paginationStyle={styles.pagination}
         dotStyle={styles.dot}
         activeDotStyle={styles.activeDot}
-      >
+        // Cấu hình hiệu ứng chuyển ảnh
+        scrollEnabled={true}
+        removeClippedSubviews={false}
+        autoplay={false}>
         <Image
-          source={require('../../../assets/images/onboarding-4.png')}
+          source={require('../../../assets/images/onboarding-1.png')}
           style={styles.image}
         />
-
         <Image
-          source={require('../../../assets/images/onboarding-5.png')}
+          source={require('../../../assets/images/onboarding-2.png')}
           style={styles.image}
         />
-
         <Image
-          source={require('../../../assets/images/onboarding-6.png')}
+          source={require('../../../assets/images/onboarding-3.png')}
           style={styles.image}
         />
       </Swiper>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          onPress={handleSkip}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.skipText}>
-            Skip
-          </Text>
+      
+      <View style={styles.bottomContainer}>
+        <TouchableOpacity onPress={handleSkip} style={styles.button}>
+          <TextComponent
+            text="Bỏ qua"
+            color={appColors.gray2}
+            font={fontFamilies.medium}
+          />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleNext}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.nextText}>
-            {index === 2 ? 'Get Started' : 'Next'}
-          </Text>
+        
+        <TouchableOpacity onPress={handleNext} style={styles.button}>
+          <TextComponent
+            text={index === 2 ? "Bắt đầu" : "Tiếp theo"}
+            color={appColors.white}
+            font={fontFamilies.medium}
+          />
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-export default OnbroadingScreen;
+export default OnboardingScreen;
 
 const styles = StyleSheet.create({
   image: {
     flex: 1,
-    resizeMode: 'contain',
-    width: width,
-    height: height * 0.95, // Giảm chiều cao xuống 85% để tránh bị che
-    alignSelf: 'center',
+    width: appInfo.sizes.WIDTH,
+    height: appInfo.sizes.HEIGHT,
+    resizeMode: 'cover',
   },
-  buttonContainer: {
-    paddingHorizontal: 40,
+  bottomContainer: {
+    paddingHorizontal: 16,
     paddingVertical: 20,
     position: 'absolute',
     bottom: 20,
@@ -115,37 +97,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  skipText: {
-    color: appColors.gray5,
-    fontFamily: fontFamilies.medium,
-    fontSize: 16,
-  },
-  nextText: {
-    color: appColors.white,
-    fontFamily: fontFamilies.medium,
-    fontSize: 16,
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   pagination: {
-    bottom: 45,
+    bottom: 50, // Đẩy dots lên trên buttons
   },
   dot: {
-    backgroundColor: appColors.gray2,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     width: 8,
     height: 8,
     borderRadius: 4,
     marginLeft: 3,
     marginRight: 3,
-    marginTop: 3,
-    marginBottom: 3,
   },
   activeDot: {
     backgroundColor: appColors.white,
-    width: 12,
+    width: 20,
     height: 8,
     borderRadius: 4,
     marginLeft: 3,
     marginRight: 3,
-    marginTop: 3,
-    marginBottom: 3,
+  },
+  text: {
+    color: appColors.white,
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

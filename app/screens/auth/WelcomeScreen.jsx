@@ -84,7 +84,7 @@ const WelcomeScreen = ({ navigation }) => {
       >
         <View style={styles.logoContainer}>
           <Image 
-            source={require("../../../assets/images/logo.png")} 
+            source={require("../../../assets/images/EventSphere.png")} 
             style={styles.logo}
             resizeMode="contain"
           />

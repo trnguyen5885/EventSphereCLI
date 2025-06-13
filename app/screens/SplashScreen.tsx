@@ -77,10 +77,9 @@ const SplashScreen = () => {
       style={styles.background}
       imageStyle={{ flex: 1 }}>
       <Image
-        source={require('../../assets/images/logo.png')}
+        source={require('../../assets/images/EventSphere.png')}
         style={styles.logo}
       />
-      <SpaceComponent height={16} />
       <ActivityIndicator color={appColors.gray} size={22} />
     </ImageBackground>
   );
