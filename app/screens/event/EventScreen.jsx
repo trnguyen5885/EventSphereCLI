@@ -4,23 +4,24 @@ import { useState } from 'react'
 import { useEffect } from 'react';
 import { appColors } from '../../constants/appColors';
 import { RowComponent } from '../../components';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import AxiosInstance  from '../../services/api/AxiosInstance';
+import {useSelector} from 'react-redux';
+
 
 const EventScreen = ({navigation}) => {
    const [userData, setUserData] = useState(null);
    const [events, setEvents] = useState([]);
    const [loading, setLoading] = useState(true);
+   const userId = useSelector(state => state.auth.userId);
 
   
 
    useEffect(()=>{
     const getTickets = async() =>{
         try{
-            const userId = await AsyncStorage.getItem('userId');
-            const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
-            setUserData(tickets.data.user);
-            setEvents(tickets.data.events);
+            const response = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
+            setUserData(response.data.user);
+            setEvents(response.data.events);
             setLoading(false);
 
         }catch(e){
