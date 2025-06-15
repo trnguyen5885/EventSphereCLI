@@ -1,85 +1,83 @@
 import React, { useEffect, useState } from 'react';
-import { View, Switch, Text, Image } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { appColors } from '../../constants/appColors';
-import { Lock, Sms } from 'iconsax-react-native';
 import {
-  ContainerComponent,
-  SectionComponent,
-  TextComponent,
-  RowComponent,
-  ButtonComponent,
-  SpaceComponent,
-  InputComponent,
-} from '../../components/index';
+  View, Switch, Image,
+  Alert
+} from 'react-native';
+
+import {
+  ContainerComponent, SectionComponent, TextComponent, RowComponent,
+  ButtonComponent, SpaceComponent, InputComponent
+} from '../../components';
+import { Lock, Sms } from 'iconsax-react-native';
 import LoadingModal from '../../modals/LoadingModal';
+import { appColors } from '../../constants/appColors';
+import { loginOrganizer, loginUser } from '../../services/authService';
 import { AxiosInstance } from '../../services';
-import { HandleNotification } from '../../utils/handleNotification';
-import { saveTokens } from '../../../app/token/authTokens';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess, setRememberMe, setSavedCredentials } from '../../redux/slices/authSlice';
-import { loginUser } from '../../services/authService';
+import SocialLogin from './Components/SocialLogin';
+
 
 const LoginScreen = ({ navigation }) => {
-  const [useId, setUseId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [isRemember, setIsRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const dispatch = useDispatch();
   const auth = useSelector(state => state.auth);
+  const [isRemember, setIsRemember] = useState(false);
+  const [res, setRes] = useState({});
 
-  // 🔹 Load email & password nếu "Remember Me" đã được bật
+
   useEffect(() => {
-      const autoLoginIfRemembered = async () => {
-        if (auth.rememberMe && auth.savedCredentials) {
-          const { email, password } = auth.savedCredentials;
-          setEmail(email);
-          setPassword(password);
-          setIsRemember(true);
-  
-          // Tự động đăng nhập
-          setIsLoading(true);
-          try {
-            const response = await loginUser(email, password);
-            if (response.status === 200 && response.data.role === 3) {
-              dispatch(
-                loginSuccess({
-                  userId: response.data.id,
-                  userData: response.data,
-                })
-              );
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Drawer' }],
-              });
-            }
-          } catch (e) {
-            console.log("Auto login failed:", e.message);
-          } finally {
-            setIsLoading(false);
+    const autoLoginIfRemembered = async () => {
+      if (auth.rememberMe && auth.savedCredentials) {
+        const { email, password } = auth.savedCredentials;
+        setEmail(email);
+        setPassword(password);
+        setIsRemember(true);
+
+        // Tự động đăng nhập
+        setIsLoading(true);
+        try {
+          const response = await loginOrganizer(email, password);
+          if (response.status === 200 && response.data.role === 3) {
+            dispatch(
+              loginSuccess({
+                userId: response.data.id,
+                userData: response.data,
+              })
+            );
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Drawer' }],
+            });
           }
+        } catch (e) {
+          console.log("Auto login failed:", e.message);
+        } finally {
+          setIsLoading(false);
         }
-      };
-  
-      autoLoginIfRemembered();
-    }, []);
+      }
+    };
+
+    autoLoginIfRemembered();
+  }, []);
+
 
   const validateInputs = () => {
     let isValid = true;
     if (!email.trim()) {
       setEmailError('Vui lòng nhập email');
       isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('Email không hợp lệ');
+      isValid = false;
     } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setEmailError('Email không hợp lệ');
-        isValid = false;
-      } else {
-        setEmailError('');
-      }
+      setEmailError('');
     }
 
     if (!password.trim()) {
@@ -91,41 +89,83 @@ const LoginScreen = ({ navigation }) => {
     } else {
       setPasswordError('');
     }
+
     return isValid;
   };
 
   const handleLogin = async () => {
     if (!validateInputs()) return;
-
     setIsLoading(true);
+
     try {
-      const res = await loginUser(email, password); // 👈 sử dụng loginUser
-      const { id, token, refreshToken, role, ...userData } = res.data;
+      const response = await loginUser(email, password); // Gọi API đăng nhập
 
-      dispatch(
-        loginSuccess({
-          userId: id,
-          userData,
-          role,
-        }),
-      );
+      if (response.status === 200) {
+        const { id, token, refreshToken, role } = response.data;
 
-      if (isRemember) {
-        dispatch(setRememberMe(true));
-        dispatch(setSavedCredentials({ email, password }));
+        if (role !== 3) {
+          setPasswordError('Tài khoản không phải người dùng');
+          return;
+        }
+
+        // Lưu dữ liệu người dùng vào redux
+        dispatch(
+          loginSuccess({
+            userId: id,
+            userData: response.data,
+          })
+        );
+
+        // Lưu thông tin ghi nhớ tài khoản nếu cần
+        if (isRemember) {
+          dispatch(setRememberMe(true));
+          dispatch(setSavedCredentials({ email, password }));
+        } else {
+          dispatch(setRememberMe(false));
+          dispatch(setSavedCredentials({ email: '', password: '' }));
+        }
+
+        // Điều hướng sang màn hình chính
+        navigation.navigate('Drawer');
       } else {
-        dispatch(setRememberMe(false));
-        dispatch(setSavedCredentials(null));
+        setPasswordError('Đăng nhập thất bại');
       }
-
-      navigation.navigate('Drawer'); // hoặc navigation.reset(...)
-    } catch (e) {
-      console.log(e);
-      setPasswordError('Email hoặc mật khẩu không chính xác');
+    } catch (error) {
+      setPasswordError(error.message || 'Đăng nhập thất bại');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Thông báo!', 'Bạn vui lòng nhập email cần đổi mật khẩu');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await AxiosInstance().post('users/forgotPassword/request', {
+        email,
+      });
+
+      if (res.message === 'Đã gửi OTP về email') {
+        navigation.navigate('OtpForgetPassword', { email }); // 👈 Truyền email sang màn hình OTP
+      } else {
+        alert(res.message || 'Đã xảy ra lỗi');
+      }
+    } catch (error) {
+      if (error.response?.data?.message) {
+        Alert.alert('Thông báo', error.response.data.message); // Hiển thị thông báo như "Email chưa đăng ký"
+      } else {
+        Alert.alert('Thông báo','Email bạn nhập không đúng hoặc đã xảy ra lỗi, vui lòng thử lại!');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
 
   return (
     <ContainerComponent isImageBackground isScroll>
@@ -141,7 +181,6 @@ const LoginScreen = ({ navigation }) => {
         <InputComponent
           value={email}
           placeholder="Email"
-
           onChange={val => {
             setEmail(val);
             setEmailError('');
@@ -162,10 +201,7 @@ const LoginScreen = ({ navigation }) => {
           allowClear
           affix={<Lock size={22} color={appColors.gray} />}
         />
-        {passwordError ? (
-          <TextComponent color="red" text={passwordError} />
-        ) : null}
-        <SpaceComponent height={5} />
+        {passwordError ? <TextComponent color="red" text={passwordError} /> : null}
         <RowComponent justify="space-between">
           <RowComponent onPress={() => setIsRemember(!isRemember)}>
             <Switch
@@ -178,26 +214,24 @@ const LoginScreen = ({ navigation }) => {
           </RowComponent>
           <ButtonComponent
             text="Quên mật khẩu?"
-            onPress={() => navigation.navigate('ForgotPassword')}
+            onPress={handleForgotPassword}
             type="text"
           />
         </RowComponent>
-      </SectionComponent>
-      <SpaceComponent height={16} />
-      <SectionComponent>
+        <SpaceComponent height={16} />
         <ButtonComponent onPress={handleLogin} text="ĐĂNG NHẬP" type="primary" />
       </SectionComponent>
-      {/* <SocialLogin /> */}
       <SectionComponent>
         <RowComponent justify="center">
           <TextComponent text="Chưa có tài khoản?" />
           <ButtonComponent
             type="link"
             text=" Đăng ký ngay"
-            onPress={() => navigation.navigate('Register')}
+            onPress={() => navigation.navigate('RegisterOrganizer')}
           />
         </RowComponent>
       </SectionComponent>
+      
       <LoadingModal visible={isLoading} />
     </ContainerComponent>
   );

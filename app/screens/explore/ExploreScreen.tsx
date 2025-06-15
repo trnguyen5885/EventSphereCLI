@@ -11,9 +11,9 @@ import {
   PermissionsAndroid,
   Linking,
 } from 'react-native';
-import React, {useEffect, useState, useCallback} from 'react';
-import {globalStyles} from '../../constants/globalStyles';
-import {appColors} from '../../constants/appColors';
+import React, { useEffect, useState, useCallback } from 'react';
+import { globalStyles } from '../../constants/globalStyles';
+import { appColors } from '../../constants/appColors';
 import {
   CircleComponent,
   RowComponent,
@@ -35,9 +35,9 @@ import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
 import Geolocation from '@react-native-community/geolocation'; // Import Geolocation
 import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
-import {useFocusEffect} from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
 
 const ExploreScreen = ({navigation}: any) => {
   const [eventsIscoming, setEventsIscoming] = useState<EventModel[]>();
@@ -80,7 +80,7 @@ const ExploreScreen = ({navigation}: any) => {
                 style: 'cancel',
               },
             ],
-            {cancelable: false},
+            { cancelable: false },
           );
         }
       } catch (err) {
@@ -113,7 +113,7 @@ const ExploreScreen = ({navigation}: any) => {
     const apiKey = 'pJ2xud8j3xprqVfQZLFKjGV51MPH60VjRuZh1i3F';
     const url = `https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=${apiKey}`;
     try {
-      const response = await axios.get(url, {timeout: 10000});
+      const response = await axios.get(url, { timeout: 10000 });
       if (response?.data?.results?.length > 0) {
         const address = response.data.results[0];
         setAddress(address);
@@ -129,10 +129,10 @@ const ExploreScreen = ({navigation}: any) => {
   const getLocation = () => {
     Geolocation.getCurrentPosition(
       position => {
-        const {latitude, longitude} = position.coords;
+        const { latitude, longitude } = position.coords;
         console.log('ExploreScreen 107 | UserLocation:', latitude, longitude);
         // Cập nhật state
-        setLocation({latitude, longitude});
+        setLocation({ latitude, longitude });
         // Gọi API Geocoding với giá trị đúng
         getAddressFromCoordinates(latitude, longitude);
       },
@@ -218,9 +218,9 @@ const ExploreScreen = ({navigation}: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 178 + (Platform.OS === 'ios' ? 16 : 0),
-          borderBottomLeftRadius: 40,
-          borderBottomRightRadius: 40,
+          height: 140 + (Platform.OS === 'ios' ? 16 : 0),
+          borderBottomLeftRadius: 35,
+          borderBottomRightRadius: 35,
           paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
         }}>
         <View style={{marginBottom: 7, paddingHorizontal: 16}}>
@@ -228,7 +228,7 @@ const ExploreScreen = ({navigation}: any) => {
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
             </TouchableOpacity>
-            <View style={{flex: 1, alignItems: 'center'}}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
               <TouchableOpacity onPress={requestLocationPermission}>
                 <RowComponent>
                   <TextComponent
@@ -288,7 +288,7 @@ const ExploreScreen = ({navigation}: any) => {
           <RowComponent>
             <RowComponent
               onPress={() => navigation.navigate('Search')}
-              styles={{flex: 1}}>
+              styles={{ flex: 1 }}>
               <SearchNormal1
                 variant="TwoTone"
                 size={22}
@@ -319,7 +319,7 @@ const ExploreScreen = ({navigation}: any) => {
             </RowComponent>
           </RowComponent>
         </View>
-        <CategoriesList isColor={true} />
+
       </View>
 
       <ScrollView
@@ -334,11 +334,36 @@ const ExploreScreen = ({navigation}: any) => {
               style={[
                 globalStyles.row,
                 styles.paddingContent,
-                {marginTop: 15, justifyContent: 'space-between'},
+                { justifyContent: 'space-between' },
               ]}>
               <TextComponent text="Sự kiện nổi bật" size={18} title />
+              <RowComponent onPress={() => { }}>
+                <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
+                <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
+              </RowComponent>
             </View>
 
+            <FlatList
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+              data={populateEvents}
+              renderItem={({ item }) => (
+                <EventItem
+                  onPress={() => {
+                    handleInteraction(item._id);
+                    navigation.navigate('Detail', {
+                      id: item.eventId,
+                    });
+                  }}
+                  type="card"
+                  item={item}
+                />
+              )}
+            />
+          </>
+        )}
+       
             <FlatList
               horizontal
               nestedScrollEnabled
