@@ -33,7 +33,9 @@ import {TypeBase} from '@/app/models/explore/ExploreModels';
 const EventDetailScreen = ({navigation, route}: any) => {
   const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
+  const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
   const sheetRef = useRef<any>(null);
+  console.log(detailEvent?._id);
 
   console.log('geg', detailEvent);
   useEffect(() => {
@@ -72,24 +74,35 @@ const EventDetailScreen = ({navigation, route}: any) => {
         navigation.navigate('Seats', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
         });
         break;
       case 'zone':
         navigation.navigate('Zone', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
         });
         break;
       case 'none':
         navigation.navigate('Ticket', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
+        });
+        break;
+      case undefined:
+        navigation.navigate('Ticket', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
         });
         break;
       default:
         navigation.navigate('Ticket', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
         });
     }
   };
@@ -154,6 +167,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
             <InviteComponent onPress={handleInviteList} eventId={id} />
           </View>
         </ImageBackground>
+
         <View style={styles.aboutSection}>
           <TextComponent text="Thông tin sự kiện" size={24} />
           <Text style={styles.aboutText}>{detailEvent?.description}</Text>
@@ -163,6 +177,41 @@ const EventDetailScreen = ({navigation, route}: any) => {
             location_map={detailEvent?.location_map}
           />
         </View>
+
+        {detailEvent?.showtimes && detailEvent?.showtimes.length > 0 && (
+          <View style={{marginTop: 20, paddingHorizontal: 20}}>
+            <TextComponent
+              text="Chọn suất chiếu"
+              size={20}
+              styles={{marginBottom: 10}}
+            />
+            <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 10}}>
+              {detailEvent.showtimes.map(showTime => (
+                <TouchableOpacity
+                  key={showTime._id}
+                  onPress={() => setSelectedShowtimeId(showTime._id)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    backgroundColor:
+                      selectedShowtimeId === showTime._id
+                        ? appColors.primary
+                        : '#E5E7EB',
+                    borderRadius: 8,
+                  }}>
+                  <Text
+                    style={{
+                      color:
+                        selectedShowtimeId === showTime._id ? 'white' : 'black',
+                      fontWeight: '600',
+                    }}>
+                    {showTime._id}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         <RatingAndReview detailEventId={detailEvent?._id} />
       </ScrollView>

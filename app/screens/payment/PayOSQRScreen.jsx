@@ -10,12 +10,22 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { globalStyles } from '../../constants/globalStyles';
 
 const PayOSQRScreen = ({ route, navigation }) => {
-  const { amount, eventName, userId, eventId } = route.params;
+  const { amount, eventName, userId, eventId, bookingType, bookingId, totalPrice } = route.params;
   const [qrData, setQrData] = useState(null);
   const [orderCode, setOrderCode] = useState(null);
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('PENDING'); // PENDING, CHECKING, PAID, ERROR
   const [intervalRef, setIntervalRef] = useState(null); // Lưu reference của interval
+  
+  console.log("Amount", amount);
+  console.log("EventName", eventName)
+  console.log("UserId", userId)
+  console.log("EventId", eventId)
+  console.log("BookingType", bookingType)
+  console.log("BookingId", bookingId)
+
+
+  
 
   // Hàm tạo QR Code
   const handleGenerateQR = async () => {
@@ -68,7 +78,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
             clearInterval(interval);
             setIntervalRef(null);
 
-            // Tui lôi thông báo ra để test, nó nằm trong khúc tạo đơn hàng ở dưới á
             setTimeout(() => {
                 Alert.alert(
                   '✅ Thành công',
@@ -87,53 +96,56 @@ const PayOSQRScreen = ({ route, navigation }) => {
               }, 100);
 
             // Tạo đơn hàng và vé sau khi thanh toán thành công
-            // try {
-            //   console.log("🏗️ Đang tạo đơn hàng...");
-            //   const bodyOrder = {
-            //     eventId: eventId,
-            //     userId: userId,
-            //     amount: amount,
-            //   };
+            try {
+              console.log("🏗️ Đang tạo đơn hàng...");
+              const bodyOrder = {
+                eventId: eventId,
+                userId: userId,
+                amount: amount,
+                bookingType: bookingType ?? 'none',
+                ...((bookingType !== undefined || bookingType !== null || bookingType !== 'none') && {bookingId: bookingId}),
+                totalPrice: totalPrice
+              };
 
-            //   const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
-            //   console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
+              const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
+              console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
 
-            //   const bodyOrderTicket = {
-            //     orderId: responseOrder.data,
-            //     paymentId: "67bbc5a3ac06033b9e2ab3e9",
-            //   };
+              const bodyOrderTicket = {
+                orderId: responseOrder.data,
+                paymentId: "67bbc5a3ac06033b9e2ab3e9",
+              };
 
-            //   const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
-            //   console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
+              const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
+              console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
 
-            //   // ✅ Log toàn bộ response khi đã thanh toán
-            //   console.log('✅ Thông tin đơn hàng sau thanh toán:', fullResponse);
+              // ✅ Log toàn bộ response khi đã thanh toán
+              console.log('✅ Thông tin đơn hàng sau thanh toán:', fullResponse);
 
-            //   console.log("🎉 Chuẩn bị hiển thị Alert...");
+              console.log("🎉 Chuẩn bị hiển thị Alert...");
 
-            //   // Đảm bảo Alert được gọi trên UI thread
-            //   setTimeout(() => {
-            //     Alert.alert(
-            //       '✅ Thành công',
-            //       'Bạn đã thanh toán thành công!',
-            //       [
-            //         {
-            //           text: 'OK',
-            //           onPress: () => {
-            //             console.log("👆 User đã nhấn OK, chuyển về Drawer");
-            //             navigation.navigate('Drawer');
-            //           },
-            //         },
-            //       ],
-            //       { cancelable: false } // Không cho phép đóng bằng cách tap bên ngoài
-            //     );
-            //   }, 100);
+              // Đảm bảo Alert được gọi trên UI thread
+              setTimeout(() => {
+                Alert.alert(
+                  '✅ Thành công',
+                  'Bạn đã thanh toán thành công!',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        console.log("👆 User đã nhấn OK, chuyển về Drawer");
+                        navigation.navigate('Drawer');
+                      },
+                    },
+                  ],
+                  { cancelable: false } // Không cho phép đóng bằng cách tap bên ngoài
+                );
+              }, 100);
 
-            // } catch (orderError) {
-            //   console.log('❌ Lỗi khi tạo đơn hàng/vé:', orderError);
-            //   setPaymentStatus('ERROR');
-            //   Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng liên hệ hỗ trợ.');
-            // }
+            } catch (orderError) {
+              console.log('❌ Lỗi khi tạo đơn hàng/vé:', orderError);
+              setPaymentStatus('ERROR');
+              Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng liên hệ hỗ trợ.');
+            }
           } else {
             console.log("⏳ Đơn hàng chưa được thanh toán, trạng thái:", status);
             setPaymentStatus('PENDING');

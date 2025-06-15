@@ -37,8 +37,12 @@ interface Seat {
 }
 
 const SeatsScreen = ({navigation, route}: any) => {
-  const {id, typeBase} = route.params;
+  const {id, typeBase, showtimeId} = route.params;
   const [seats, setSeats] = useState<Seat[][]>([]);
+  const [zoneId, setZoneId] = useState();
+  const [isLoading, setIsLoading] = useState(false);
+  const [bookingId, setBookingId] = useState();
+
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -55,7 +59,9 @@ const SeatsScreen = ({navigation, route}: any) => {
 
   const fetchSeatsFromApi = async () => {
     try {
-      const response = await AxiosInstance().get(`/events/getZone/${id}`);
+      const response = await AxiosInstance().get(
+        `/events/getZone/${id}?showtimeId=${showtimeId}`,
+      );
 
       const seatObjects = response.zones[0].layout.seats.map((item: any) => {
         let status: SeatStatus;
@@ -86,12 +92,13 @@ const SeatsScreen = ({navigation, route}: any) => {
       }
 
       setSeats(grouped);
+      setZoneId(response.zones[0]._id);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách ghế:', error);
     }
   };
 
-  const handleSeatPress = (rowIndex: number, colIndex: number) => {
+  const handleSeatPress = async (rowIndex: number, colIndex: number) => {
     const seat = seats[rowIndex][colIndex];
     if (seat.status === SeatStatus.BOOKED) return;
 
@@ -102,8 +109,47 @@ const SeatsScreen = ({navigation, route}: any) => {
       newSelected.splice(existingIndex, 1);
       setSelectedSeats(newSelected);
     } else {
-      // Thêm vào danh sách chọn
-      setSelectedSeats([...selectedSeats, seat]);
+      try {
+        setIsLoading(true);
+        // Thêm vào danh sách chọn
+        const response = await AxiosInstance().post('/zones/reserveSeats', {
+          eventId: id,
+          showtimeId: showtimeId,
+          seat: {
+            seatId: seat.id,
+            zoneId: zoneId,
+          },
+          action: 'select',
+        });
+        setBookingId(response.bookingId);
+        if (response.message === 'Ghế đã được chọn trước đó.') {
+          Alert.alert(
+            'Lỗi',
+            'Bạn đang chọn ghế này trước đó vui lòng thử lại sau 1 phút',
+          );
+        } else {
+          setSelectedSeats([...selectedSeats, seat]);
+        }
+        setIsLoading(false);
+      } catch (error) {
+        if (error.response?.status === 409) {
+          Alert.alert(
+            'Ghế đã được đặt',
+            'Một số ghế bạn chọn đã được người khác đặt. Vui lòng chọn ghế khác.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setSelectedSeats([]);
+                  fetchSeatsFromApi();
+                },
+              },
+            ],
+          );
+        } else {
+          Alert.alert('Lỗi', 'Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.');
+        }
+      }
     }
   };
 
@@ -118,38 +164,14 @@ const SeatsScreen = ({navigation, route}: any) => {
         type: seat.area,
       }));
 
-      const response = await AxiosInstance().post('/zones/reserveSeats', {
-        eventId: id,
-        seats: payload,
-        totalPrice: totalPrice,
-      });
-
       navigation.navigate('Ticket', {
         id: id, // EventID
         typeBase: typeBase, // typeBase Event
         totalPrice: totalPrice,
         quantity: selectedSeats.length,
-        bookingId: response.bookingId,
+        bookingId: bookingId,
       });
-    } catch (error) {
-      if (error.response?.status === 409) {
-        Alert.alert(
-          'Ghế đã được đặt',
-          'Một số ghế bạn chọn đã được người khác đặt. Vui lòng chọn ghế khác.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setSelectedSeats([]);
-                fetchSeatsFromApi();
-              },
-            },
-          ],
-        );
-      } else {
-        Alert.alert('Lỗi', 'Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.');
-      }
-    }
+    } catch (error) {}
   };
 
   const panGesture = Gesture.Pan()

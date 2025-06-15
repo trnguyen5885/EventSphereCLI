@@ -326,7 +326,7 @@ const ExploreScreen = ({navigation}: any) => {
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         style={{flex: 1, paddingTop: 25}}>
-        <BannerComponent bannerData={eventsIscoming} />
+        <BannerComponent bannerData={populateEvents} />
 
         {populateEvents && (
           <>
@@ -360,39 +360,47 @@ const ExploreScreen = ({navigation}: any) => {
           </>
         )}
 
-        <View
-          style={[
-            globalStyles.row,
-            styles.paddingContent,
-            {marginTop: 15, justifyContent: 'space-between'},
-          ]}>
-          <TextComponent text="Sự kiện đang diễn ra" size={18} title />
-          <RowComponent onPress={() => {}}>
-            <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
-            <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
-          </RowComponent>
-        </View>
+        {eventsIscoming && eventsIscoming.length > 0 && (
+          <>
+            <View
+              style={[
+                globalStyles.row,
+                styles.paddingContent,
+                {marginTop: 15, justifyContent: 'space-between'},
+              ]}>
+              <TextComponent text="Sự kiện đang diễn ra" size={18} title />
+              <RowComponent onPress={() => {}}>
+                <TextComponent
+                  text="Xem thêm"
+                  size={16}
+                  color={appColors.gray}
+                />
+                <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
+              </RowComponent>
+            </View>
 
-        <FlatList
-          horizontal
-          nestedScrollEnabled
-          showsHorizontalScrollIndicator={false}
-          data={eventsIscoming}
-          renderItem={({item}) => (
-            <EventItem
-              onPress={() => {
-                handleInteraction(item._id);
-                navigation.navigate('Detail', {
-                  id: item._id,
-                });
-              }}
-              type="card"
-              item={item}
+            <FlatList
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+              data={eventsIscoming}
+              renderItem={({item}) => (
+                <EventItem
+                  onPress={() => {
+                    handleInteraction(item._id);
+                    navigation.navigate('Detail', {
+                      id: item._id,
+                    });
+                  }}
+                  type="card"
+                  item={item}
+                />
+              )}
             />
-          )}
-        />
+          </>
+        )}
 
-        {eventsUpcoming && (
+        {eventsUpcoming && eventsUpcoming.length > 0 && (
           <>
             <View
               style={[

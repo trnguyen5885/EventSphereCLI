@@ -17,8 +17,9 @@ export interface EventModel {
     timeEnd: number,
     timeStart: number,
     soldTicket: number,
-    eventId: string
-    typeBase: TypeBase
+    eventId: string,
+    typeBase: TypeBase,
+    showtimes: any[]
 }
 
 interface MapEvent {

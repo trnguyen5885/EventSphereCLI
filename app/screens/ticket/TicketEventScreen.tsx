@@ -25,7 +25,7 @@ import {useSelector} from 'react-redux';
 const {ZaloPayModule} = NativeModules;
 
 const TicketEventScreen = ({navigation, route}: any) => {
-  const {id, totalPrice, typeBase, quantity, bookingId} = route.params;
+  const {id, typeBase, totalPrice, quantity, bookingId} = route.params;
   const [userInfo, setUserInfo] = useState<UserModel | null>();
   const [isLoading, setIsLoading] = useState(false);
   const userId = useSelector(state => state.auth.userId);
@@ -80,7 +80,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
   // Reset loading khi quay lại màn hình
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      console.log("🔄 Màn hình TicketEvent được focus lại");
+      console.log('🔄 Màn hình TicketEvent được focus lại');
       setIsLoading(false); // Reset loading state
     });
 
@@ -120,13 +120,13 @@ const TicketEventScreen = ({navigation, route}: any) => {
 
   const confirmOrder = async () => {
     setIsLoading(true);
-    
+
     try {
       if (formData.paymentMethod === 'zalo') {
         const totalAmount = calculateTotal();
         // Body for Payment
         const bodyPayment = {
-          amount: typeBase === undefined ? totalAmount : totalPrice,
+          amount: typeBase === undefined ? totalAmount : quantity,
           urlCalbackSuccess:
             'https://gamesphereapi.onrender.com/payments/callback',
           dataSave: 'save',
@@ -140,9 +140,18 @@ const TicketEventScreen = ({navigation, route}: any) => {
         const bodyOrder = {
           eventId: id,
           userId: userInfo?._id,
-          bookingType: typeBase,
-          amount: typeBase === undefined ? formData.tickets.normal : quantity,
-          ...(typeBase !== undefined && {bookingId: bookingId}),
+          bookingType: typeBase ?? 'none',
+          amount:
+            typeBase === undefined || typeBase === null || typeBase === 'none'
+              ? formData.tickets.normal
+              : quantity,
+          ...((typeBase !== undefined ||
+            typeBase !== null ||
+            typeBase !== 'none') && {bookingId: bookingId}),
+          totalPrice:
+            typeBase === undefined || typeBase === null || typeBase === 'none'
+              ? calculateTotal()
+              : totalPrice,
         };
 
         const responseOrder = await AxiosInstance().post(
@@ -184,7 +193,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
           amount: eventInfo?.ticketPrice,
         });
       }
-      
+
       if (formData.paymentMethod === 'payos') {
         const totalAmount = calculateTotal();
         setIsLoading(false); // Reset loading trước khi navigate
@@ -192,7 +201,19 @@ const TicketEventScreen = ({navigation, route}: any) => {
           eventName: eventInfo?.name || 'Thanh toán vé',
           eventId: id,
           userId: userInfo?._id,
-          amount: totalAmount,
+          amount:
+            typeBase === undefined || typeBase === null || typeBase === 'none'
+              ? totalAmount
+              : totalPrice,
+          bookingType: typeBase,
+          bookingId:
+            typeBase === undefined || typeBase === null || typeBase === 'none'
+              ? null
+              : bookingId,
+          totalPrice:
+            typeBase === undefined || typeBase === null || typeBase === 'none'
+              ? calculateTotal()
+              : totalPrice,
         });
       }
     } catch (error) {
@@ -246,7 +267,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
         </CardComponent>
 
         {/* Ticket Selection */}
-        {typeBase === undefined ? (
+        {typeBase === undefined || typeBase === null || typeBase === 'none' ? (
           <View style={styles.card}>
             <Text style={styles.title}>Chọn loại vé</Text>
 
@@ -353,11 +374,15 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <TouchableOpacity
           style={[
             styles.checkoutButton,
-            typeBase === undefined
+            typeBase === undefined || typeBase === 'none'
               ? !isFormValid() && styles.buttonDisabled
               : null,
           ]}
-          disabled={typeBase === undefined ? !isFormValid() : false}
+          disabled={
+            typeBase === undefined || typeBase === 'none'
+              ? !isFormValid()
+              : false
+          }
           onPress={confirmOrder}>
           <Text style={styles.checkoutButtonText}>Thanh toán</Text>
         </TouchableOpacity>
