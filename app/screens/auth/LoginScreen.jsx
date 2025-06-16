@@ -221,6 +221,11 @@ const LoginScreen = ({ navigation }) => {
         <SpaceComponent height={16} />
         <ButtonComponent onPress={handleLogin} text="ĐĂNG NHẬP" type="primary" />
       </SectionComponent>
+      <SpaceComponent height={16} />
+      <SectionComponent>
+        <ButtonComponent onPress={handleLogin} text="SIGN IN" type="primary" />
+      </SectionComponent>
+      <SocialLogin navigation={navigation} />
       <SectionComponent>
         <RowComponent justify="center">
           <TextComponent text="Chưa có tài khoản?" />

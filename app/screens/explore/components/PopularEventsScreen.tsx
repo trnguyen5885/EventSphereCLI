@@ -54,10 +54,11 @@ const PopularEventsScreen = ({ handleInteraction, navigation }: PopularEventsScr
                         }}
                         type="card"
                         item={item}
-                        styles={{width: '90%'}}
+                        styles={{width: '94%'}}
                     />
                 )}
                 contentContainerStyle={{ paddingBottom: 60 }}
+                showsVerticalScrollIndicator={false}
             />
         </View>
     )
