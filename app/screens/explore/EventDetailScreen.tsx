@@ -28,21 +28,22 @@ import {EventModel} from '@/app/models';
 import ListInviteComponent from './components/ListInviteComponent';
 import InviteComponent from './components/InviteComponent';
 import MapPreview from '../map/MapPreview';
+import {TypeBase} from '@/app/models/explore/ExploreModels';
 
 const EventDetailScreen = ({navigation, route}: any) => {
   const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
+  const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
   const sheetRef = useRef<any>(null);
-  const handleNavigation = () => {
-    navigation.goBack();
-  };
+  console.log(detailEvent?._id);
+
   console.log('geg', detailEvent);
   useEffect(() => {
     const getDetailEvent = async () => {
       try {
         const response = await AxiosInstance().get(`events/detail/${id}`);
         setDetailEvent(response.data);
-        console.log('44 ', response.data);
+        console.log('Detail ', response.data);
       } catch (e) {
         console.log(e);
       }
@@ -67,11 +68,54 @@ const EventDetailScreen = ({navigation, route}: any) => {
     }
   };
 
+  const handleNavigation = (typeBase: TypeBase | undefined) => {
+    switch (typeBase) {
+      case 'seat':
+        navigation.navigate('Seats', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
+        });
+        break;
+      case 'zone':
+        navigation.navigate('Zone', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
+        });
+        break;
+      case 'none':
+        navigation.navigate('Ticket', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
+        });
+        break;
+      case undefined:
+        navigation.navigate('Ticket', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
+        });
+        break;
+      default:
+        navigation.navigate('Ticket', {
+          id: detailEvent?._id,
+          typeBase: detailEvent?.typeBase,
+          showtimeId: selectedShowtimeId,
+        });
+    }
+  };
+
+  const handleBackNavigation = () => {
+    navigation.goBack();
+  };
+
   return (
     <View style={[globalStyles.container]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleNavigation} styles={{columnGap: 25}}>
+        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
           <Ionicons name="chevron-back" size={26} color="white" />
 
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
@@ -123,6 +167,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
             <InviteComponent onPress={handleInviteList} eventId={id} />
           </View>
         </ImageBackground>
+
         <View style={styles.aboutSection}>
           <TextComponent text="Thông tin sự kiện" size={24} />
           <Text style={styles.aboutText}>{detailEvent?.description}</Text>
@@ -133,17 +178,52 @@ const EventDetailScreen = ({navigation, route}: any) => {
           />
         </View>
 
+        {detailEvent?.showtimes && detailEvent?.showtimes.length > 0 && (
+          <View style={{marginTop: 20, paddingHorizontal: 20}}>
+            <TextComponent
+              text="Chọn suất chiếu"
+              size={20}
+              styles={{marginBottom: 10}}
+            />
+            <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 10}}>
+              {detailEvent.showtimes.map(showTime => (
+                <TouchableOpacity
+                  key={showTime._id}
+                  onPress={() => setSelectedShowtimeId(showTime._id)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    backgroundColor:
+                      selectedShowtimeId === showTime._id
+                        ? appColors.primary
+                        : '#E5E7EB',
+                    borderRadius: 8,
+                  }}>
+                  <Text
+                    style={{
+                      color:
+                        selectedShowtimeId === showTime._id ? 'white' : 'black',
+                      fontWeight: '600',
+                    }}>
+                    {showTime._id}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         <RatingAndReview detailEventId={detailEvent?._id} />
       </ScrollView>
 
       <View>
         <ButtonComponent
           onPress={() => {
-            navigation.navigate('Ticket', {
-              id: detailEvent?._id,
-            });
+            handleNavigation(detailEvent?.typeBase);
           }}
-          text={`Mua vé với giá ${formatPrice(detailEvent?.ticketPrice)}`}
+          text={`Mua vé với giá ${formatPrice(
+            detailEvent?.ticketPrice ?? undefined,
+          )}`}
           type="primary"
           icon={
             <CircleComponent color={appColors.white}>

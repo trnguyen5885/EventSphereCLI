@@ -173,9 +173,10 @@ const LoginScreen = ({ navigation }) => {
         <RowComponent>
           <Image
             style={{ width: 162, height: 114 }}
-            source={require('../../../assets/images/icon-avatar.png')}
+            source={require('../../../assets/images/EventSphere.png')}
           />
         </RowComponent>
+        <SpaceComponent height={16} />
         <TextComponent size={24} title text="Đăng nhập" />
         <SpaceComponent height={16} />
         <InputComponent
@@ -223,9 +224,9 @@ const LoginScreen = ({ navigation }) => {
       </SectionComponent>
       <SpaceComponent height={16} />
       <SectionComponent>
-        <ButtonComponent onPress={handleLogin} text="SIGN IN" type="primary" />
+        <SocialLogin navigation={navigation} />
       </SectionComponent>
-      <SocialLogin navigation={navigation} />
+      
       <SectionComponent>
         <RowComponent justify="center">
           <TextComponent text="Chưa có tài khoản?" />

@@ -19,15 +19,14 @@ import {
   EventSearchScreen,
   ProfileEdit,
   ProfileScreen,
-  ZoneScreen,
+  SeatsScreen,
+  ZonesScreen,
 } from './app/screens';
 import SplashScreen from './app/screens/SplashScreen';
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
 import Review from './app/screens/review/Review';
 import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview';
-import Filter from './app/screens/filter/Filter';
-import FilteredEventScreen from './app/screens/filter/FilteredEventScreeen';
 import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 import OtpOrganizerVerificationScreen from './app/screens/authOrganizer/OtpOrganizerVerificationScreen';
 
@@ -52,6 +51,7 @@ import LoginOrganizerScreen from './app/screens/authOrganizer/LoginOrganizerScre
 import RegisterOrganizerScreen from './app/screens/authOrganizer/RegisterOrganizerScreen';
 import EventDetailOrganizer from './app/screens/organizer/EventDetailOrganizer';
 import EventEdit from './app/screens/organizer/EventEdit';
+import PayOSQRScreen from './app/screens/payment/PayOSQRScreen';
 import OtpForgetPasswordScreen from './app/screens/auth/OtpForgetPasswordScreen';
 import ResetPasswordScreen from './app/screens/auth/ResetPasswordScreen';
 import OtpForgetPasswordOrganizerScreen from './app/screens/authOrganizer/OtpForgetPasswordOrganizerScreen';
@@ -184,7 +184,8 @@ const AppWithSocket = () => {
           <Stack.Screen name="Category" component={EventCategoryScreen} />
           <Stack.Screen name="Search" component={EventSearchScreen} />
           <Stack.Screen name="Detail" component={EventDetailScreen} />
-          <Stack.Screen name="Zone" component={ZoneScreen} />
+          <Stack.Screen name="Seats" component={SeatsScreen} />
+          <Stack.Screen name='Zone' component={ZonesScreen} />
           <Stack.Screen name="Ticket" component={TicketEventScreen} />
           <Stack.Screen name="Payment" component={PaymentScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
@@ -211,6 +212,7 @@ const AppWithSocket = () => {
           />
           <Stack.Screen name="EventEdit" component={EventEdit} />
           <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
+          <Stack.Screen name="PayOSQRScreen" component={PayOSQRScreen} />
           <Stack.Screen name="OtpForgetPassword" component={OtpForgetPasswordScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           <Stack.Screen name="OtpForgetPasswordOrganizer" component={OtpForgetPasswordOrganizerScreen} />

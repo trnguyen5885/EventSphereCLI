@@ -172,9 +172,10 @@ const LoginOrganizerScreen = ({ navigation }) => {
         <RowComponent>
           <Image
             style={{ width: 162, height: 114 }}
-            source={require('../../../assets/images/icon-avatar.png')}
+            source={require('../../../assets/images/EventSphere.png')}
           />
         </RowComponent>
+        <SpaceComponent height={16} />
         <TextComponent size={24} title text="Đăng nhập Nhà Tổ Chức" />
         <SpaceComponent height={16} />
         <InputComponent

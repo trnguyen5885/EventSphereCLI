@@ -1,7 +1,7 @@
-import { Platform, StyleSheet, Text, View } from "react-native";
-import React, { ReactNode } from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { appColors } from "../constants/appColors";
+import {Platform, StyleSheet, Text, View} from 'react-native';
+import React, {ReactNode} from 'react';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {appColors} from '../constants/appColors';
 import {
   AddEventScreen,
   EventScreen,
@@ -9,34 +9,34 @@ import {
   MapScreen,
   NotificationScreen,
   ProfileScreen,
-} from "../screens";
-import { CircleComponent, TextComponent } from "../components";
+} from '../screens';
+import {CircleComponent, TextComponent} from '../components';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { globalStyles } from "../constants/globalStyles";
+import {globalStyles} from '../constants/globalStyles';
 
 const TabNavigator = () => {
   const Tab = createBottomTabNavigator();
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({route}) => ({
         headerShown: false,
         tabBarStyle: {
-          height: Platform.OS === "ios" ? 88 : 68,
-          justifyContent: "center",
-          alignItems: "center",
+          height: Platform.OS === 'ios' ? 88 : 68,
+          justifyContent: 'center',
+          alignItems: 'center',
           backgroundColor: appColors.white,
         },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({focused, color, size}) => {
           let icon: ReactNode;
           color = focused ? appColors.primary : appColors.gray5;
           size = 24;
           switch (route.name) {
-            case "Khám phá":
+            case 'Khám phá':
               icon = <MaterialIcons name="explore" size={size} color={color} />;
               break;
 
-            case "Sự kiện":
+            case 'Sự kiện':
               icon = (
                 <MaterialIcons
                   name="calendar-month"
@@ -45,15 +45,14 @@ const TabNavigator = () => {
                 />
               );
               break;
-            case "Địa điểm":
+            case 'Địa điểm':
               icon = (
                 <MaterialIcons name="location-on" size={size} color={color} />
               );
               break;
-            case "Thông tin":
+            case 'Thông tin':
               icon = <MaterialIcons name="person" size={size} color={color} />;
               break;
-
           }
           return icon;
         },

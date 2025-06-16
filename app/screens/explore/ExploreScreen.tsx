@@ -11,9 +11,9 @@ import {
   PermissionsAndroid,
   Linking,
 } from 'react-native';
-import React, { useEffect, useState, useCallback } from 'react';
-import { globalStyles } from '../../constants/globalStyles';
-import { appColors } from '../../constants/appColors';
+import React, {useEffect, useState, useCallback} from 'react';
+import {globalStyles} from '../../constants/globalStyles';
+import {appColors} from '../../constants/appColors';
 import {
   CircleComponent,
   RowComponent,
@@ -27,15 +27,15 @@ import {
   Sort,
 } from 'iconsax-react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { fontFamilies } from '../../constants/fontFamilies';
+import {fontFamilies} from '../../constants/fontFamilies';
 import CategoriesList from '../../components/CategoriesList';
 import EventItem from '../../components/EventItem';
-import { AxiosInstance } from '../../services';
+import {AxiosInstance} from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
 import Geolocation from '@react-native-community/geolocation'; // Import Geolocation
 import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
-import { useFocusEffect } from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
 import { EventModel } from '@/app/models';
 import TabComponent from './components/TabComponent';
@@ -88,7 +88,7 @@ const ExploreScreen = ({ navigation }: any) => {
                 style: 'cancel',
               },
             ],
-            { cancelable: false },
+            {cancelable: false},
           );
         }
       } catch (err) {
@@ -121,7 +121,7 @@ const ExploreScreen = ({ navigation }: any) => {
     const apiKey = 'pJ2xud8j3xprqVfQZLFKjGV51MPH60VjRuZh1i3F';
     const url = `https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=${apiKey}`;
     try {
-      const response = await axios.get(url, { timeout: 10000 });
+      const response = await axios.get(url, {timeout: 10000});
       if (response?.data?.results?.length > 0) {
         const address = response.data.results[0];
         setAddress(address);
@@ -137,10 +137,10 @@ const ExploreScreen = ({ navigation }: any) => {
   const getLocation = () => {
     Geolocation.getCurrentPosition(
       position => {
-        const { latitude, longitude } = position.coords;
+        const {latitude, longitude} = position.coords;
         console.log('ExploreScreen 107 | UserLocation:', latitude, longitude);
         // Cập nhật state
-        setLocation({ latitude, longitude });
+        setLocation({latitude, longitude});
         // Gọi API Geocoding với giá trị đúng
         getAddressFromCoordinates(latitude, longitude);
       },
@@ -201,13 +201,13 @@ const ExploreScreen = ({ navigation }: any) => {
     try {
       const body = {
         eventId: id,
-        type: "view"
-      }
+        type: 'view',
+      };
       await AxiosInstance().post('interactions/addInteraction', body);
     } catch (e) {
-      console.log("Error handle interaction: ", e)
+      console.log('Error handle interaction: ', e);
     }
-  }
+  };
 
   if (isLoading) {
     return <LoadingModal visible={true} />;
@@ -234,7 +234,7 @@ const ExploreScreen = ({ navigation }: any) => {
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
             </TouchableOpacity>
-            <View style={{ flex: 1, alignItems: 'center' }}>
+            <View style={{flex: 1, alignItems: 'center'}}>
               <TouchableOpacity onPress={requestLocationPermission}>
                 <RowComponent>
                   <TextComponent
@@ -287,7 +287,7 @@ const ExploreScreen = ({ navigation }: any) => {
           <RowComponent>
             <RowComponent
               onPress={() => navigation.navigate('Search')}
-              styles={{ flex: 1 }}>
+              styles={{flex: 1}}>
               <SearchNormal1
                 variant="TwoTone"
                 size={22}

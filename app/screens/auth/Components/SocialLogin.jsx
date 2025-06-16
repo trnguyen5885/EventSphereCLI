@@ -1,14 +1,8 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import React from "react";
-import {
-  ButtonComponent,
-  SectionComponent,
-  SpaceComponent,
-  TextComponent,
-} from "../../../components";
 import { appColors } from "../../../constants/appColors";
 import { fontFamilies } from "../../../constants/fontFamilies";
-import { Facebook, Google } from "iconsax-react-native";
+import { Google } from "iconsax-react-native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { socialLogin } from "../../../services/authService";
 import { useDispatch } from "react-redux";
@@ -40,65 +34,89 @@ const SocialLogin = ({ navigation }) => {
           }),
         );
 
-        // You might want to add remember me logic here for social logins as well
-        // For now, let's assume no remember me for social login or handle it differently
         dispatch(setRememberMe(false));
         dispatch(setSavedCredentials(null));
 
         navigation.navigate('Drawer');
-
       }
       
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled the login flow
         console.log("User cancelled Google Sign-In");
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        // operation (e.g. sign in) is in progress already
         console.log("Google Sign-In is already in progress");
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        // play services not available or outdated
         console.log("Google Play Services not available or outdated");
       } else {
-        // some other error happened
         console.log("Google Sign-In Error:", error);
       }
     }
   };
 
   return (
-    <View>
-      <SectionComponent>
-        <TextComponent
-          styles={{ textAlign: "center" }}
-          text="OR"
-          color={appColors.gray4}
-          size={16}
-          font={fontFamilies.medium}
-        />
-        <SpaceComponent height={16} />
-        <ButtonComponent
-          type="primary"
-          color={appColors.white}
-          textColor={appColors.text}
-          text="Login with Google"
-          textFont={fontFamilies.regular}
-          icon={<Google />}
-          iconFlex="left"
-          onPress={handleGoogleLogin}
-        />
-        <ButtonComponent
-          type="primary"
-          color={appColors.white}
-          textColor={appColors.text}
-          text="Login with Facebook"
-          textFont={fontFamilies.regular}
-          icon={<Facebook />}
-          iconFlex="left"
-        />
-      </SectionComponent>
+    <View style={styles.container}>
+      {/* OR Text */}
+      <Text style={styles.orText}>HOẶC</Text>
+      
+      {/* Spacing */}
+      <View style={styles.spacing} />
+      
+      {/* Google Login Button */}
+      <TouchableOpacity 
+        style={styles.googleButton} 
+        onPress={handleGoogleLogin}
+        activeOpacity={0.8}
+      >
+        <Google size={20} color={appColors.text} />
+        <Text style={styles.buttonText}>Login with Google</Text>
+      </TouchableOpacity>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingBottom: 15,
+    alignItems: 'center',
+  },
+  orText: {
+    textAlign: 'center',
+    color: appColors.gray4,
+    fontSize: 16,
+    fontFamily: fontFamilies.medium,
+  },
+  spacing: {
+    height: 16,
+  },
+  googleButton: {
+    width: '100%',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: appColors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    minHeight: 56,
+    flexDirection: 'row',
+    shadowColor: 'rgba(0,0,0,0.1)',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: appColors.gray2 || '#E5E5E5',
+  },
+  buttonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: appColors.text,
+    fontFamily: fontFamilies.regular,
+  },
+});
 
 export default SocialLogin;
