@@ -38,12 +38,20 @@ import LocationServicesDialogBox from 'react-native-android-location-services-di
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { EventModel } from '@/app/models';
+import TabComponent from './components/TabComponent';
+import PopularEventsScreen from './components/PopularEventsScreen';
+import UpcomingEventsScreen from './components/UpcomingEventsScreen';
+import SuggestedEventsScreen from './components/SuggestedEventsScreen';
 
 const ExploreScreen = ({ navigation }: any) => {
-  const [eventsIscoming, setEventsIscoming] = useState<EventModel[]>();
-  const [eventsUpcoming, setEventsUpcoming] = useState<EventModel[]>();
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
   const [isLoading, setIsLoading] = useState(true);
+  const tabs = [
+    {id: 0, name: "Đề xuất"},
+    {id: 1, name: "Nổi bật"},
+    {id: 2, name: "Sắp diễn ra"},
+  ];
+  const [activeTab, setActiveTab] = useState(0);
   const [location, setLocation] = useState<{
     latitude: number | null;
     longitude: number | null;
@@ -173,11 +181,9 @@ const ExploreScreen = ({ navigation }: any) => {
           (eventItem: EventModel) =>
             now >= eventItem.timeStart && now <= eventItem.timeEnd,
         );
-        setEventsIscoming(ongoingEvents);
         const upcomingEvents = response.filter(
           (eventItem: EventModel) => eventItem.timeStart > now,
         );
-        setEventsUpcoming(upcomingEvents);
         setIsLoading(false);
       } catch (e) {
         console.log(e);
@@ -187,8 +193,6 @@ const ExploreScreen = ({ navigation }: any) => {
     };
     getEvents();
     return () => {
-      setEventsIscoming([]);
-      setEventsUpcoming([]);
       setPopulateEvents([]);
     };
   }, []);
@@ -209,8 +213,10 @@ const ExploreScreen = ({ navigation }: any) => {
     return <LoadingModal visible={true} />;
   }
 
+  console.log("Event Incoming: " + JSON.stringify(populateEvents));
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -218,12 +224,12 @@ const ExploreScreen = ({ navigation }: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 140 + (Platform.OS === 'ios' ? 16 : 0),
+          height: 170 + (Platform.OS === 'ios' ? 16 : 0),
           borderBottomLeftRadius: 35,
           borderBottomRightRadius: 35,
           paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
         }}>
-        <View style={{ marginBottom: 7, paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: 16 }}>
           <RowComponent>
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
@@ -250,13 +256,6 @@ const ExploreScreen = ({ navigation }: any) => {
                 />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('FriendSearchScreen')}
-              style={{ marginRight: 8 }}>
-              <CircleComponent color="#524CE0" size={36}>
-                <MaterialIcons name="group" size={24} color={appColors.white} />
-              </CircleComponent>
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate('Notification')}>
               <CircleComponent color="#524CE0" size={36}>
@@ -317,127 +316,34 @@ const ExploreScreen = ({ navigation }: any) => {
               <SpaceComponent width={8} />
               <TextComponent text="Lọc" color={appColors.white} />
             </RowComponent>
-          </RowComponent>
-        </View>
 
+          </RowComponent>
+          {/* Tab View Section */}
+          <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
+        </View>
       </View>
-
-      <ScrollView
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
-        style={{ flex: 1 }}>
-        <BannerComponent bannerData={eventsIscoming} />
-
-        {populateEvents && (
-          <>
-            <View
-              style={[
-                globalStyles.row,
-                styles.paddingContent,
-                { justifyContent: 'space-between' },
-              ]}>
-              <TextComponent text="Sự kiện nổi bật" size={18} title />
-              <RowComponent onPress={() => { }}>
-                <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
-                <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
-              </RowComponent>
-            </View>
-
-            <FlatList
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              data={populateEvents}
-              renderItem={({ item }) => (
-                <EventItem
-                  onPress={() => {
-                    handleInteraction(item._id);
-                    navigation.navigate('Detail', {
-                      id: item.eventId,
-                    });
-                  }}
-                  type="card"
-                  item={item}
-                />
-              )}
-            />
-          </>
-        )}
-
-        <View
-          style={[
-            globalStyles.row,
-            styles.paddingContent,
-            { marginTop: 15, justifyContent: 'space-between' },
-          ]}>
-
-          <TextComponent text="Sự kiện đang diễn ra" size={18} title />
-          <RowComponent onPress={() => { }}>
-            <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
-            <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
-          </RowComponent>
-        </View>
-
-        <FlatList
-          horizontal
-          nestedScrollEnabled
-          showsHorizontalScrollIndicator={false}
-          data={eventsIscoming}
-          renderItem={({ item }) => (
-            <EventItem
-              onPress={() => {
-                handleInteraction(item._id);
-                navigation.navigate('Detail', {
-                  id: item._id,
-                });
-              }}
-              type="card"
-              item={item}
-            />
-          )}
+      {/* The BannerComponent is here, conditionally rendered */}
+      {/* {activeTab === 0 && <BannerComponent bannerData={populateEvents || []} />} */}
+      {activeTab === 0 && (
+        <SuggestedEventsScreen
+          populateEvents={populateEvents}
+          handleInteraction={handleInteraction}
+          navigation={navigation}
         />
-
-        {eventsUpcoming && (
-          <>
-            <View
-              style={[
-                globalStyles.row,
-                styles.paddingContent,
-                { marginTop: 15, justifyContent: 'space-between' },
-              ]}>
-              <TextComponent text="Sự kiện sắp diễn ra" size={18} title />
-              <RowComponent onPress={() => { }}>
-                <TextComponent
-                  text="Xem thêm"
-                  size={16}
-                  color={appColors.gray}
-                />
-                <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
-              </RowComponent>
-            </View>
-
-            <FlatList
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              data={eventsUpcoming}
-              renderItem={({ item }) => (
-                <EventItem
-                  onPress={() => {
-                    handleInteraction(item._id);
-                    navigation.navigate('Detail', {
-                      id: item._id,
-                    });
-                  }}
-                  type="card"
-                  item={item}
-                />
-              )}
-            />
-          </>
-        )}
-      </ScrollView>
-    </ScrollView>
+      )}
+      {activeTab === 1 && (
+        <PopularEventsScreen
+          handleInteraction={handleInteraction}
+          navigation={navigation}
+        />
+      )}
+      {activeTab === 2 && (
+        <UpcomingEventsScreen
+          handleInteraction={handleInteraction}
+          navigation={navigation}
+        />
+      )}
+    </View>
   );
 };
 

@@ -52,7 +52,6 @@ export const globalStyles = StyleSheet.create({
         marginRight: 12,
       },
       card: {
-        padding: 12,
         borderRadius: 12,
         backgroundColor: appColors.white,
         margin: 12,
