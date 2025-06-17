@@ -15,7 +15,7 @@ import { appColors } from '../constants/appColors';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
-  const { userData, rememberMe } = useSelector(state => state.auth); // ✅ Lấy thêm rememberMe
+  const { userData } = useSelector(state => state.auth);
 
   useEffect(() => {
     const checkFirstLaunchAndNavigate = async () => {
@@ -33,8 +33,8 @@ const SplashScreen = () => {
           });
         } else {
           // Không phải lần đầu, kiểm tra đăng nhập
-          // ✅ Chỉ tự động đăng nhập khi có userData VÀ rememberMe = true
-          if (userData && rememberMe) {
+          // Tự động đăng nhập nếu có userData
+          if (userData) {
             if (userData.role === 3) {
               navigation.reset({
                 index: 0,
@@ -52,7 +52,7 @@ const SplashScreen = () => {
               });
             }
           } else {
-            // ✅ Nếu không có rememberMe hoặc không có userData thì về Welcome
+            // Nếu không có userData thì về Welcome
             navigation.reset({
               index: 0,
               routes: [{ name: 'Welcome' }],
@@ -69,7 +69,7 @@ const SplashScreen = () => {
     };
 
     checkFirstLaunchAndNavigate();
-  }, [navigation, userData, rememberMe]); // ✅ Thêm rememberMe vào dependency
+  }, [navigation, userData]);
 
   return (
     <ImageBackground

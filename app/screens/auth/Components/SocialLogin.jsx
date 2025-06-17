@@ -6,7 +6,7 @@ import { Google } from "iconsax-react-native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { socialLogin } from "../../../services/authService";
 import { useDispatch } from "react-redux";
-import { loginSuccess, setRememberMe, setSavedCredentials } from "../../../redux/slices/authSlice";
+import { loginSuccess } from "../../../redux/slices/authSlice";
 
 GoogleSignin.configure({
   webClientId: '518691740711-hpgf2l7sj9ec9f0uh8695ov0lnfoscka.apps.googleusercontent.com',
@@ -26,18 +26,34 @@ const SocialLogin = ({ navigation }) => {
         const res = await socialLogin(userInfo.data.idToken);
         const { id, token, refreshToken, role, ...userData } = res.data;
 
+        // Lưu thông tin đăng nhập vào Redux
         dispatch(
           loginSuccess({
             userId: id,
-            userData,
-            role,
+            userData: {
+              id,
+              token,
+              refreshToken,
+              role,
+              ...userData
+            },
           }),
         );
 
-        dispatch(setRememberMe(false));
-        dispatch(setSavedCredentials(null));
-
-        navigation.navigate('Drawer');
+        // Điều hướng theo role
+        if (role === 3) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Drawer' }],
+          });
+        } else if (role === 2) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'OrganizerTabs' }],
+          });
+        } else {
+          navigation.navigate('Drawer'); // Mặc định
+        }
       }
       
     } catch (error) {

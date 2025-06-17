@@ -10,6 +10,7 @@ import {
   View,
   PermissionsAndroid,
   Linking,
+  BackHandler, // Thêm BackHandler
 } from 'react-native';
 import React, {useEffect, useState, useCallback} from 'react';
 import {globalStyles} from '../../constants/globalStyles';
@@ -33,7 +34,7 @@ import EventItem from '../../components/EventItem';
 import {AxiosInstance} from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
-import Geolocation from '@react-native-community/geolocation'; // Import Geolocation
+import Geolocation from '@react-native-community/geolocation';
 import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
 import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
@@ -66,6 +67,37 @@ const ExploreScreen = ({ navigation }: any) => {
     };
   }>();
 
+  // Xử lý nút Back - hiển thị dialog xác nhận thoát app
+  const handleBackPress = useCallback(() => {
+    Alert.alert(
+      'Thoát ứng dụng',
+      'Bạn có muốn thoát ứng dụng không?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+          onPress: () => null,
+        },
+        {
+          text: 'Thoát',
+          style: 'destructive',
+          onPress: () => BackHandler.exitApp(),
+        },
+      ],
+      { cancelable: false }
+    );
+    return true; // Ngăn chặn hành vi back mặc định
+  }, []);
+
+  // Sử dụng useFocusEffect để đăng ký/hủy đăng ký BackHandler
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+      
+      return () => backHandler.remove();
+    }, [handleBackPress])
+  );
+
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       try {
@@ -73,7 +105,7 @@ const ExploreScreen = ({ navigation }: any) => {
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          checkGPSStatus(); // Kiểm tra xem GPS đã bật chưa
+          checkGPSStatus();
         } else {
           Alert.alert(
             'Quyền bị từ chối',
@@ -81,7 +113,7 @@ const ExploreScreen = ({ navigation }: any) => {
             [
               {
                 text: 'Thử lại',
-                onPress: () => requestLocationPermission(), // Gọi lại chính nó
+                onPress: () => requestLocationPermission(),
               },
               {
                 text: 'Hủy',
@@ -95,7 +127,7 @@ const ExploreScreen = ({ navigation }: any) => {
         console.warn(err);
       }
     } else {
-      checkGPSStatus(); // iOS tự động xử lý quyền
+      checkGPSStatus();
     }
   };
 
@@ -107,13 +139,14 @@ const ExploreScreen = ({ navigation }: any) => {
     })
       .then((success: any) => {
         if (success) {
-          getLocation(); // Nếu GPS đã bật, gọi hàm lấy vị trí
+          getLocation();
         }
       })
       .catch((error: any) => {
         Alert.alert('Lỗi', 'Vui lòng bật GPS để tiếp tục.');
       });
   };
+
   const getAddressFromCoordinates = async (
     latitude: number,
     longitude: number,
@@ -139,9 +172,7 @@ const ExploreScreen = ({ navigation }: any) => {
       position => {
         const {latitude, longitude} = position.coords;
         console.log('ExploreScreen 107 | UserLocation:', latitude, longitude);
-        // Cập nhật state
         setLocation({latitude, longitude});
-        // Gọi API Geocoding với giá trị đúng
         getAddressFromCoordinates(latitude, longitude);
       },
       error => {
@@ -153,19 +184,18 @@ const ExploreScreen = ({ navigation }: any) => {
     );
   };
 
-  // Gọi hàm yêu cầu quyền truy cập khi ứng dụng khởi động
+  // Xử lý location permission khi focus vào màn hình
   useFocusEffect(
     React.useCallback(() => {
       const timeout = setTimeout(() => {
-        requestLocationPermission(); // Gọi sau 5 giây
+        requestLocationPermission();
       }, 3000);
 
-      // Cleanup nếu người dùng rời khỏi màn hình trước khi timeout
       return () => clearTimeout(timeout);
     }, []),
   );
+
   useEffect(() => {
-    // setIsLoading(true);
     const getEvents = async () => {
       try {
         const response = await AxiosInstance().get<EventModel[], any>(
@@ -318,12 +348,10 @@ const ExploreScreen = ({ navigation }: any) => {
             </RowComponent>
 
           </RowComponent>
-          {/* Tab View Section */}
           <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
         </View>
       </View>
-      {/* The BannerComponent is here, conditionally rendered */}
-      {/* {activeTab === 0 && <BannerComponent bannerData={populateEvents || []} />} */}
+      
       {activeTab === 0 && (
         <SuggestedEventsScreen
           populateEvents={populateEvents}

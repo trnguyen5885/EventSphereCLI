@@ -6,8 +6,6 @@ const authSlice = createSlice({
     isAuthenticated: false,
     userId: null,
     userData: null,
-    rememberMe: false,
-    savedCredentials: null,
   },
   reducers: {
     loginSuccess: (state, action) => {
@@ -20,17 +18,9 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.userId = null;
       state.userData = null;
-      state.rememberMe = false;
-      state.savedCredentials = { email: '', password: '' };
-    },
-    setRememberMe: (state, action) => {
-      state.rememberMe = action.payload;
-    },
-    setSavedCredentials: (state, action) => {
-      state.savedCredentials = action.payload;
     },
   },
 });
 
-export const { loginSuccess, logout, setRememberMe, setSavedCredentials } = authSlice.actions;
+export const { loginSuccess, logout } = authSlice.actions;
 export default authSlice.reducer;
