@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Switch, Image,
+  View, Image,
   Alert
 } from 'react-native';
 
@@ -14,9 +14,8 @@ import { appColors } from '../../constants/appColors';
 import { loginOrganizer } from '../../services/authService';
 import { AxiosInstance } from '../../services';
 
-import { useDispatch, useSelector } from 'react-redux';
-import { loginSuccess, setRememberMe, setSavedCredentials } from '../../redux/slices/authSlice';
-
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../redux/slices/authSlice';
 
 const LoginOrganizerScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -26,46 +25,6 @@ const LoginOrganizerScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const dispatch = useDispatch();
-  const auth = useSelector(state => state.auth);
-  const [isRemember, setIsRemember] = useState(false);
-  const [res, setRes] = useState({});
-
-
-  useEffect(() => {
-    const autoLoginIfRemembered = async () => {
-      if (auth.rememberMe && auth.savedCredentials) {
-        const { email, password } = auth.savedCredentials;
-        setEmail(email);
-        setPassword(password);
-        setIsRemember(true);
-
-        // Tự động đăng nhập
-        setIsLoading(true);
-        try {
-          const response = await loginOrganizer(email, password);
-          if (response.status === 200 && response.data.role === 2) {
-            dispatch(
-              loginSuccess({
-                userId: response.data.id,
-                userData: response.data,
-              })
-            );
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'OrganizerTabs' }],
-            });
-          }
-        } catch (e) {
-          console.log("Auto login failed:", e.message);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    autoLoginIfRemembered();
-  }, []);
-
 
   const validateInputs = () => {
     let isValid = true;
@@ -97,7 +56,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const response = await loginOrganizer(email, password); // Gọi API đăng nhập
+      const response = await loginOrganizer(email, password);
 
       if (response.status === 200) {
         const { id, token, refreshToken, role } = response.data;
@@ -115,17 +74,11 @@ const LoginOrganizerScreen = ({ navigation }) => {
           })
         );
 
-        // Lưu thông tin ghi nhớ tài khoản nếu cần
-        if (isRemember) {
-          dispatch(setRememberMe(true));
-          dispatch(setSavedCredentials({ email, password }));
-        } else {
-          dispatch(setRememberMe(false));
-          dispatch(setSavedCredentials({ email: '', password: '' }));
-        }
-
         // Điều hướng sang màn hình chính
-        navigation.navigate('OrganizerTabs');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'OrganizerTabs' }],
+        });
       } else {
         setPasswordError('Đăng nhập thất bại');
       }
@@ -149,13 +102,13 @@ const LoginOrganizerScreen = ({ navigation }) => {
       });
 
       if (res.message === 'Đã gửi OTP về email') {
-        navigation.navigate('OtpForgetPasswordOrganizer', { email }); // 👈 Truyền email sang màn hình OTP
+        navigation.navigate('OtpForgetPasswordOrganizer', { email });
       } else {
         alert(res.message || 'Đã xảy ra lỗi');
       }
     } catch (error) {
       if (error.response?.data?.message) {
-        Alert.alert('Thông báo', error.response.data.message); // Hiển thị thông báo như "Email chưa đăng ký"
+        Alert.alert('Thông báo', error.response.data.message);
       } else {
         Alert.alert('Thông báo','Email bạn nhập không đúng hoặc đã xảy ra lỗi, vui lòng thử lại!');
       }
@@ -164,17 +117,16 @@ const LoginOrganizerScreen = ({ navigation }) => {
     }
   };
 
-
-
   return (
     <ContainerComponent isImageBackground isScroll>
       <SectionComponent>
         <RowComponent>
           <Image
             style={{ width: 162, height: 114 }}
-            source={require('../../../assets/images/icon-avatar.png')}
+            source={require('../../../assets/images/EventSphere.png')}
           />
         </RowComponent>
+        <SpaceComponent height={16} />
         <TextComponent size={24} title text="Đăng nhập Nhà Tổ Chức" />
         <SpaceComponent height={16} />
         <InputComponent
@@ -201,16 +153,7 @@ const LoginOrganizerScreen = ({ navigation }) => {
           affix={<Lock size={22} color={appColors.gray} />}
         />
         {passwordError ? <TextComponent color="red" text={passwordError} /> : null}
-        <RowComponent justify="space-between">
-          <RowComponent onPress={() => setIsRemember(!isRemember)}>
-            <Switch
-              trackColor={{ true: appColors.primary }}
-              thumbColor={appColors.white}
-              value={isRemember}
-              onChange={() => setIsRemember(!isRemember)}
-            />
-            <TextComponent text="Ghi nhớ tài khoản" />
-          </RowComponent>
+        <RowComponent justify="flex-end">
           <ButtonComponent
             text="Quên mật khẩu?"
             onPress={handleForgotPassword}

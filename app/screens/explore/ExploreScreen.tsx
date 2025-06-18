@@ -10,6 +10,7 @@ import {
   View,
   PermissionsAndroid,
   Linking,
+  BackHandler, // Thêm BackHandler
 } from 'react-native';
 import React, {useEffect, useState, useCallback} from 'react';
 import {globalStyles} from '../../constants/globalStyles';
@@ -33,17 +34,25 @@ import EventItem from '../../components/EventItem';
 import {AxiosInstance} from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
-import Geolocation from '@react-native-community/geolocation'; // Import Geolocation
+import Geolocation from '@react-native-community/geolocation';
 import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
 import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
+import TabComponent from './components/TabComponent';
+import PopularEventsScreen from './components/PopularEventsScreen';
+import UpcomingEventsScreen from './components/UpcomingEventsScreen';
+import SuggestedEventsScreen from './components/SuggestedEventsScreen';
 
-const ExploreScreen = ({navigation}: any) => {
-  const [eventsIscoming, setEventsIscoming] = useState<EventModel[]>();
-  const [eventsUpcoming, setEventsUpcoming] = useState<EventModel[]>();
+const ExploreScreen = ({ navigation }: any) => {
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
   const [isLoading, setIsLoading] = useState(true);
+  const tabs = [
+    {id: 0, name: "Đề xuất"},
+    {id: 1, name: "Nổi bật"},
+    {id: 2, name: "Sắp diễn ra"},
+  ];
+  const [activeTab, setActiveTab] = useState(0);
   const [location, setLocation] = useState<{
     latitude: number | null;
     longitude: number | null;
@@ -58,6 +67,37 @@ const ExploreScreen = ({navigation}: any) => {
     };
   }>();
 
+  // Xử lý nút Back - hiển thị dialog xác nhận thoát app
+  const handleBackPress = useCallback(() => {
+    Alert.alert(
+      'Thoát ứng dụng',
+      'Bạn có muốn thoát ứng dụng không?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+          onPress: () => null,
+        },
+        {
+          text: 'Thoát',
+          style: 'destructive',
+          onPress: () => BackHandler.exitApp(),
+        },
+      ],
+      { cancelable: false }
+    );
+    return true; // Ngăn chặn hành vi back mặc định
+  }, []);
+
+  // Sử dụng useFocusEffect để đăng ký/hủy đăng ký BackHandler
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+      
+      return () => backHandler.remove();
+    }, [handleBackPress])
+  );
+
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       try {
@@ -65,7 +105,7 @@ const ExploreScreen = ({navigation}: any) => {
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          checkGPSStatus(); // Kiểm tra xem GPS đã bật chưa
+          checkGPSStatus();
         } else {
           Alert.alert(
             'Quyền bị từ chối',
@@ -73,7 +113,7 @@ const ExploreScreen = ({navigation}: any) => {
             [
               {
                 text: 'Thử lại',
-                onPress: () => requestLocationPermission(), // Gọi lại chính nó
+                onPress: () => requestLocationPermission(),
               },
               {
                 text: 'Hủy',
@@ -87,7 +127,7 @@ const ExploreScreen = ({navigation}: any) => {
         console.warn(err);
       }
     } else {
-      checkGPSStatus(); // iOS tự động xử lý quyền
+      checkGPSStatus();
     }
   };
 
@@ -99,13 +139,14 @@ const ExploreScreen = ({navigation}: any) => {
     })
       .then((success: any) => {
         if (success) {
-          getLocation(); // Nếu GPS đã bật, gọi hàm lấy vị trí
+          getLocation();
         }
       })
       .catch((error: any) => {
         Alert.alert('Lỗi', 'Vui lòng bật GPS để tiếp tục.');
       });
   };
+
   const getAddressFromCoordinates = async (
     latitude: number,
     longitude: number,
@@ -131,9 +172,7 @@ const ExploreScreen = ({navigation}: any) => {
       position => {
         const {latitude, longitude} = position.coords;
         console.log('ExploreScreen 107 | UserLocation:', latitude, longitude);
-        // Cập nhật state
         setLocation({latitude, longitude});
-        // Gọi API Geocoding với giá trị đúng
         getAddressFromCoordinates(latitude, longitude);
       },
       error => {
@@ -145,19 +184,18 @@ const ExploreScreen = ({navigation}: any) => {
     );
   };
 
-  // Gọi hàm yêu cầu quyền truy cập khi ứng dụng khởi động
+  // Xử lý location permission khi focus vào màn hình
   useFocusEffect(
     React.useCallback(() => {
       const timeout = setTimeout(() => {
-        requestLocationPermission(); // Gọi sau 5 giây
+        requestLocationPermission();
       }, 3000);
 
-      // Cleanup nếu người dùng rời khỏi màn hình trước khi timeout
       return () => clearTimeout(timeout);
     }, []),
   );
+
   useEffect(() => {
-    // setIsLoading(true);
     const getEvents = async () => {
       try {
         const response = await AxiosInstance().get<EventModel[], any>(
@@ -173,11 +211,9 @@ const ExploreScreen = ({navigation}: any) => {
           (eventItem: EventModel) =>
             now >= eventItem.timeStart && now <= eventItem.timeEnd,
         );
-        setEventsIscoming(ongoingEvents);
         const upcomingEvents = response.filter(
           (eventItem: EventModel) => eventItem.timeStart > now,
         );
-        setEventsUpcoming(upcomingEvents);
         setIsLoading(false);
       } catch (e) {
         console.log(e);
@@ -187,8 +223,6 @@ const ExploreScreen = ({navigation}: any) => {
     };
     getEvents();
     return () => {
-      setEventsIscoming([]);
-      setEventsUpcoming([]);
       setPopulateEvents([]);
     };
   }, []);
@@ -209,8 +243,10 @@ const ExploreScreen = ({navigation}: any) => {
     return <LoadingModal visible={true} />;
   }
 
+  console.log("Event Incoming: " + JSON.stringify(populateEvents));
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -218,12 +254,12 @@ const ExploreScreen = ({navigation}: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 140 + (Platform.OS === 'ios' ? 16 : 0),
+          height: 170 + (Platform.OS === 'ios' ? 16 : 0),
           borderBottomLeftRadius: 35,
           borderBottomRightRadius: 35,
           paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
         }}>
-        <View style={{marginBottom: 7, paddingHorizontal: 16}}>
+        <View style={{ paddingHorizontal: 16 }}>
           <RowComponent>
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
@@ -250,13 +286,6 @@ const ExploreScreen = ({navigation}: any) => {
                 />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('FriendSearchScreen')}
-              style={{marginRight: 8}}>
-              <CircleComponent color="#524CE0" size={36}>
-                <MaterialIcons name="group" size={24} color={appColors.white} />
-              </CircleComponent>
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate('Notification')}>
               <CircleComponent color="#524CE0" size={36}>
@@ -317,137 +346,32 @@ const ExploreScreen = ({navigation}: any) => {
               <SpaceComponent width={8} />
               <TextComponent text="Lọc" color={appColors.white} />
             </RowComponent>
+
           </RowComponent>
+          <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
         </View>
       </View>
-
-      <ScrollView
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
-        style={{flex: 1, paddingTop: 25}}>
-        <BannerComponent bannerData={populateEvents} />
-
-        {populateEvents && (
-          <>
-            <View
-              style={[
-                globalStyles.row,
-                styles.paddingContent,
-                {justifyContent: 'space-between'},
-              ]}>
-              <TextComponent text="Sự kiện nổi bật" size={18} title />
-              <RowComponent onPress={() => {}}>
-                <TextComponent
-                  text="Xem thêm"
-                  size={16}
-                  color={appColors.gray}
-                />
-                <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
-              </RowComponent>
-            </View>
-
-            <FlatList
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              data={populateEvents}
-              renderItem={({item}) => (
-                <EventItem
-                  onPress={() => {
-                    handleInteraction(item._id);
-                    navigation.navigate('Detail', {
-                      id: item.eventId,
-                    });
-                  }}
-                  type="card"
-                  item={item}
-                />
-              )}
-            />
-          </>
-        )}
-
-        {eventsIscoming && eventsIscoming.length > 0 && (
-          <>
-            <View
-              style={[
-                globalStyles.row,
-                styles.paddingContent,
-                {marginTop: 15, justifyContent: 'space-between'},
-              ]}>
-              <TextComponent text="Sự kiện đang diễn ra" size={18} title />
-              <RowComponent onPress={() => {}}>
-                <TextComponent
-                  text="Xem thêm"
-                  size={16}
-                  color={appColors.gray}
-                />
-                <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
-              </RowComponent>
-            </View>
-
-            <FlatList
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              data={eventsIscoming}
-              renderItem={({item}) => (
-                <EventItem
-                  onPress={() => {
-                    handleInteraction(item._id);
-                    navigation.navigate('Detail', {
-                      id: item._id,
-                    });
-                  }}
-                  type="card"
-                  item={item}
-                />
-              )}
-            />
-          </>
-        )}
-
-        {eventsUpcoming && eventsUpcoming.length > 0 && (
-          <>
-            <View
-              style={[
-                globalStyles.row,
-                styles.paddingContent,
-                {marginTop: 15, justifyContent: 'space-between'},
-              ]}>
-              <TextComponent text="Sự kiện sắp diễn ra" size={18} title />
-              <RowComponent onPress={() => {}}>
-                <TextComponent
-                  text="Xem thêm"
-                  size={16}
-                  color={appColors.gray}
-                />
-                <ArrowRight2 variant="Bold" size={14} color={appColors.gray} />
-              </RowComponent>
-            </View>
-
-            <FlatList
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              data={eventsUpcoming}
-              renderItem={({item}) => (
-                <EventItem
-                  onPress={() => {
-                    handleInteraction(item._id);
-                    navigation.navigate('Detail', {
-                      id: item._id,
-                    });
-                  }}
-                  type="card"
-                  item={item}
-                />
-              )}
-            />
-          </>
-        )}
-      </ScrollView>
-    </ScrollView>
+      
+      {activeTab === 0 && (
+        <SuggestedEventsScreen
+          populateEvents={populateEvents}
+          handleInteraction={handleInteraction}
+          navigation={navigation}
+        />
+      )}
+      {activeTab === 1 && (
+        <PopularEventsScreen
+          handleInteraction={handleInteraction}
+          navigation={navigation}
+        />
+      )}
+      {activeTab === 2 && (
+        <UpcomingEventsScreen
+          handleInteraction={handleInteraction}
+          navigation={navigation}
+        />
+      )}
+    </View>
   );
 };
 

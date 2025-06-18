@@ -52,4 +52,29 @@ export const loginUser = async (email, password) => {
   }
 };
 
+export const socialLogin = async (idToken) => {
+  const body = { idToken };
+  const res = await AxiosInstance().post('users/googleLogin', body);
+
+  const { status, data } = res;
+
+  if (status === 200) {
+    const { id, token, refreshToken, role, ...rest } = data;
+    await saveTokens(token, refreshToken);
+
+    return {
+      status: 200,
+      data: {
+        id,
+        token,
+        refreshToken,
+        role,
+        ...rest,
+      },
+    };
+  } else {
+    throw new Error('Đăng nhập xã hội thất bại');
+  }
+};
+
 

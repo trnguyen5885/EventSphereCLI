@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   FlatList,
+  Alert, // Thêm Alert import
 } from "react-native";
 import React, { useState } from "react";
 import {
@@ -82,6 +83,26 @@ const DrawerCustom = ({ navigation }: any) => {
     },
   ];
 
+  // Hàm hiển thị thông báo xác nhận đăng xuất
+  const showLogoutConfirmation = () => {
+    Alert.alert(
+      "Đăng xuất", // Tiêu đề
+      "Bạn có muốn đăng xuất không?", // Nội dung
+      [
+        {
+          text: "Hủy",
+          style: "cancel", // Style cho nút hủy
+        },
+        {
+          text: "Đăng xuất",
+          style: "destructive", // Style cho nút đăng xuất (màu đỏ)
+          onPress: handleSignout, // Gọi hàm đăng xuất khi nhấn OK
+        },
+      ],
+      { cancelable: false } // Cho phép hủy bằng cách nhấn ra ngoài
+    );
+  };
+
   const handleSignout = async () => {
     setIsLoading(true);
     try {
@@ -116,13 +137,13 @@ const DrawerCustom = ({ navigation }: any) => {
       <FlatList
         showsVerticalScrollIndicator={false}
         data={profileMenu}
-        style={{ flex: 1, marginVertical: 20 }}
+        style={localStyles.menuList}
         renderItem={({ item, index }) => (
           <RowComponent
             styles={[localStyles.listItem]}
             onPress={
               item.key === "SignOut"
-                ? () => handleSignout()
+                ? showLogoutConfirmation
                 : () => {
                   console.log(item.key);
                   navigation.closeDrawer();
@@ -136,17 +157,15 @@ const DrawerCustom = ({ navigation }: any) => {
           </RowComponent>
         )}
       />
-      <RowComponent justify="flex-start">
-        <TouchableOpacity
-          style={[
-            globalStyles.button,
-            { backgroundColor: "#00F8FF33", height: "auto" },
-          ]}>
-          <MaterialCommunityIcons name="crown" size={22} color={"#00F8FF"} />
-          <SpaceComponent width={8} />
-          <TextComponent color="#00F8FF" text="Upgrade Pro" />
-        </TouchableOpacity>
-      </RowComponent>
+      <TouchableOpacity
+        style={[
+          globalStyles.button,
+          localStyles.upgradeButton,
+        ]}>
+        <MaterialCommunityIcons name="crown" size={22} color={"#00F8FF"} />
+        <SpaceComponent width={8} />
+        <TextComponent color="#00F8FF" text="Upgrade Pro" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -157,7 +176,14 @@ const localStyles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingVertical: Platform.OS === "android" ? StatusBar.currentHeight : 48,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight + 16 : 48,
+    paddingBottom: 16,
+    justifyContent: 'space-between',
+  },
+
+  menuList: {
+    flex: 1,
+    marginVertical: 20,
   },
 
   avatar: {
@@ -176,5 +202,12 @@ const localStyles = StyleSheet.create({
 
   listItemText: {
     paddingLeft: 12,
+  },
+
+  upgradeButton: {
+    backgroundColor: "#00F8FF33",
+    height: "auto",
+    alignSelf: 'flex-start',
+    marginTop: 10,
   },
 });

@@ -6,9 +6,10 @@ import {
   Image,
   StyleProp,
   ViewStyle,
+  TouchableOpacity,
 } from 'react-native';
-import React from 'react';
-import {CardComponent, TextComponent} from '.';
+import React, {useState} from 'react';
+import {CardComponent, RowComponent, TextComponent} from '.';
 import {appColors} from '../constants/appColors';
 import {formatDate} from '../services';
 import {formatPrice} from '../services/utils/price';
@@ -24,6 +25,11 @@ interface Props {
 
 const EventItem = (props: Props) => {
   const {item, type, styles, onPress} = props;
+  const [isFilled, setIsFilled] = useState(false);
+
+  const handlePressHeart = () => {
+    setIsFilled(!isFilled);
+  };
 
   return type === 'card' ? (
     <CardComponent
@@ -38,14 +44,55 @@ const EventItem = (props: Props) => {
       <Image
         style={{
           width: '100%',
-          height: 130,
+          height: 150,
           objectFit: 'cover',
           borderRadius: 15,
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0
         }}
         source={{uri: item.avatar}}
       />
+      <View
+        style={{
+          paddingHorizontal: 10,
+          paddingBottom: 10,
+          width: '100%'
+        }}
+      >
+      <RowComponent styles={{marginTop: 10}}  justify='flex-start'>
+        <View
+          style={{
+            backgroundColor: appColors.danger,
+            paddingVertical: 2,
+            paddingHorizontal: 12,
+            borderRadius: 20,
+            marginRight: 3
+          }}>
+          <TextComponent text="Giải trí" color='white' size={12}/>
+        </View>
+        <View
+          style={{
+            backgroundColor: appColors.link,
+            paddingVertical: 2,
+            paddingHorizontal: 12,
+            borderRadius: 20,
+            marginRight: 3
+          }}>
+          <TextComponent text="Concert" color='white' size={12}/>
+        </View>
+        <View
+          style={{
+            backgroundColor: 'green',
+            paddingVertical: 2,
+            paddingHorizontal: 12,
+            borderRadius: 20,
+            marginRight: 3
+          }}>
+          <TextComponent text="Âm nhạc" color='white' size={12}/>
+        </View>
+      </RowComponent>
       <TextComponent
-        numberOfLine={2}
+        numberOfLine={1}
         title
         size={18}
         text={item.name}
@@ -64,6 +111,20 @@ const EventItem = (props: Props) => {
           <Text>{`${formatDate(item.timeStart)} - `}</Text>
           <Text>{formatDate(item.timeEnd)}</Text>
         </View>
+      </View>
+      <RowComponent justify='flex-end' styles={{alignItems: 'center', marginTop: 5}}>
+        <TouchableOpacity
+          onPress={handlePressHeart}
+          style={{
+          }}>
+          <Ionicons
+            name={isFilled ? "heart" : "heart-outline"}
+            size={22}
+            color={isFilled ? appColors.danger : 'black'}
+          />
+        </TouchableOpacity>
+        <TextComponent text='10k' size={15} styles={{marginLeft: 1}}/>
+      </RowComponent>
       </View>
     </CardComponent>
   ) : (
