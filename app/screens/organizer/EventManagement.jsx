@@ -35,7 +35,7 @@ const EventCard = ({ name, timeStart, timeEnd, ticketPrice, soldTickets, image, 
       <Text style={styles.date}>Bắt đầu: {formatDate(timeStart)}</Text>
       <Text style={styles.date}>Kết thúc: {formatDate(timeEnd)}</Text>
       <Text style={styles.status}>Đã bán: {soldTickets}</Text>
-      <Text style={styles.price}>Giá vé: {ticketPrice.toLocaleString()}đ</Text>
+      {/* <Text style={styles.price}>Giá vé: {ticketPrice.toLocaleString()}đ</Text> */}
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}

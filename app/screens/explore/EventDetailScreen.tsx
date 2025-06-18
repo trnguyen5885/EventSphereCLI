@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,28 +10,33 @@ import {
   ScrollView,
   ImageBackground,
   Platform,
+  useWindowDimensions
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {AxiosInstance} from '../../services';
-import {globalStyles} from '../../constants/globalStyles';
+import { AxiosInstance } from '../../services';
+import { globalStyles } from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
   RowComponent,
+  SpaceComponent,
   TextComponent,
 } from '../../components';
-import {appColors} from '../../constants/appColors';
-import {formatDate} from '../../services/index';
-import {formatPrice} from '../../services/utils/price';
+import { appColors } from '../../constants/appColors';
+import { formatDate } from '../../services/index';
+import { formatPrice } from '../../services/utils/price';
 import RatingAndReview from '../review/RatingAndReview';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
 import ListInviteComponent from './components/ListInviteComponent';
 import InviteComponent from './components/InviteComponent';
 import MapPreview from '../map/MapPreview';
-import {TypeBase} from '@/app/models/explore/ExploreModels';
+import { TypeBase } from '@/app/models/explore/ExploreModels';
+import RenderHtml from 'react-native-render-html';
 
-const EventDetailScreen = ({navigation, route}: any) => {
-  const {id} = route.params;
+
+
+const EventDetailScreen = ({ navigation, route }: any) => {
+  const { id } = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
   const sheetRef = useRef<any>(null);
@@ -111,11 +116,14 @@ const EventDetailScreen = ({navigation, route}: any) => {
     navigation.goBack();
   };
 
+  const {width} = useWindowDimensions();
+
+
   return (
     <View style={[globalStyles.container]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
+        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
           <Ionicons name="chevron-back" size={26} color="white" />
 
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
@@ -130,10 +138,10 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{uri: detailEvent?.avatar}}>
+          source={{ uri: detailEvent?.avatar }}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{uri: detailEvent?.avatar}}
+              source={{ uri: detailEvent?.avatar }}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -163,14 +171,27 @@ const EventDetailScreen = ({navigation, route}: any) => {
               </View>
             </View>
           </View>
-          <View style={{width: '100%', alignItems: 'center'}}>
+          <View style={{ width: '100%', alignItems: 'center' }}>
             <InviteComponent onPress={handleInviteList} eventId={id} />
           </View>
         </ImageBackground>
 
         <View style={styles.aboutSection}>
-          <TextComponent text="Thông tin sự kiện" size={24} />
-          <Text style={styles.aboutText}>{detailEvent?.description}</Text>
+          <TextComponent text="Thông tin sự kiện" size={24}/>
+          <SpaceComponent height={30} />
+          {detailEvent?.description && (
+            <RenderHtml
+              contentWidth={width}
+              source={{ html: detailEvent.description }}
+              enableCSSInlineProcessing={true}
+              tagsStyles={{
+                strong: { fontWeight: 'bold' },
+                b: { fontWeight: 'bold' },
+                div: { marginBottom: 8 },
+              }}
+            />
+          )}
+          <SpaceComponent height={30} />
           <MapPreview
             latitude={detailEvent?.latitude}
             longitude={detailEvent?.longitude}
@@ -178,14 +199,15 @@ const EventDetailScreen = ({navigation, route}: any) => {
           />
         </View>
 
+
         {detailEvent?.showtimes && detailEvent?.showtimes.length > 0 && (
-          <View style={{marginTop: 20, paddingHorizontal: 20}}>
+          <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
             <TextComponent
               text="Chọn suất chiếu"
               size={20}
-              styles={{marginBottom: 10}}
+              styles={{ marginBottom: 10 }}
             />
-            <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 10}}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
               {detailEvent.showtimes.map(showTime => (
                 <TouchableOpacity
                   key={showTime._id}
