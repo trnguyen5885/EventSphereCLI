@@ -199,7 +199,7 @@ const ExploreScreen = ({ navigation }: any) => {
     const getEvents = async () => {
       try {
         const response = await AxiosInstance().get<EventModel[], any>(
-          'events/all',
+          'events/home',
         );
         console.log(response);
         const res = await AxiosInstance().get<EventModel[], any>(

@@ -19,13 +19,13 @@ const UpcomingEventsScreen = ({ handleInteraction, navigation }: UpcomingEventsS
             try {
                 setIsLoading(true);
                 const response = await AxiosInstance().get<EventModel[], any>(
-                    'events/all',
+                    'events/home',
                 );
                 const now = Date.now();
                 const filteredUpcomingEvents = response.filter(
                     (eventItem: EventModel) => eventItem.timeStart > now,
                 );
-                setUpcomingEvents(filteredUpcomingEvents);
+                setUpcomingEvents(response);
                 setIsLoading(false);
             } catch (e) {
                 console.log("Error fetching upcoming events: ", e);
@@ -58,6 +58,7 @@ const UpcomingEventsScreen = ({ handleInteraction, navigation }: UpcomingEventsS
                         }}
                         type="card"
                         item={item}
+                        styles={{width: '94%'}}
                     />
                 )}
             />

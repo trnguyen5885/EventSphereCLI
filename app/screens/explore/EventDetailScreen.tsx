@@ -10,7 +10,8 @@ import {
   ScrollView,
   ImageBackground,
   Platform,
-  useWindowDimensions
+  useWindowDimensions,
+  Animated
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AxiosInstance } from '../../services';
@@ -33,24 +34,50 @@ import MapPreview from '../map/MapPreview';
 import { TypeBase } from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
 
-
-
 const EventDetailScreen = ({ navigation, route }: any) => {
   const { id } = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
+  const [organizer, setOrganizer] = useState<any>(null); // Thêm state cho thông tin người tổ chức
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
+  const [isEventInfoExpanded, setIsEventInfoExpanded] = useState(false);
+  const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
+  const [isLocationExpanded, setIsLocationExpanded] = useState(false);
+  const [isOrganizerExpanded, setIsOrganizerExpanded] = useState(false); // Thêm state cho phần ban tổ chức
   const sheetRef = useRef<any>(null);
-  console.log(detailEvent?._id);
 
+  // Animation values
+  const eventInfoAnimation = useRef(new Animated.Value(0)).current;
+  const ticketInfoAnimation = useRef(new Animated.Value(0)).current;
+  const locationAnimation = useRef(new Animated.Value(0)).current;
+  const organizerAnimation = useRef(new Animated.Value(0)).current; // Thêm animation cho ban tổ chức
+
+  console.log(detailEvent?._id);
   console.log('geg', detailEvent);
+
   useEffect(() => {
     const getDetailEvent = async () => {
       try {
         const response = await AxiosInstance().get(`events/detail/${id}`);
         setDetailEvent(response.data);
         console.log('Detail ', response.data);
+        
+        // Gọi API lấy thông tin người tổ chức nếu có userId
+        if (response.data?.userId) {
+          getOrganizerInfo(response.data.userId);
+        }
       } catch (e) {
         console.log(e);
+      }
+    };
+
+    // Hàm lấy thông tin người tổ chức
+    const getOrganizerInfo = async (userId: string) => {
+      try {
+        const response = await AxiosInstance().get(`users/getUser/${userId}`);
+        setOrganizer(response.data);
+        console.log('Organizer info: ', response.data);
+      } catch (e) {
+        console.log('Error getting organizer info: ', e);
       }
     };
 
@@ -58,9 +85,54 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
     return () => {
       setDetailEvent(null);
+      setOrganizer(null); // Cleanup organizer state
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const toggleEventInfo = () => {
+    const toValue = isEventInfoExpanded ? 0 : 1;
+    setIsEventInfoExpanded(!isEventInfoExpanded);
+
+    Animated.timing(eventInfoAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const toggleTicketInfo = () => {
+    const toValue = isTicketInfoExpanded ? 0 : 1;
+    setIsTicketInfoExpanded(!isTicketInfoExpanded);
+
+    Animated.timing(ticketInfoAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const toggleLocationInfo = () => {
+    const toValue = isLocationExpanded ? 0 : 1;
+    setIsLocationExpanded(!isLocationExpanded);
+
+    Animated.timing(locationAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  // Thêm hàm toggle cho ban tổ chức
+  const toggleOrganizerInfo = () => {
+    const toValue = isOrganizerExpanded ? 0 : 1;
+    setIsOrganizerExpanded(!isOrganizerExpanded);
+
+    Animated.timing(organizerAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
 
   const handleInviteList = () => {
     if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
@@ -116,8 +188,14 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     navigation.goBack();
   };
 
-  const {width} = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
+  // Truncate description to show only first part
+  const getTruncatedDescription = (description: string, maxLength: number = 500) => {
+    if (!description) return '';
+    if (description.length <= maxLength) return description;
+    return description.substring(0, maxLength) + '...';
+  };
 
   return (
     <View style={[globalStyles.container]}>
@@ -125,12 +203,11 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         <StatusBar animated backgroundColor={appColors.primary} />
         <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
           <Ionicons name="chevron-back" size={26} color="white" />
-
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
         </RowComponent>
 
         <TouchableOpacity>
-          <Ionicons name="bookmark-outline" size={24} color="white" />
+          <Ionicons name="share-social-outline" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -171,66 +248,197 @@ const EventDetailScreen = ({ navigation, route }: any) => {
               </View>
             </View>
           </View>
-          <View style={{ width: '100%', alignItems: 'center' }}>
-            <InviteComponent onPress={handleInviteList} eventId={id} />
-          </View>
         </ImageBackground>
 
-        <View style={styles.aboutSection}>
-          <TextComponent text="Thông tin sự kiện" size={24}/>
-          <SpaceComponent height={30} />
-          {detailEvent?.description && (
-            <RenderHtml
-              contentWidth={width}
-              source={{ html: detailEvent.description }}
-              enableCSSInlineProcessing={true}
-              tagsStyles={{
-                strong: { fontWeight: 'bold' },
-                b: { fontWeight: 'bold' },
-                div: { marginBottom: 8 },
-              }}
+        {/* Event Info Section - Giới thiệu */}
+        <View style={styles.sectionContainer}>
+          <TouchableOpacity style={styles.sectionHeader} onPress={toggleEventInfo}>
+            <TextComponent text="Giới thiệu" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
+            <Ionicons
+              name={isEventInfoExpanded ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="black"
             />
-          )}
-          <SpaceComponent height={30} />
-          <MapPreview
-            latitude={detailEvent?.latitude}
-            longitude={detailEvent?.longitude}
-            location_map={detailEvent?.location_map}
-          />
+          </TouchableOpacity>
+
+          <View style={styles.sectionContent}>
+            <View style={styles.contentWrapper}>
+              {detailEvent?.description && (
+                <RenderHtml
+                  contentWidth={width - 40}
+                  source={{
+                    html: isEventInfoExpanded
+                      ? detailEvent.description
+                      : getTruncatedDescription(detailEvent.description.replace(/<[^>]*>/g, ''), 500)
+                  }}
+                  enableCSSInlineProcessing={true}
+                  tagsStyles={{
+                    strong: { fontWeight: 'bold' },
+                    b: { fontWeight: 'bold' },
+                    div: { marginBottom: 8 },
+                  }}
+                />
+              )}
+            </View>
+          </View>
         </View>
 
-
-        {detailEvent?.showtimes && detailEvent?.showtimes.length > 0 && (
-          <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
-            <TextComponent
-              text="Chọn suất chiếu"
-              size={20}
-              styles={{ marginBottom: 10 }}
+        {/* Location Section - Vị trí sự kiện */}
+        <View style={styles.sectionContainer}>
+          <TouchableOpacity style={styles.sectionHeader} onPress={toggleLocationInfo}>
+            <TextComponent text="Vị trí sự kiện" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
+            <Ionicons
+              name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="black"
             />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {detailEvent.showtimes.map(showTime => (
-                <TouchableOpacity
-                  key={showTime._id}
-                  onPress={() => setSelectedShowtimeId(showTime._id)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    backgroundColor:
-                      selectedShowtimeId === showTime._id
-                        ? appColors.primary
-                        : '#E5E7EB',
-                    borderRadius: 8,
-                  }}>
-                  <Text
-                    style={{
-                      color:
-                        selectedShowtimeId === showTime._id ? 'white' : 'black',
-                      fontWeight: '600',
-                    }}>
-                    {showTime._id}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          </TouchableOpacity>
+
+          {isLocationExpanded && (
+            <View style={styles.sectionContent}>
+              <View style={styles.contentWrapper}>
+                <View style={styles.detailRow}>
+                  <Ionicons name="location" size={22} color={appColors.primary} />
+                  <View>
+                    <Text style={styles.titleLocation}>
+                      {detailEvent?.location ?? ''}
+                    </Text>
+                  </View>
+                </View>
+                <MapPreview
+                  latitude={detailEvent?.latitude}
+                  longitude={detailEvent?.longitude}
+                  location_map={detailEvent?.location_map}
+                />
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Ticket Info Section */}
+        {detailEvent?.showtimes && detailEvent?.showtimes.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <TouchableOpacity style={styles.sectionHeader} onPress={toggleTicketInfo}>
+              <TextComponent text="Thông tin vé" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
+              <Ionicons
+                name={isTicketInfoExpanded ? 'chevron-up' : 'chevron-down'}
+                size={24}
+                color="black"
+              />
+            </TouchableOpacity>
+
+            <View style={styles.sectionContent}>
+              <View style={styles.contentWrapper}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                  {detailEvent.showtimes.map(showTime => (
+                    <TouchableOpacity
+                      key={showTime._id}
+                      onPress={() => setSelectedShowtimeId(showTime._id)}
+                      style={{
+                        paddingHorizontal: 16,
+                        paddingVertical: 10,
+                        backgroundColor:
+                          selectedShowtimeId === showTime._id
+                            ? appColors.primary
+                            : '#E5E7EB',
+                        borderRadius: 8,
+                      }}>
+                      <Text
+                        style={{
+                          color:
+                            selectedShowtimeId === showTime._id ? 'white' : 'black',
+                          fontWeight: '600',
+                        }}>
+                        {showTime._id}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {isTicketInfoExpanded && (
+                  <View style={styles.ticketPriceContainer}>
+                    <View style={styles.ticketPriceRow}>
+                      <Text style={styles.ticketPriceLabel}>NHÀ NHEM</Text>
+                      <Text style={styles.ticketPriceValue}>450.000 đ</Text>
+                    </View>
+                    <View style={styles.ticketPriceRow}>
+                      <Text style={styles.ticketPriceLabel}>CHẤP CHOANG</Text>
+                      <Text style={styles.ticketPriceValue}>650.000 đ</Text>
+                    </View>
+                    <View style={styles.ticketPriceRow}>
+                      <Text style={styles.ticketPriceLabel}>CHANG VANG</Text>
+                      <Text style={styles.ticketPriceValue}>900.000 đ</Text>
+                    </View>
+                    <View style={styles.ticketPriceRow}>
+                      <Text style={styles.ticketPriceLabel}>CHIÊU TÀ</Text>
+                      <Text style={styles.ticketPriceValue}>1.150.000 đ</Text>
+                    </View>
+                    <View style={styles.ticketPriceRow}>
+                      <Text style={styles.ticketPriceLabel}>HOÀNG HÔN</Text>
+                      <Text style={styles.ticketPriceValue}>1.400.000 đ</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Organizer Section - Ban tổ chức */}
+        {organizer && (
+          <View style={styles.sectionContainer}>
+            <TouchableOpacity style={styles.sectionHeader} onPress={toggleOrganizerInfo}>
+              <TextComponent text="Ban tổ chức" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
+              <Ionicons
+                name={isOrganizerExpanded ? 'chevron-up' : 'chevron-down'}
+                size={24}
+                color="black"
+              />
+            </TouchableOpacity>
+
+            <View style={styles.sectionContent}>
+              <View style={styles.contentWrapper}>
+                <View style={styles.organizerContainer}>
+                  <Image
+                    source={{ 
+                      uri: organizer.picUrl || 'https://via.placeholder.com/60x60?text=User' 
+                    }}
+                    style={styles.organizerAvatar}
+                  />
+                  <View style={styles.organizerInfo}>
+                    <Text style={styles.organizerName}>
+                      {organizer.username || 'Người tổ chức'}
+                    </Text>
+                    <Text style={styles.organizerRole}>
+                      Nhà tổ chức sự kiện
+                    </Text>
+                  </View>
+                </View>
+
+                {isOrganizerExpanded && (
+                  <View style={styles.organizerDetails}>
+                    <View style={styles.organizerStats}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>25</Text>
+                        <Text style={styles.statLabel}>Sự kiện</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>1.2K</Text>
+                        <Text style={styles.statLabel}>Người theo dõi</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>4.8</Text>
+                        <Text style={styles.statLabel}>Đánh giá</Text>
+                      </View>
+                    </View>
+                    
+                    <TouchableOpacity style={styles.followButton}>
+                      <Ionicons name="person-add" size={16} color="white" />
+                      <Text style={styles.followButtonText}>Theo dõi</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         )}
@@ -243,9 +451,8 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           onPress={() => {
             handleNavigation(detailEvent?.typeBase);
           }}
-          text={`Mua vé với giá ${formatPrice(
-            detailEvent?.ticketPrice ?? undefined,
-          )}`}
+          text={"Mua vé ngay"}
+          styles={styles.buyTicketButton}
           type="primary"
           icon={
             <CircleComponent color={appColors.white}>
@@ -298,7 +505,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
-
   containerEventDetailInfo: {
     backgroundColor: 'rgba(0,0,0,0.6)',
     borderBottomLeftRadius: 10,
@@ -320,12 +526,123 @@ const styles = StyleSheet.create({
   },
   detailSubtitle: {
     color: appColors.white2,
-
     maxWidth: 320,
     lineHeight: 26,
     marginTop: 2,
   },
-
+  titleLocation: {
+    color: "black",
+    maxWidth: 320,
+    lineHeight: 26,
+    marginTop: 2,
+  },
+  sectionContainer: {
+    marginHorizontal: 12,
+    marginTop: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+  },
+  sectionContent: {
+    backgroundColor: 'white',
+    overflow: 'hidden',
+  },
+  contentWrapper: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  ticketPriceContainer: {
+    marginTop: 10,
+  },
+  ticketPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  ticketPriceLabel: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  ticketPriceValue: {
+    color: appColors.primary,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Thêm styles cho phần Ban tổ chức
+  organizerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  organizerAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 12,
+  },
+  organizerInfo: {
+    flex: 1,
+  },
+  organizerName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+    marginBottom: 4,
+  },
+  organizerRole: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  organizerDetails: {
+    marginTop: 16,
+  },
+  organizerStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    paddingVertical: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: appColors.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  followButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: appColors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    gap: 8,
+  },
+  followButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   aboutSection: {
     paddingHorizontal: 20,
     marginTop: 20,
@@ -344,7 +661,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
-    marginTop: 24,
+    marginTop: 12,
   },
   buyTicketText: {
     color: 'white',

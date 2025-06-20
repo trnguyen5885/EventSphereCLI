@@ -6,10 +6,13 @@ import { appInfo } from '../../constants/appInfos';
 import { io } from 'socket.io-client';
 import { useNavigation } from '@react-navigation/native';
 import { AxiosInstance, formatDate, formatDateCreateAt } from '../../services';
+import { globalStyles } from '../../constants/globalStyles';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const RatingAndReview = ({detailEventId}) => {
      const navigation = useNavigation();
      const [listReview, setListReivew] = useState([]);
+     const [isExpanded, setIsExpanded] = useState(false);
      const socketRef = useRef(null);
 
      console.log(listReview);
@@ -49,76 +52,133 @@ const RatingAndReview = ({detailEventId}) => {
           };
       },[detailEventId]);
 
+    const toggleExpanded = () => {
+        setIsExpanded(!isExpanded);
+    };
+
+    const displayedReviews = isExpanded ? listReview : listReview.slice(0, 2);
+
+    const renderStars = (rating) => {
+        return Array.from({length: 5}, (_, index) => (
+            <Ionicons
+                key={index}
+                name={index < rating ? 'star' : 'star-outline'}
+                size={16}
+                color={index < rating ? '#FFD700' : '#D1D5DB'}
+            />
+        ));
+    };
+
     return (
-        <View style={styles.container}>
-            {/* Thanh tiêu đề */}
-            <View style={styles.headerTaskbar}>
-                <TextComponent text="Đánh giá và nhận xét" size={24} />
-            </View>
-
-            <ScrollView contentContainerStyle={styles.contentWrapper}>
-                {/* Đánh giá trung bình và biểu đồ */}
-                 {/* <View style={styles.ratingContainer}>
-                    <View style={styles.avgRatingBox}>
-                        <View style={styles.avgRatingContainer}>
-                            <Text style={styles.avgRating}>9.5</Text>
-                            <Text style={styles.maxRating}>/10</Text>
-                        </View>
-                        <Text style={styles.totalRating}>44 lượt đánh giá</Text>
-                    </View>
-
-                    <View style={styles.chartContainer}>
-                        <Text style={styles.placeholderText}>[ Biểu đồ đánh giá ]</Text>
-                    </View>
-                </View> */}
-
-                {/* Đánh giá của bạn */}
-                {/* <View style={styles.userRating}>
-                    <Text style={styles.sectionTitle}>Đánh giá của bạn</Text>
-                    <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
-                </View> */}
-
-                {/* Danh sách bình luận */}
-                <View style={styles.commentList}>
-                    {listReview.map((item) => (
-                        <View key={item._id} style={styles.commentItem}>
-
-                            {/* Header: avatar + tên + ngày */}
-                            <View style={styles.commentHeader}>
-                                <Image style={styles.commentAvt} source={{uri: item?.userId?.picUrl ? item?.userId?.picUrl : 'https://avatar.iran.liara.run/public'}}  />
-                                <Text style={styles.commentName}>{item?.userId?.username}</Text>
-                                {/* <Text style={styles.commentDate}>{formatDateCreateAt(item.userId.createdAt)}</Text> */}    
-                            </View>
-
-                            {/* Số sao đánh giá */}
-                            <View style={styles.commentRating}>
-                                <Text>{'⭐'.repeat(item.rating)}</Text>
-                            </View>
-
-                            {/* Nội dung bình luận */}
-                            <Text style={styles.commentContent}>{item.comment}</Text>
-
-                            {/* Các hành động */}
-                            <View style={styles.actionButtonContainer}>
-                                <TouchableOpacity style={styles.actionButtons}>
-                                    <Text style={styles.actionButtonText}>Thích</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.actionButtons}>
-                                    <Text style={styles.actionButtonText}>Báo cáo</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    ))}
+        <View style={styles.sectionContainer}>
+            {/* Header Section */}
+            <TouchableOpacity style={styles.sectionHeader} onPress={toggleExpanded}>
+                <TextComponent 
+                    text="Đánh giá và nhận xét" 
+                    size={18} 
+                    styles={{ fontWeight: 'bold', color: '#1F2937' }} 
+                />
+                <View style={styles.headerRight}>
+                    <Text style={styles.reviewCount}>({listReview.length})</Text>
+                    <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={24}
+                        color="#6B7280"
+                    />
                 </View>
-                <TouchableOpacity activeOpacity={0.2} onPress={() => navigation.navigate('Review',{
-                    detailEventId: detailEventId,
+            </TouchableOpacity>
 
-                })} >
-                    <TextComponent styles={styles.comment} text="Đánh giá của bạn về sự kiện" />
-                </TouchableOpacity>
-            </ScrollView>
+            {/* Content Section */}
+            {isExpanded && (
+                <View style={styles.sectionContent}>
+                    <View style={styles.contentWrapper}>
+                        {/* Nút đánh giả của bạn */}
+                        <TouchableOpacity 
+                            activeOpacity={0.8} 
+                            onPress={() => navigation.navigate('Review', {
+                                detailEventId: detailEventId,
+                            })}
+                            style={styles.writeReviewButton}
+                        >
+                            <Ionicons name="create-outline" size={20} color={appColors.primary} />
+                            <Text style={styles.writeReviewText}>Viết đánh giá của bạn</Text>
+                            <Ionicons name="chevron-forward" size={16} color="#6B7280" />
+                        </TouchableOpacity>
 
+                        {/* Danh sách bình luận */}
+                        {displayedReviews.length > 0 ? (
+                            displayedReviews.map((item, index) => (
+                                <View key={item._id} style={[
+                                    styles.commentItem,
+                                    index === displayedReviews.length - 1 && styles.lastCommentItem
+                                ]}>
+                                    {/* Header: avatar + tên + ngày */}
+                                    <View style={styles.commentHeader}>
+                                        <Image 
+                                            style={styles.commentAvt} 
+                                            source={{
+                                                uri: item?.userId?.picUrl ? 
+                                                    item?.userId?.picUrl : 
+                                                    'https://avatar.iran.liara.run/public'
+                                            }}  
+                                        />
+                                        <View style={styles.commentUserInfo}>
+                                            <Text style={styles.commentName}>
+                                                {item?.userId?.username}
+                                            </Text>
+                                            <View style={styles.commentRating}>
+                                                {renderStars(item.rating)}
+                                            </View>
+                                        </View>
+                                    </View>
 
+                                    {/* Nội dung bình luận */}
+                                    <Text style={styles.commentContent}>
+                                        {item.comment}
+                                    </Text>
+
+                                    {/* Các hành động */}
+                                    <View style={styles.actionButtonContainer}>
+                                        <TouchableOpacity style={styles.actionButtons}>
+                                            <Ionicons name="heart-outline" size={16} color="#6B7280" />
+                                            <Text style={styles.actionButtonText}>Thích</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.actionButtons}>
+                                            <Ionicons name="flag-outline" size={16} color="#6B7280" />
+                                            <Text style={styles.actionButtonText}>Báo cáo</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))
+                        ) : (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="chatbubble-outline" size={48} color="#9CA3AF" />
+                                <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
+                                <Text style={styles.emptySubText}>Hãy là người đầu tiên đánh giá sự kiện này</Text>
+                            </View>
+                        )}
+
+                        {/* Nút xem thêm/ít hơn */}
+                        {listReview.length > 2 && (
+                            <TouchableOpacity 
+                                style={styles.showMoreButton}
+                                onPress={toggleExpanded}
+                            >
+                                <Text style={styles.showMoreText}>
+                                    {isExpanded ? 'Thu gọn' : `Xem thêm ${listReview.length - 2} đánh giá`}
+                                </Text>
+                                <Ionicons
+                                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                    size={16}
+                                    color={appColors.primary}
+                                />
+                            </TouchableOpacity>
+                        )}
+
+                        
+                    </View>
+                </View>
+            )}
         </View>
     );
 };
@@ -126,145 +186,180 @@ const RatingAndReview = ({detailEventId}) => {
 export default RatingAndReview;
 
 const styles = StyleSheet.create({
-    // Container chính
-    container: {
-        flex: 1,
-        backgroundColor: '#FFF',
+    // Container chính với background sáng
+    sectionContainer: {
+        marginHorizontal: 12,
+        marginTop: 20,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        overflow: 'hidden',
+        
     },
-
-    // Header (thanh tiêu đề)
-    headerTaskbar: {
+    
+    sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
+        padding: 16,
+        backgroundColor: '#F9FAFB',
         borderBottomWidth: 1,
-        borderColor: '#E5E5E5',
-    },
-    headerTitle: {
-        fontSize: 22,
-
-        color: appColors.text,
-    },
-    backIcon: {
-        fontSize: 20,
+        borderBottomColor: '#E5E7EB',
     },
 
-    // Bọc nội dung chính (scroll view)
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+
+    reviewCount: {
+        color: '#6B7280',
+        fontSize: 16,
+    },
+
+    sectionContent: {
+        backgroundColor: '#FFFFFF',
+        overflow: 'hidden',
+    },
+
     contentWrapper: {
-        paddingHorizontal: 15,
-        paddingBottom: 10,
-    },
-
-    // Phần đánh giá trung bình + biểu đồ
-    ratingContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems:'baseline',
-        marginVertical: 20,
-    },
-    avgRatingBox: {
-        flex: 1,
-        marginRight: 10,
-    },
-    avgRatingContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-    },
-    avgRating: {
-        fontSize: 40,
-        fontWeight: 'bold',
-    },
-    maxRating: {
-        fontSize: 20,
-        color: 'grey',
-        marginLeft: 2,
-    },
-    totalRating: {
-        marginTop: 5,
-        color: 'grey',
-    },
-    chartContainer: {
-        width: 180,
-        height: 100,
-        backgroundColor: '#EEE',
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    placeholderText: {
-        color: 'grey',
-    },
-
-    // Đánh giá của bạn
-    userRating: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderColor: '#E5E5E5',
-    },
-    sectionTitle: {
-        fontWeight: '600',
-    },
-    stars: {
-        fontSize: 18,
+        padding: 16,
+        paddingTop: 0,
     },
 
     // Danh sách bình luận
-    commentList: {
-        paddingVertical: 10,
-    },
     commentItem: {
-        marginBottom: 15,
-        paddingBottom: 15,
+        marginBottom: 20,
+        paddingBottom: 20,
         borderBottomWidth: 1,
-        borderColor: '#E5E5E5',
+        borderBottomColor: '#E5E7EB',
     },
+
+    lastCommentItem: {
+        borderBottomWidth: 0,
+        marginBottom: 0,
+        paddingBottom: 0,
+    },
+
     commentHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 5,
+        marginBottom: 12,
     },
+
     commentAvt: {
-        width: 35,
-        height: 35,
-        borderRadius: 25,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
     },
+
+    commentUserInfo: {
+        marginLeft: 12,
+        flex: 1,
+    },
+
     commentName: {
-        marginHorizontal: 10,
+        color: 'black',
+        fontSize: 16,
         fontWeight: '600',
+        marginBottom: 4,
     },
-    commentDate: {
-        color: 'grey',
-        fontSize: 12,
-    },
+
     commentRating: {
-        marginVertical: 5,
+        flexDirection: 'row',
+        gap: 2,
     },
+
     commentContent: {
-        marginBottom: 10,
+        color: '#374151',
+        fontSize: 15,
+        lineHeight: 22,
+        marginBottom: 12,
     },
 
     // Các nút hành động dưới comment
     actionButtonContainer: {
         flexDirection: 'row',
-        gap: 10,
+        gap: 12,
     },
+
     actionButtons: {
-        paddingVertical: 5,
-        paddingHorizontal: 15,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
+
     actionButtonText: {
+        color: '#6B7280',
         fontSize: 13,
     },
-    comment: {
-        minHeight: 50,
-        padding: 10,
-        textAlignVertical: 'top', // giúp text bắt đầu từ trên cùng
+
+    // Nút xem thêm
+    showMoreButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        paddingVertical: 12,
+        marginTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+    },
+
+    showMoreText: {
+        color: appColors.primary,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+
+    // Nút viết đánh giá
+    writeReviewButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        marginTop: 10,
+        marginBottom: 20,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+
+    writeReviewText: {
+        color: '#1F2937',
+        fontSize: 16,
+        fontWeight: '500',
+        flex: 1,
+        marginLeft: 12,
+    },
+
+    // Empty state
+    emptyState: {
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+
+    emptyText: {
+        color: '#1F2937',
+        fontSize: 16,
+        fontWeight: '600',
+        marginTop: 12,
+        textAlign: 'center',
+    },
+
+    emptySubText: {
+        color: '#6B7280',
+        fontSize: 14,
+        marginTop: 4,
+        textAlign: 'center',
     },
 });
