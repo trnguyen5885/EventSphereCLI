@@ -4,7 +4,7 @@ import { appColors } from './appColors';
 export const globalStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: appColors.white,
+        backgroundColor: appColors.gray5,
         justifyContent: 'center',
     },
     text:{

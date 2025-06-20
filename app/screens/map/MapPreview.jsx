@@ -19,7 +19,7 @@ const MapPreview = ({longitude, latitude, location_map}) => {
 
   return (
     <View>
-      <TextComponent text="Vị trí sự kiện" size={24} />
+      
       <SpaceComponent height={10} />
       <TouchableOpacity onPress={openInGoogleMaps} style={styles.mapContainer}>
         <View style={styles.mapWrapper}>

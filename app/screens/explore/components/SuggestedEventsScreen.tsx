@@ -73,7 +73,7 @@ const SuggestedEventsScreen = ({
 
   const fetchEvents = async () => {
     try {
-      const response = await AxiosInstance().get<EventModel[]>('events/all');
+      const response = await AxiosInstance().get<EventModel[]>('events/home');
       const now = Date.now();
 
       const ongoing = response.data.filter(

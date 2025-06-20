@@ -99,7 +99,7 @@ const EventItem = (props: Props) => {
         styles={{marginTop: 5}}
       />
       <TextComponent
-        text={`Từ ${formatPrice(item.ticketPrice)}`}
+        text={`Từ ${formatPrice(item.minTicketPrice)}`}
         styles={{fontSize: 17, fontWeight: 'bold', color: appColors.primary}}
       />
 
