@@ -49,7 +49,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   const eventInfoAnimation = useRef(new Animated.Value(0)).current;
   const ticketInfoAnimation = useRef(new Animated.Value(0)).current;
   const locationAnimation = useRef(new Animated.Value(0)).current;
-  const organizerAnimation = useRef(new Animated.Value(0)).current; // Thêm animation cho ban tổ chức
+  
 
   console.log(detailEvent?._id);
   console.log('geg', detailEvent);
@@ -122,28 +122,9 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     }).start();
   };
 
-  // Thêm hàm toggle cho ban tổ chức
-  const toggleOrganizerInfo = () => {
-    const toValue = isOrganizerExpanded ? 0 : 1;
-    setIsOrganizerExpanded(!isOrganizerExpanded);
+  
 
-    Animated.timing(organizerAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const handleInviteList = () => {
-    if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
-      sheetRef.current?.expand();
-      console.log('sheetRef.current', sheetRef.current);
-    } else {
-      console.error(
-        'Bottom sheet reference or present method is not available',
-      );
-    }
-  };
+  
 
   const handleNavigation = (typeBase: TypeBase | undefined) => {
     switch (typeBase) {
@@ -387,13 +368,9 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         {/* Organizer Section - Ban tổ chức */}
         {organizer && (
           <View style={styles.sectionContainer}>
-            <TouchableOpacity style={styles.sectionHeader} onPress={toggleOrganizerInfo}>
+            <TouchableOpacity style={styles.sectionHeader} >
               <TextComponent text="Ban tổ chức" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
-              <Ionicons
-                name={isOrganizerExpanded ? 'chevron-up' : 'chevron-down'}
-                size={24}
-                color="black"
-              />
+              
             </TouchableOpacity>
 
             <View style={styles.sectionContent}>
@@ -415,29 +392,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
                   </View>
                 </View>
 
-                {isOrganizerExpanded && (
-                  <View style={styles.organizerDetails}>
-                    <View style={styles.organizerStats}>
-                      <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>25</Text>
-                        <Text style={styles.statLabel}>Sự kiện</Text>
-                      </View>
-                      <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>1.2K</Text>
-                        <Text style={styles.statLabel}>Người theo dõi</Text>
-                      </View>
-                      <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>4.8</Text>
-                        <Text style={styles.statLabel}>Đánh giá</Text>
-                      </View>
-                    </View>
-                    
-                    <TouchableOpacity style={styles.followButton}>
-                      <Ionicons name="person-add" size={16} color="white" />
-                      <Text style={styles.followButtonText}>Theo dõi</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+                
               </View>
             </View>
           </View>
@@ -533,7 +488,6 @@ const styles = StyleSheet.create({
   titleLocation: {
     color: "black",
     maxWidth: 320,
-    lineHeight: 26,
     marginTop: 2,
   },
   sectionContainer: {
