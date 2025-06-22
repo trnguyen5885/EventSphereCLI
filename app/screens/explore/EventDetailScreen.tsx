@@ -50,8 +50,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
   const eventInfoAnimation = useRef(new Animated.Value(0)).current;
   const ticketInfoAnimation = useRef(new Animated.Value(0)).current;
   const locationAnimation = useRef(new Animated.Value(0)).current;
-  
-
+  const organizerInfoAnimation = useRef(new Animated.Value(0)).current;
   console.log('Id Event: ', detailEvent?._id);
   console.log('Detail Event', detailEvent);
 
@@ -123,9 +122,16 @@ const EventDetailScreen = ({navigation, route}: any) => {
     }).start();
   };
 
-  
+  const toggleOrganizerInfo = () => {
+    const toValue = isLocationExpanded ? 0 : 1;
+    setIsOrganizerExpanded(!isOrganizerExpanded);
 
-  
+    Animated.timing(organizerInfoAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
 
   const handleNavigation = (
     typeBase: TypeBase | undefined,
