@@ -38,19 +38,19 @@ import Geolocation from '@react-native-community/geolocation';
 import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
 import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
-import { EventModel } from '@/app/models';
+import {EventModel} from '@/app/models';
 import TabComponent from './components/TabComponent';
 import PopularEventsScreen from './components/PopularEventsScreen';
 import UpcomingEventsScreen from './components/UpcomingEventsScreen';
 import SuggestedEventsScreen from './components/SuggestedEventsScreen';
 
-const ExploreScreen = ({ navigation }: any) => {
+const ExploreScreen = ({navigation}: any) => {
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
   const [isLoading, setIsLoading] = useState(true);
   const tabs = [
-    {id: 0, name: "Đề xuất"},
-    {id: 1, name: "Nổi bật"},
-    {id: 2, name: "Sắp diễn ra"},
+    {id: 0, name: 'Đề xuất'},
+    {id: 1, name: 'Nổi bật'},
+    {id: 2, name: 'Sắp diễn ra'},
   ];
   const [activeTab, setActiveTab] = useState(0);
   const [location, setLocation] = useState<{
@@ -84,7 +84,7 @@ const ExploreScreen = ({ navigation }: any) => {
           onPress: () => BackHandler.exitApp(),
         },
       ],
-      { cancelable: false }
+      {cancelable: false},
     );
     return true; // Ngăn chặn hành vi back mặc định
   }, []);
@@ -92,10 +92,13 @@ const ExploreScreen = ({ navigation }: any) => {
   // Sử dụng useFocusEffect để đăng ký/hủy đăng ký BackHandler
   useFocusEffect(
     useCallback(() => {
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-      
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        handleBackPress,
+      );
+
       return () => backHandler.remove();
-    }, [handleBackPress])
+    }, [handleBackPress]),
   );
 
   const requestLocationPermission = async () => {
@@ -243,10 +246,10 @@ const ExploreScreen = ({ navigation }: any) => {
     return <LoadingModal visible={true} />;
   }
 
-  console.log("Event Incoming: " + JSON.stringify(populateEvents));
+  console.log('Event Incoming: ' + JSON.stringify(populateEvents));
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <ScrollView style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.9)'}}>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -254,12 +257,12 @@ const ExploreScreen = ({ navigation }: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 170 + (Platform.OS === 'ios' ? 16 : 0),
+          height: 145 + (Platform.OS === 'ios' ? 16 : 0),
           borderBottomLeftRadius: 35,
           borderBottomRightRadius: 35,
           paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
         }}>
-        <View style={{ paddingHorizontal: 16 }}>
+        <View style={{paddingHorizontal: 16}}>
           <RowComponent>
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
@@ -346,32 +349,16 @@ const ExploreScreen = ({ navigation }: any) => {
               <SpaceComponent width={8} />
               <TextComponent text="Lọc" color={appColors.white} />
             </RowComponent>
-
           </RowComponent>
-          <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
         </View>
       </View>
-      
-      {activeTab === 0 && (
-        <SuggestedEventsScreen
-          populateEvents={populateEvents}
-          handleInteraction={handleInteraction}
-          navigation={navigation}
-        />
-      )}
-      {activeTab === 1 && (
-        <PopularEventsScreen
-          handleInteraction={handleInteraction}
-          navigation={navigation}
-        />
-      )}
-      {activeTab === 2 && (
-        <UpcomingEventsScreen
-          handleInteraction={handleInteraction}
-          navigation={navigation}
-        />
-      )}
-    </View>
+
+      <SuggestedEventsScreen
+        populateEvents={populateEvents}
+        handleInteraction={handleInteraction}
+        navigation={navigation}
+      />
+    </ScrollView>
   );
 };
 
