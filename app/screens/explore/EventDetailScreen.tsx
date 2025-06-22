@@ -50,7 +50,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
   const eventInfoAnimation = useRef(new Animated.Value(0)).current;
   const ticketInfoAnimation = useRef(new Animated.Value(0)).current;
   const locationAnimation = useRef(new Animated.Value(0)).current;
-  const organizerAnimation = useRef(new Animated.Value(0)).current; // Thêm animation cho ban tổ chức
+  
 
   console.log('Id Event: ', detailEvent?._id);
   console.log('Detail Event', detailEvent);
@@ -123,28 +123,9 @@ const EventDetailScreen = ({navigation, route}: any) => {
     }).start();
   };
 
-  // Thêm hàm toggle cho ban tổ chức
-  const toggleOrganizerInfo = () => {
-    const toValue = isOrganizerExpanded ? 0 : 1;
-    setIsOrganizerExpanded(!isOrganizerExpanded);
+  
 
-    Animated.timing(organizerAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const handleInviteList = () => {
-    if (sheetRef.current && typeof sheetRef.current.expand === 'function') {
-      sheetRef.current?.expand();
-      console.log('sheetRef.current', sheetRef.current);
-    } else {
-      console.error(
-        'Bottom sheet reference or present method is not available',
-      );
-    }
-  };
+  
 
   const handleNavigation = (
     typeBase: TypeBase | undefined,
@@ -440,7 +421,6 @@ const EventDetailScreen = ({navigation, route}: any) => {
                     </Text>
                   </View>
                 </View>
-
                 {isOrganizerExpanded && (
                   <View style={styles.organizerDetails}>
                     <View style={styles.organizerStats}>
@@ -559,7 +539,6 @@ const styles = StyleSheet.create({
   titleLocation: {
     color: 'black',
     maxWidth: 320,
-    lineHeight: 26,
     marginTop: 2,
   },
   sectionContainer: {

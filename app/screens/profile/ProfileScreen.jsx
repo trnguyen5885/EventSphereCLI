@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, Platform } from 'react-native'
+import { StyleSheet, Text, View, Image, Platform, RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { ButtonComponent, RowComponent, TextComponent } from '../../components'
 import { ScrollView, TouchableOpacity } from 'react-native'
@@ -8,376 +8,395 @@ import Feather from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import ProfileHeader from './ProfileHeader'
 import { AxiosInstance } from '../../services';
+import { useSelector, useDispatch } from 'react-redux';
+import { appColors } from '../../constants/appColors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions } from '@react-navigation/native';
+import { logout } from '../../redux/slices/authSlice';
+import CustomLogoutDialog from '../../components/CustomLogoutDialog'; // Import component dialog
 
-const getRandomColor = () => {
-  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-  return colors[Math.floor(Math.random() * colors.length)];
-};
+const ProfileScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const userId = useSelector(state => state.auth.userId);
 
-const ProfileScreen = ({navigation}) => {
-  const interests = ["Nhạc sống", "Thể thao", "Hội thảo", "Nghệ thuật", "Ẩm thực", "Công nghệ", "Du lịch", "Giải trí"];
-  
-  // Mock data - trong thực tế sẽ lấy từ API
-  const [userStats, setUserStats] = useState({
-    eventsAttended: 12,
-    upcomingEvents: 3,
-    totalSpent: 2500000,
-    favoriteEvents: 8
-  });
+  const [name, setName] = useState('');
+  const [image, setImage] = useState('');
+  const [email, setEmail] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false); // State cho dialog
 
-  const [recentTickets, setRecentTickets] = useState([
-    {
-      id: 1,
-      eventName: "Concert Sơn Tùng M-TP",
-      date: "15/06/2025",
-      status: "upcoming",
-      image: "https://via.placeholder.com/80x80"
-    },
-    {
-      id: 2,
-      eventName: "Hội thảo Marketing 2025",
-      date: "10/06/2025", 
-      status: "completed",
-      image: "https://via.placeholder.com/80x80"
+  const getUserInfo = async () => {
+    try {
+      if (userId) {
+        const response = await AxiosInstance().get(`users/getUser/${userId}`);
+        setName(response.data.username);
+        setImage(response.data.picUrl);
+        setEmail(response.data.email);
+      }
+    } catch (error) {
+      console.log('Lỗi khi lấy thông tin người dùng:', error);
     }
-  ]);
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
   };
 
+  useEffect(() => {
+    getUserInfo();
+  }, [userId]);
+
+  // Hàm hiển thị dialog đăng xuất
+  const showLogoutConfirmation = () => {
+    setShowLogoutDialog(true);
+  };
+
+  // Hàm đóng dialog
+  const hideLogoutDialog = () => {
+    setShowLogoutDialog(false);
+  };
+
+  const handleSignout = async () => {
+    setIsLoading(true);
+    try {
+      // Xoá trong AsyncStorage
+      await AsyncStorage.removeItem("userId");
+      await AsyncStorage.removeItem("savedCredentials");
+      await AsyncStorage.removeItem("rememberMe");
+
+      // Xoá trong Redux
+      dispatch(logout());
+
+      // Đóng dialog
+      setShowLogoutDialog(false);
+
+      // Reset về màn Login
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "Login" }],
+        })
+      );
+    } catch (error) {
+      console.log("Sign out failed:", error);
+      // Có thể hiện thị thông báo lỗi ở đây
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Gọi lại API để cập nhật thông tin
+      await getUserInfo();
+
+      // Thêm delay nhỏ để người dùng thấy hiệu ứng loading
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 500);
+    } catch (error) {
+      console.log('Lỗi khi refresh:', error);
+      setRefreshing(false);
+    }
+  }, [userId]);
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ flexGrow: 1 }}>
-      <View style={styles.container}>
-        {/* Header với avatar và tên */}
-        <ProfileHeader onPress={()=>navigation.navigate('FriendScreen')}/>
-        
-        {/* Nút chỉnh sửa */}
-        <View style={styles.editBtnContainer}>
-          <ButtonComponent
-            text='Chỉnh sửa'
-            textStyles={{ fontSize: 16, color: '#5669FF', margin: 0 }}
-            icon={<MaterialCommunityIcons name="square-edit-outline" size={20} color="#5669FF" />}
-            iconFlex='left'
-            type='primary'
-            styles={styles.editBtn}
-            onPress={() => navigation.navigate("ProfileEdit")}
+    <View style={styles.container}>
+      {/* Header với background pattern */}
+      <View style={styles.headerContainer}>
+        <Image
+          source={require('../../../assets/images/bannerprofile.png')}
+          style={styles.headerBackground}
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Avatar container - nằm giữa header và content */}
+      <View style={styles.avatarSection}>
+        <View style={styles.avatarContainer}>
+          <Image
+            style={styles.profileAVT}
+            source={{
+              uri: image ? image : 'https://avatar.iran.liara.run/public'
+            }}
           />
         </View>
 
-        {/* Thống kê người dùng */}
-        <View style={styles.statsContainer}>
+        {/* Tên người dùng nằm dưới avatar */}
+        <View>
           <TextComponent
-            text='Thống kê của tôi'
-            styles={styles.sectionTitle}
+            text={name || 'Người dùng'}
+            styles={styles.userName}
           />
-          
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <MaterialIcons name="event-available" size={24} color="#4CAF50" />
-              <TextComponent text={userStats.eventsAttended.toString()} styles={styles.statNumber} />
-              <TextComponent text="Sự kiện đã tham gia" styles={styles.statLabel} />
-            </View>
-            
-            <View style={styles.statItem}>
-              <MaterialIcons name="event-note" size={24} color="#FF9800" />
-              <TextComponent text={userStats.upcomingEvents.toString()} styles={styles.statNumber} />
-              <TextComponent text="Sự kiện sắp tới" styles={styles.statLabel} />
-            </View>
-            
-            <View style={styles.statItem}>
-              <FontAwesome5 name="money-bill-wave" size={20} color="#E91E63" />
-              <TextComponent text={formatCurrency(userStats.totalSpent)} styles={styles.statMoney} />
-              <TextComponent text="Tổng chi tiêu" styles={styles.statLabel} />
-            </View>
-            
-            <View style={styles.statItem}>
-              <MaterialIcons name="favorite" size={24} color="#F44336" />
-              <TextComponent text={userStats.favoriteEvents.toString()} styles={styles.statNumber} />
-              <TextComponent text="Sự kiện yêu thích" styles={styles.statLabel} />
-            </View>
-          </View>
         </View>
+      </View>
 
-        {/* Vé gần đây */}
-        <View style={styles.recentTicketsContainer}>
+      {/* Nội dung chính */}
+      <ScrollView
+        style={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[appColors.primary]} // Android
+            tintColor={appColors.primary} // iOS
+            title="Đang cập nhật..." // iOS
+            titleColor={appColors.primary} // iOS
+          />
+        }
+      >
+
+        {/* Phần Cài đặt tài khoản */}
+        <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
-            <TextComponent
-              text='Vé của tôi'
-              styles={styles.sectionTitle}
-            />
-            <TouchableOpacity onPress={() => navigation.navigate('MyTickets')}>
-              <TextComponent
-                text='Xem tất cả'
-                styles={styles.viewAllText}
-              />
-            </TouchableOpacity>
+            <MaterialIcons name="person" size={20} color="#333" />
+            <TextComponent text="Cài đặt tài khoản" styles={styles.sectionTitle} />
           </View>
-          
-          {recentTickets.map((ticket) => (
-            <View key={ticket.id} style={styles.ticketItem}>
-              <Image source={{ uri: ticket.image }} style={styles.ticketImage} />
-              <View style={styles.ticketInfo}>
-                <TextComponent text={ticket.eventName} styles={styles.ticketEventName} />
-                <TextComponent text={ticket.date} styles={styles.ticketDate} />
-              </View>
-              <View style={[
-                styles.ticketStatus,
-                { backgroundColor: ticket.status === 'upcoming' ? '#E8F5E8' : '#F5F5F5' }
-              ]}>
-                <TextComponent 
-                  text={ticket.status === 'upcoming' ? 'Sắp diễn ra' : 'Đã tham gia'} 
-                  styles={[
-                    styles.ticketStatusText,
-                    { color: ticket.status === 'upcoming' ? '#4CAF50' : '#757575' }
-                  ]} 
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('ProfileEdit')}
+          >
+            <View style={styles.menuItemContent}>
+              <TextComponent text="Thông tin tài khoản" styles={styles.menuText} />
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('SetupPIN')}
+          >
+            <View style={styles.menuItemContent}>
+              <TextComponent text="Thiết lập mã PIN" styles={styles.menuText} />
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Phần Cài đặt ứng dụng */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="settings" size={20} color="#333" />
+            <TextComponent text="Cài đặt ứng dụng" styles={styles.sectionTitle} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('LanguageSettings')}
+          >
+            <View style={styles.menuItemContent}>
+              <TextComponent text="Thay đổi ngôn ngữ" styles={styles.menuText} />
+              <View style={styles.languageContainer}>
+                <Image
+                  source={{ uri: 'https://flagcdn.com/w20/vn.png' }}
+                  style={styles.flagIcon}
                 />
+                <TextComponent text="Vie" styles={styles.languageText} />
+                <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
               </View>
             </View>
-          ))}
-        </View>
-
-        {/* Sở thích */}
-        <View style={styles.interestSection}>
-          <View style={styles.interestContainer}>
-            <TextComponent
-              text='Sở thích sự kiện'
-              styles={styles.sectionTitle}
-            />
-            <TouchableOpacity 
-              style={styles.changeBtn}
-              onPress={() => navigation.navigate('InterestSettings')}
-            >
-              <TextComponent text="Thay đổi" styles={styles.changeBtnText} />
-              <MaterialCommunityIcons name="chevron-right" size={16} color="#5669FF" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.interestBtnContainer}>
-            {interests.map((item, index) => (
-              <View
-                key={index}
-                style={[styles.interestBtn, { backgroundColor: getRandomColor() }]}
-              >
-                <TextComponent
-                  text={item}
-                  styles={styles.interestTitle}
-                />
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Menu hành động */}
-        <View style={styles.menuContainer}>
-          
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('Notification')}
-          >
-            <MaterialIcons name="notifications" size={24} color="#5669FF" />
-            <TextComponent text="Thông báo" styles={styles.menuText} />
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#CCCCCC" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+        </View>
+
+        {/* Menu khác */}
+        <View style={styles.sectionContainer}>
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => navigation.navigate('Support')}
           >
-            <MaterialIcons name="help-outline" size={24} color="#5669FF" />
-            <TextComponent text="Hỗ trợ khách hàng" styles={styles.menuText} />
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#CCCCCC" />
+            <View style={styles.menuItemContent}>
+              <MaterialIcons name="help-outline" size={20} color="#333" />
+              <TextComponent text="Trung tâm trợ giúp" styles={styles.menuText} />
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.menuItem, styles.logoutItem]}
+            onPress={showLogoutConfirmation}
+            disabled={isLoading}
+          >
+            <View style={styles.menuItemContent}>
+              <MaterialIcons name="logout" size={20} color="black" />
+              <TextComponent
+                text={isLoading ? "Đang đăng xuất..." : "Đăng xuất"}
+                styles={styles.menuText}
+              />
+              {!isLoading && <MaterialCommunityIcons name="chevron-right" size={20} color="#E53E3E" />}
+            </View>
           </TouchableOpacity>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Version info */}
+        <View style={styles.versionContainer}>
+          <TextComponent text="Phiên bản 1.0.1(21625)" styles={styles.versionText} />
+        </View>
+
+      </ScrollView>
+
+      {/* Custom Logout Dialog */}
+      <CustomLogoutDialog
+        visible={showLogoutDialog}
+        onClose={hideLogoutDialog}
+        onConfirm={handleSignout}
+        isLoading={isLoading}
+      />
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: Platform.OS === "ios" ? 66 : 23,
+    backgroundColor: '#F5F5F5',
   },
-  editBtnContainer: {
+
+  // Header styles - chỉ background
+  headerContainer: {
+    backgroundColor: appColors.primary, // Màu xanh lá như trong ảnh
+    height: 120, // Chiều cao cố định cho header
+    
+    position: 'relative',
+  },
+
+  headerBackground: {
+    position: 'absolute',
+    
+    width: '100%',
+    height: '100%',
+    zIndex: 1, // đẩy ảnh nền xuống dưới các thành phần khác
+  },
+
+
+
+  // Avatar section - nằm giữa header và content
+  avatarSection: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20
+    marginTop: -50,
+    marginBottom: 10, // Đẩy avatar lên để nằm một nửa trên header
+    zIndex: 1,
   },
-  editBtn: {
-    width: 180,
-    height: 45,
-    justifyContent: 'center',
+
+  avatarContainer: {
     alignItems: 'center',
-    flexDirection: 'row',
-    borderWidth: 1.5,
-    borderColor: '#5669FF',
-    borderRadius: 22,
-    backgroundColor: 'white',
-    paddingVertical: 10
+    marginBottom: 15,
+    // Shadow cho avatar
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1A'
+
+  profileAVT: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // Đảm bảo có background trắng
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: '#5669FF',
-    fontWeight: '500'
-  },
-  
-  // Styles cho phần thống kê
-  statsContainer: {
-    marginBottom: 25
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 15
-  },
-  statItem: {
-    width: '48%',
-    backgroundColor: '#F8F9FA',
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 10
-  },
-  statNumber: {
+
+  userName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginTop: 8
-  },
-  statMoney: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginTop: 8,
-    textAlign: 'center'
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666666',
+    color: 'black',
     textAlign: 'center',
-    marginTop: 4
   },
-  
-  // Styles cho vé gần đây
-  recentTicketsContainer: {
-    marginBottom: 25
+
+  // Content styles
+  contentContainer: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 20,
   },
-  ticketItem: {
+
+  sectionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 20,
+    paddingVertical: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  ticketImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 12
-  },
-  ticketInfo: {
-    flex: 1
-  },
-  ticketEventName: {
-    fontSize: 14,
+
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A'
+    color: '#333',
+    marginLeft: 10,
   },
-  ticketDate: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 2
+
+  menuItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8F8F8',
   },
-  ticketStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12
-  },
-  ticketStatusText: {
-    fontSize: 10,
-    fontWeight: '500'
-  },
-  
-  // Styles cho sở thích
-  interestSection: {
-    marginBottom: 25
-  },
-  interestContainer: {
+
+  menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 15
   },
-  changeBtn: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 6
-  },
-  changeBtnText: {
-    fontSize: 12,
-    color: '#5669FF',
-    marginRight: 4
-  },
-  interestBtnContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap'
-  },
-  interestBtn: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginRight: 8,
-    marginBottom: 8,
-    borderRadius: 20
-  },
-  interestTitle: {
-    fontSize: 14,
-    color: '#ffffff',
-    fontWeight: '500'
-  },
-  
-  // Styles cho menu
-  menuContainer: {
-    marginTop: 10
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
+
   menuText: {
+    fontSize: 15,
+    color: '#333',
     flex: 1,
-    fontSize: 16,
-    color: '#1A1A1A',
-    marginLeft: 15
-  }
+    marginLeft: 10,
+  },
+
+  // Logout specific styles
+  logoutItem: {
+    borderBottomWidth: 0,
+  },
+
+  languageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  flagIcon: {
+    width: 20,
+    height: 15,
+    marginRight: 8,
+  },
+
+  languageText: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 10,
+  },
+
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+
+  versionText: {
+    fontSize: 12,
+    color: '#999',
+  },
 })
 
 export default ProfileScreen
