@@ -1,14 +1,20 @@
-import { StyleSheet, View, FlatList, ActivityIndicator, ScrollView } from 'react-native';
-import React, { useEffect, useState, useCallback } from 'react';
-import { EventModel } from '@/app/models';
-import { globalStyles } from '../../../constants/globalStyles';
-import { appColors } from '../../../constants/appColors';
-import { RowComponent, TextComponent } from '../../../components';
-import { ArrowRight2 } from 'iconsax-react-native';
+import {
+  StyleSheet,
+  View,
+  FlatList,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {EventModel} from '@/app/models';
+import {globalStyles} from '../../../constants/globalStyles';
+import {appColors} from '../../../constants/appColors';
+import {RowComponent, TextComponent} from '../../../components';
+import {ArrowRight2} from 'iconsax-react-native';
 import EventItem from '../../../components/EventItem';
-import { AxiosInstance } from '../../../services';
+import {AxiosInstance} from '../../../services';
 import BannerComponent from '../components/BannerComponent';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 
 interface SuggestedEventsScreenProps {
   populateEvents: EventModel[] | undefined;
@@ -35,9 +41,8 @@ const EventSection = ({
         style={[
           globalStyles.row,
           styles.paddingContent,
-          { marginTop: 15, justifyContent: 'space-between' },
-        ]}
-      >
+          {marginTop: 15, justifyContent: 'space-between'},
+        ]}>
         <TextComponent text={title} size={18} title />
         <RowComponent onPress={onPressMore}>
           <TextComponent text="Xem thêm" size={16} color={appColors.gray} />
@@ -49,8 +54,8 @@ const EventSection = ({
         horizontal
         showsHorizontalScrollIndicator={false}
         data={data}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
+        keyExtractor={item => item._id}
+        renderItem={({item}) => (
           <EventItem
             onPress={() => onPressItem(item)}
             type="card"
@@ -77,9 +82,11 @@ const SuggestedEventsScreen = ({
       const now = Date.now();
 
       const ongoing = response.data.filter(
-        (e: EventModel) => now >= e.timeStart && now <= e.timeEnd
+        (e: EventModel) => now >= e.timeStart && now <= e.timeEnd,
       );
-      const upcoming = response.data.filter((e: EventModel) => e.timeStart > now);
+      const upcoming = response.data.filter(
+        (e: EventModel) => e.timeStart > now,
+      );
 
       setEventsIscoming(ongoing);
       setEventsUpcoming(upcoming);
@@ -101,35 +108,34 @@ const SuggestedEventsScreen = ({
   const onPressEvent = useCallback(
     (item: EventModel) => {
       handleInteraction(item._id);
-      navigation.navigate('Detail', { id: item._id });
+      navigation.navigate('Detail', {id: item._id});
     },
-    [handleInteraction, navigation]
+    [handleInteraction, navigation],
   );
 
   return (
     <ScrollView
-      contentContainerStyle={{ paddingBottom: 100 }} // 👈 tránh bị che
-      showsVerticalScrollIndicator={false}
-    >
+      contentContainerStyle={{paddingBottom: 100}} // 👈 tránh bị che
+      showsVerticalScrollIndicator={false}>
       <BannerComponent bannerData={populateEvents || []} />
-  
+
       <EventSection
         title="Sự kiện nổi bật"
         data={populateEvents}
-        onPressItem={(item) => {
+        onPressItem={item => {
           handleInteraction(item._id);
           navigation.navigate('Detail', {
             id: item.eventId,
           });
         }}
       />
-  
+
       <EventSection
         title="Sự kiện đang diễn ra"
         data={eventsIscoming}
         onPressItem={onPressEvent}
       />
-  
+
       <EventSection
         title="Sự kiện sắp diễn ra"
         data={eventsUpcoming}
