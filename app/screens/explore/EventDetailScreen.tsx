@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useState, useRef } from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,11 @@ import {
   ImageBackground,
   Platform,
   useWindowDimensions,
-  Animated
+  Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { AxiosInstance } from '../../services';
-import { globalStyles } from '../../constants/globalStyles';
+import {AxiosInstance} from '../../services';
+import {globalStyles} from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
@@ -23,19 +23,20 @@ import {
   SpaceComponent,
   TextComponent,
 } from '../../components';
-import { appColors } from '../../constants/appColors';
-import { formatDate } from '../../services/index';
-import { formatPrice } from '../../services/utils/price';
+import {appColors} from '../../constants/appColors';
+import {formatDate} from '../../services/index';
+import {formatPrice} from '../../services/utils/price';
 import RatingAndReview from '../review/RatingAndReview';
-import { EventModel } from '@/app/models';
+import {EventModel} from '@/app/models';
 import ListInviteComponent from './components/ListInviteComponent';
 import InviteComponent from './components/InviteComponent';
 import MapPreview from '../map/MapPreview';
-import { TypeBase } from '@/app/models/explore/ExploreModels';
+import {TypeBase} from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
+import {formatTimeRange} from '../../services/utils/time';
 
-const EventDetailScreen = ({ navigation, route }: any) => {
-  const { id } = route.params;
+const EventDetailScreen = ({navigation, route}: any) => {
+  const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [organizer, setOrganizer] = useState<any>(null); // Thêm state cho thông tin người tổ chức
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
@@ -51,8 +52,8 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   const locationAnimation = useRef(new Animated.Value(0)).current;
   
 
-  console.log(detailEvent?._id);
-  console.log('geg', detailEvent);
+  console.log('Id Event: ', detailEvent?._id);
+  console.log('Detail Event', detailEvent);
 
   useEffect(() => {
     const getDetailEvent = async () => {
@@ -60,7 +61,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         const response = await AxiosInstance().get(`events/detail/${id}`);
         setDetailEvent(response.data);
         console.log('Detail ', response.data);
-        
+
         // Gọi API lấy thông tin người tổ chức nếu có userId
         if (response.data?.userId) {
           getOrganizerInfo(response.data.userId);
@@ -126,41 +127,44 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
   
 
-  const handleNavigation = (typeBase: TypeBase | undefined) => {
+  const handleNavigation = (
+    typeBase: TypeBase | undefined,
+    showtimeId?: any,
+  ) => {
     switch (typeBase) {
       case 'seat':
         navigation.navigate('Seats', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
-          showtimeId: selectedShowtimeId,
+          showtimeId: selectedShowtimeId ?? showtimeId,
         });
         break;
       case 'zone':
         navigation.navigate('Zone', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
-          showtimeId: selectedShowtimeId,
+          showtimeId: selectedShowtimeId ?? showtimeId,
         });
         break;
       case 'none':
         navigation.navigate('Ticket', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
-          showtimeId: selectedShowtimeId,
+          showtimeId: selectedShowtimeId ?? showtimeId,
         });
         break;
       case undefined:
         navigation.navigate('Ticket', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
-          showtimeId: selectedShowtimeId,
+          showtimeId: selectedShowtimeId ?? showtimeId,
         });
         break;
       default:
         navigation.navigate('Ticket', {
           id: detailEvent?._id,
           typeBase: detailEvent?.typeBase,
-          showtimeId: selectedShowtimeId,
+          showtimeId: selectedShowtimeId ?? showtimeId,
         });
     }
   };
@@ -169,10 +173,13 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     navigation.goBack();
   };
 
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
 
   // Truncate description to show only first part
-  const getTruncatedDescription = (description: string, maxLength: number = 500) => {
+  const getTruncatedDescription = (
+    description: string,
+    maxLength: number = 500,
+  ) => {
     if (!description) return '';
     if (description.length <= maxLength) return description;
     return description.substring(0, maxLength) + '...';
@@ -182,7 +189,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     <View style={[globalStyles.container]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
+        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
           <Ionicons name="chevron-back" size={26} color="white" />
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
         </RowComponent>
@@ -196,10 +203,10 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{ uri: detailEvent?.avatar }}>
+          source={{uri: detailEvent?.avatar}}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{ uri: detailEvent?.avatar }}
+              source={{uri: detailEvent?.avatar}}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -233,8 +240,14 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
         {/* Event Info Section - Giới thiệu */}
         <View style={styles.sectionContainer}>
-          <TouchableOpacity style={styles.sectionHeader} onPress={toggleEventInfo}>
-            <TextComponent text="Giới thiệu" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={toggleEventInfo}>
+            <TextComponent
+              text="Giới thiệu"
+              size={18}
+              styles={{fontWeight: 'bold', color: 'black'}}
+            />
             <Ionicons
               name={isEventInfoExpanded ? 'chevron-up' : 'chevron-down'}
               size={24}
@@ -250,13 +263,16 @@ const EventDetailScreen = ({ navigation, route }: any) => {
                   source={{
                     html: isEventInfoExpanded
                       ? detailEvent.description
-                      : getTruncatedDescription(detailEvent.description.replace(/<[^>]*>/g, ''), 500)
+                      : getTruncatedDescription(
+                          detailEvent.description.replace(/<[^>]*>/g, ''),
+                          500,
+                        ),
                   }}
                   enableCSSInlineProcessing={true}
                   tagsStyles={{
-                    strong: { fontWeight: 'bold' },
-                    b: { fontWeight: 'bold' },
-                    div: { marginBottom: 8 },
+                    strong: {fontWeight: 'bold'},
+                    b: {fontWeight: 'bold'},
+                    div: {marginBottom: 8},
                   }}
                 />
               )}
@@ -264,10 +280,77 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           </View>
         </View>
 
+        {/* Ticket Info Section */}
+        {detailEvent?.showtimes && detailEvent?.showtimes.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={toggleTicketInfo}>
+              <TextComponent
+                text="Thông tin vé"
+                size={18}
+                styles={{fontWeight: 'bold', color: 'black'}}
+              />
+              <Ionicons
+                name={isTicketInfoExpanded ? 'chevron-up' : 'chevron-down'}
+                size={24}
+                color="black"
+              />
+            </TouchableOpacity>
+
+            <View style={styles.sectionContent}>
+              <View style={styles.contentWrapper}>
+                {/* Showtime Selection */}
+                <View style={styles.showtimeContainer}>
+                  {detailEvent.showtimes.map(showTime => (
+                    <TouchableOpacity
+                      key={showTime._id}
+                      onPress={() => setSelectedShowtimeId(showTime._id)}
+                      style={[styles.showtimeButton]}>
+                      <View>
+                        <Text style={[styles.showtimeText]}>
+                          {formatTimeRange(
+                            showTime.startTime,
+                            showTime.endTime,
+                          )}
+                        </Text>
+                        <Text style={[styles.showtimeDateText]}>
+                          {formatDate(showTime.startTime)} -{' '}
+                          {formatDate(showTime.endTime)}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={{
+                          paddingVertical: 10,
+                          paddingHorizontal: 14,
+                          backgroundColor: appColors.primary,
+                          borderRadius: 5,
+                        }}
+                        onPress={() =>
+                          handleNavigation(detailEvent?.typeBase, showTime._id)
+                        }>
+                        <Text style={{color: 'white', fontWeight: 'bold'}}>
+                          Mua vé ngay
+                        </Text>
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Location Section - Vị trí sự kiện */}
         <View style={styles.sectionContainer}>
-          <TouchableOpacity style={styles.sectionHeader} onPress={toggleLocationInfo}>
-            <TextComponent text="Vị trí sự kiện" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={toggleLocationInfo}>
+            <TextComponent
+              text="Vị trí sự kiện"
+              size={18}
+              styles={{fontWeight: 'bold', color: 'black'}}
+            />
             <Ionicons
               name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
               size={24}
@@ -279,7 +362,11 @@ const EventDetailScreen = ({ navigation, route }: any) => {
             <View style={styles.sectionContent}>
               <View style={styles.contentWrapper}>
                 <View style={styles.detailRow}>
-                  <Ionicons name="location" size={22} color={appColors.primary} />
+                  <Ionicons
+                    name="location"
+                    size={22}
+                    color={appColors.primary}
+                  />
                   <View>
                     <Text style={styles.titleLocation}>
                       {detailEvent?.location ?? ''}
@@ -296,13 +383,19 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           )}
         </View>
 
-        {/* Ticket Info Section */}
-        {detailEvent?.showtimes && detailEvent?.showtimes.length > 0 && (
+        {/* Organizer Section - Ban tổ chức */}
+        {organizer && (
           <View style={styles.sectionContainer}>
-            <TouchableOpacity style={styles.sectionHeader} onPress={toggleTicketInfo}>
-              <TextComponent text="Thông tin vé" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={toggleOrganizerInfo}>
+              <TextComponent
+                text="Ban tổ chức"
+                size={18}
+                styles={{fontWeight: 'bold', color: 'black'}}
+              />
               <Ionicons
-                name={isTicketInfoExpanded ? 'chevron-up' : 'chevron-down'}
+                name={isOrganizerExpanded ? 'chevron-up' : 'chevron-down'}
                 size={24}
                 color="black"
               />
@@ -310,75 +403,12 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
             <View style={styles.sectionContent}>
               <View style={styles.contentWrapper}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-                  {detailEvent.showtimes.map(showTime => (
-                    <TouchableOpacity
-                      key={showTime._id}
-                      onPress={() => setSelectedShowtimeId(showTime._id)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        backgroundColor:
-                          selectedShowtimeId === showTime._id
-                            ? appColors.primary
-                            : '#E5E7EB',
-                        borderRadius: 8,
-                      }}>
-                      <Text
-                        style={{
-                          color:
-                            selectedShowtimeId === showTime._id ? 'white' : 'black',
-                          fontWeight: '600',
-                        }}>
-                        {showTime._id}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {isTicketInfoExpanded && (
-                  <View style={styles.ticketPriceContainer}>
-                    <View style={styles.ticketPriceRow}>
-                      <Text style={styles.ticketPriceLabel}>NHÀ NHEM</Text>
-                      <Text style={styles.ticketPriceValue}>450.000 đ</Text>
-                    </View>
-                    <View style={styles.ticketPriceRow}>
-                      <Text style={styles.ticketPriceLabel}>CHẤP CHOANG</Text>
-                      <Text style={styles.ticketPriceValue}>650.000 đ</Text>
-                    </View>
-                    <View style={styles.ticketPriceRow}>
-                      <Text style={styles.ticketPriceLabel}>CHANG VANG</Text>
-                      <Text style={styles.ticketPriceValue}>900.000 đ</Text>
-                    </View>
-                    <View style={styles.ticketPriceRow}>
-                      <Text style={styles.ticketPriceLabel}>CHIÊU TÀ</Text>
-                      <Text style={styles.ticketPriceValue}>1.150.000 đ</Text>
-                    </View>
-                    <View style={styles.ticketPriceRow}>
-                      <Text style={styles.ticketPriceLabel}>HOÀNG HÔN</Text>
-                      <Text style={styles.ticketPriceValue}>1.400.000 đ</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Organizer Section - Ban tổ chức */}
-        {organizer && (
-          <View style={styles.sectionContainer}>
-            <TouchableOpacity style={styles.sectionHeader} >
-              <TextComponent text="Ban tổ chức" size={18} styles={{ fontWeight: 'bold', color: 'black' }} />
-              
-            </TouchableOpacity>
-
-            <View style={styles.sectionContent}>
-              <View style={styles.contentWrapper}>
                 <View style={styles.organizerContainer}>
                   <Image
-                    source={{ 
-                      uri: organizer.picUrl || 'https://via.placeholder.com/60x60?text=User' 
+                    source={{
+                      uri:
+                        organizer.picUrl ||
+                        'https://via.placeholder.com/60x60?text=User',
                     }}
                     style={styles.organizerAvatar}
                   />
@@ -391,8 +421,29 @@ const EventDetailScreen = ({ navigation, route }: any) => {
                     </Text>
                   </View>
                 </View>
+                {isOrganizerExpanded && (
+                  <View style={styles.organizerDetails}>
+                    <View style={styles.organizerStats}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>25</Text>
+                        <Text style={styles.statLabel}>Sự kiện</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>1.2K</Text>
+                        <Text style={styles.statLabel}>Người theo dõi</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>4.8</Text>
+                        <Text style={styles.statLabel}>Đánh giá</Text>
+                      </View>
+                    </View>
 
-                
+                    <TouchableOpacity style={styles.followButton}>
+                      <Ionicons name="person-add" size={16} color="white" />
+                      <Text style={styles.followButtonText}>Theo dõi</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -406,7 +457,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           onPress={() => {
             handleNavigation(detailEvent?.typeBase);
           }}
-          text={"Mua vé ngay"}
+          text={'Mua vé ngay'}
           styles={styles.buyTicketButton}
           type="primary"
           icon={
@@ -486,7 +537,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   titleLocation: {
-    color: "black",
+    color: 'black',
     maxWidth: 320,
     marginTop: 2,
   },
@@ -622,5 +673,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginRight: 8,
+  },
+  showtimeContainer: {
+    flexDirection: 'column',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  showtimeButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    minWidth: 120,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  showtimeText: {
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  showtimeDateText: {
+    fontSize: 12,
+    marginTop: 5,
+    fontWeight: '500',
+  },
+  ticketListContainer: {
+    backgroundColor: '#2D3748',
+    borderRadius: 12,
+    padding: 16,
+  },
+  ticketRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  ticketType: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  ticketPrice: {
+    color: '#48BB78', // Green color for prices
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -45,11 +45,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
   const ticketTypes = {
     normal: {
       name: 'Vé Thường',
-      price: eventInfo ? eventInfo.ticketPrice : 0,
+      price: eventInfo ? eventInfo.showtimes[0].ticketPrice : 0,
     },
     vip: {
       name: 'Vé VIP',
-      price: eventInfo ? eventInfo.ticketPrice * 2 : 0,
+      price: eventInfo ? eventInfo.showtimes[0].ticketPrice * 2 : 0,
     },
   };
 

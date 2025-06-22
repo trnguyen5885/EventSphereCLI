@@ -48,7 +48,7 @@ const EventItem = (props: Props) => {
           objectFit: 'cover',
           borderRadius: 15,
           borderBottomLeftRadius: 0,
-          borderBottomRightRadius: 0
+          borderBottomRightRadius: 0,
         }}
         source={{uri: item.avatar}}
       />
@@ -56,75 +56,73 @@ const EventItem = (props: Props) => {
         style={{
           paddingHorizontal: 10,
           paddingBottom: 10,
-          width: '100%'
-        }}
-      >
-      <RowComponent styles={{marginTop: 10}}  justify='flex-start'>
-        <View
-          style={{
-            backgroundColor: appColors.danger,
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Giải trí" color='white' size={12}/>
-        </View>
-        <View
-          style={{
-            backgroundColor: appColors.link,
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Concert" color='white' size={12}/>
-        </View>
-        <View
-          style={{
-            backgroundColor: 'green',
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Âm nhạc" color='white' size={12}/>
-        </View>
-      </RowComponent>
-      <TextComponent
-        numberOfLine={1}
-        title
-        size={18}
-        text={item.name}
-        styles={{marginTop: 5}}
-      />
-      <TextComponent
-        text={`Từ ${formatPrice(item.minTicketPrice)}`}
-        styles={{fontSize: 17, fontWeight: 'bold', color: appColors.primary}}
-      />
+          width: '100%',
+        }}>
+        <RowComponent styles={{marginTop: 10}} justify="flex-start">
+          <View
+            style={{
+              backgroundColor: appColors.danger,
+              paddingVertical: 2,
+              paddingHorizontal: 12,
+              borderRadius: 20,
+              marginRight: 3,
+            }}>
+            <TextComponent text="Giải trí" color="white" size={12} />
+          </View>
+          <View
+            style={{
+              backgroundColor: appColors.link,
+              paddingVertical: 2,
+              paddingHorizontal: 12,
+              borderRadius: 20,
+              marginRight: 3,
+            }}>
+            <TextComponent text="Concert" color="white" size={12} />
+          </View>
+          <View
+            style={{
+              backgroundColor: 'green',
+              paddingVertical: 2,
+              paddingHorizontal: 12,
+              borderRadius: 20,
+              marginRight: 3,
+            }}>
+            <TextComponent text="Âm nhạc" color="white" size={12} />
+          </View>
+        </RowComponent>
+        <TextComponent
+          numberOfLine={1}
+          title
+          size={18}
+          text={item.name}
+          styles={{marginTop: 5}}
+        />
+        <TextComponent
+          text={`Từ ${formatPrice(item.minTicketPrice)}`}
+          styles={{fontSize: 17, fontWeight: 'bold', color: appColors.primary}}
+        />
 
-      <View style={[globalStyles.row, {marginTop: 5, columnGap: 5}]}>
-        <View>
-          <Ionicons name="calendar" size={18} color={appColors.primary} />
+        <View style={[globalStyles.row, {marginTop: 5, columnGap: 5}]}>
+          <View>
+            <Ionicons name="calendar" size={18} color={appColors.primary} />
+          </View>
+          <View style={globalStyles.row}>
+            <Text>{`${formatDate(item.timeStart)} - `}</Text>
+            <Text>{formatDate(item.timeEnd)}</Text>
+          </View>
         </View>
-        <View style={globalStyles.row}>
-          <Text>{`${formatDate(item.timeStart)} - `}</Text>
-          <Text>{formatDate(item.timeEnd)}</Text>
-        </View>
-      </View>
-      <RowComponent justify='flex-end' styles={{alignItems: 'center', marginTop: 5}}>
-        <TouchableOpacity
-          onPress={handlePressHeart}
-          style={{
-          }}>
-          <Ionicons
-            name={isFilled ? "heart" : "heart-outline"}
-            size={22}
-            color={isFilled ? appColors.danger : 'black'}
-          />
-        </TouchableOpacity>
-        <TextComponent text='10k' size={15} styles={{marginLeft: 1}}/>
-      </RowComponent>
+        <RowComponent
+          justify="flex-end"
+          styles={{alignItems: 'center', marginTop: 5}}>
+          <TouchableOpacity onPress={handlePressHeart} style={{}}>
+            <Ionicons
+              name={isFilled ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isFilled ? appColors.danger : 'black'}
+            />
+          </TouchableOpacity>
+          <TextComponent text="10k" size={15} styles={{marginLeft: 1}} />
+        </RowComponent>
       </View>
     </CardComponent>
   ) : (
