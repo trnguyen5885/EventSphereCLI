@@ -57,7 +57,7 @@ import ResetPasswordScreen from './app/screens/auth/ResetPasswordScreen';
 import OtpForgetPasswordOrganizerScreen from './app/screens/authOrganizer/OtpForgetPasswordOrganizerScreen';
 import ResetPasswordOrganizerScreen from './app/screens/authOrganizer/ResetPasswordOrganizerScreen';
 import OnbroadingScreen from './app/screens/auth/OnbroadingScreen';
-
+import SearchEventOrganizer from './app/screens/organizer/SearchEventOrganizer';
 import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
 import AuthLoadingScreen from './app/screens/auth/AuthLoadingScreen';
@@ -217,6 +217,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           <Stack.Screen name="OtpForgetPasswordOrganizer" component={OtpForgetPasswordOrganizerScreen} />
           <Stack.Screen name="ResetPasswordOrganizer" component={ResetPasswordOrganizerScreen} />
+          <Stack.Screen name="SearchEventOrganizer" component={SearchEventOrganizer} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

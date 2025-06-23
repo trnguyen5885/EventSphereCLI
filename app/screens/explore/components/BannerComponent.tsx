@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,10 @@ import {
   FlatList,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { TextComponent } from '../../../../app/components';
-import { appColors } from '../../../../app/constants/appColors';
+import {TextComponent} from '../../../../app/components';
+import {appColors} from '../../../../app/constants/appColors';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 interface BannerItem {
   avatar: string;
@@ -29,11 +29,13 @@ const colors = {
   secondaryText: '#64748B',
 };
 
-const BannerComponent = ({ bannerData }: { bannerData: BannerItem[] }) => {
+const BannerComponent = ({bannerData}: {bannerData: BannerItem[]}) => {
   const carouselRef = useRef<FlatList>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [currentImage, setCurrentImage] = useState(bannerData?.[0]?.avatar);
-  const [displayItem, setDisplayItem] = useState<BannerItem | undefined>(bannerData?.[0]);
+  const [displayItem, setDisplayItem] = useState<BannerItem | undefined>(
+    bannerData?.[0],
+  );
 
   const itemWidth = width * 0.8;
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -49,7 +51,7 @@ const BannerComponent = ({ bannerData }: { bannerData: BannerItem[] }) => {
     }
   }, [activeSlide, bannerData, currentImage]);
 
-  const renderItem = ({ item, index }: { item: BannerItem; index: number }) => {
+  const renderItem = ({item, index}: {item: BannerItem; index: number}) => {
     const inputRange = [
       (index - 1) * itemWidth,
       index * itemWidth,
@@ -69,8 +71,16 @@ const BannerComponent = ({ bannerData }: { bannerData: BannerItem[] }) => {
     });
 
     return (
-      <Animated.View style={[styles.slide, { width: itemWidth, transform: [{ scale }], opacity }]}>
-        <Image source={{ uri: item.avatar }} style={styles.poster} resizeMode="cover" />
+      <Animated.View
+        style={[
+          styles.slide,
+          {width: itemWidth, transform: [{scale}], opacity},
+        ]}>
+        <Image
+          source={{uri: item.avatar}}
+          style={styles.poster}
+          resizeMode="cover"
+        />
       </Animated.View>
     );
   };
@@ -90,8 +100,8 @@ const BannerComponent = ({ bannerData }: { bannerData: BannerItem[] }) => {
       {/* Background Image + Fade */}
       <View style={styles.backgroundWrapper}>
         <Animated.Image
-          source={{ uri: currentImage }}
-          style={[styles.backgroundImage, { opacity: 1 }]}
+          source={{uri: currentImage}}
+          style={[styles.backgroundImage, {opacity: 1}]}
           resizeMode="cover"
           blurRadius={20}
         />
@@ -123,23 +133,27 @@ const BannerComponent = ({ bannerData }: { bannerData: BannerItem[] }) => {
             offset: itemWidth * index,
             index,
           })}
-          contentContainerStyle={{ paddingHorizontal: (width - itemWidth) / 2 }}
+          contentContainerStyle={{paddingHorizontal: (width - itemWidth) / 2}}
         />
       </View>
 
       {/* Info */}
       <View style={styles.infoBox}>
-        <TextComponent styles={styles.title} text={displayItem?.name || ''} numberOfLine={1}/>
-        <Text style={styles.subtitle}>Sắp diễn ra</Text>
+        {/* <TextComponent
+          styles={styles.title}
+          text={displayItem?.name || ''}
+          numberOfLine={1}
+        />
+        <Text style={styles.subtitle}>Sắp diễn ra</Text> */}
 
-        <View style={styles.buttonRow}>
+        {/* <View style={styles.buttonRow}>
           <Pressable style={styles.watchNowButton}>
             <Text style={styles.watchNowText}>Xem ngay</Text>
           </Pressable>
           <Pressable style={styles.infoButton}>
             <Text style={styles.infoButtonText}>Yêu thích</Text>
           </Pressable>
-        </View>
+        </View> */}
 
         {/* Pagination */}
         <View style={styles.paginationContainer}>
@@ -161,10 +175,10 @@ const BannerComponent = ({ bannerData }: { bannerData: BannerItem[] }) => {
 const styles = StyleSheet.create({
   container: {
     width,
-    height: height * 0.5,
+    height: height * 0.45,
     backgroundColor: 'white',
     overflow: 'hidden',
-    marginTop: 10
+    marginTop: 10,
   },
   backgroundWrapper: {
     ...StyleSheet.absoluteFillObject,
@@ -187,15 +201,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   slide: {
-    borderRadius: 16,
+    borderRadius: 5,
     overflow: 'hidden',
     backgroundColor: 'white',
     elevation: 3,
   },
   poster: {
     width: '100%',
-    height: height * 0.2,
-    borderRadius: 16,
+    height: height * 0.3,
+    // objectFit: 'cover',
+    // borderRadius: 5,
   },
   infoBox: {
     paddingHorizontal: 20,

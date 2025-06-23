@@ -249,7 +249,7 @@ const ExploreScreen = ({navigation}: any) => {
   console.log('Event Incoming: ' + JSON.stringify(populateEvents));
 
   return (
-    <ScrollView style={{flex: 1, backgroundColor: 'white'}}>
+    <ScrollView style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.9)'}}>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -257,7 +257,7 @@ const ExploreScreen = ({navigation}: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 170 + (Platform.OS === 'ios' ? 16 : 0),
+          height: 145 + (Platform.OS === 'ios' ? 16 : 0),
           borderBottomLeftRadius: 35,
           borderBottomRightRadius: 35,
           paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
@@ -350,29 +350,14 @@ const ExploreScreen = ({navigation}: any) => {
               <TextComponent text="Lọc" color={appColors.white} />
             </RowComponent>
           </RowComponent>
-          <TabComponent activeTab={activeTab} setActiveTab={setActiveTab} />
         </View>
       </View>
 
-      {activeTab === 0 && (
-        <SuggestedEventsScreen
-          populateEvents={populateEvents}
-          handleInteraction={handleInteraction}
-          navigation={navigation}
-        />
-      )}
-      {activeTab === 1 && (
-        <PopularEventsScreen
-          handleInteraction={handleInteraction}
-          navigation={navigation}
-        />
-      )}
-      {activeTab === 2 && (
-        <UpcomingEventsScreen
-          handleInteraction={handleInteraction}
-          navigation={navigation}
-        />
-      )}
+      <SuggestedEventsScreen
+        populateEvents={populateEvents}
+        handleInteraction={handleInteraction}
+        navigation={navigation}
+      />
     </ScrollView>
   );
 };

@@ -14,8 +14,7 @@ const OrganizerTabs = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => {
           let iconName = '';
-          if (route.name === 'Trang chủ') iconName = 'grid';
-          else if (route.name === 'Quản lý sự kiện') iconName = 'calendar';
+          if (route.name === 'Quản lý sự kiện') iconName = 'calendar';
           else if (route.name === 'Thông tin') iconName = 'user';
 
           return <Icon name={iconName} size={20} color={color} />;
@@ -34,7 +33,7 @@ const OrganizerTabs = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Trang chủ" component={EventDasboard} />
+      
       <Tab.Screen name="Quản lý sự kiện" component={EventManagement} />
       <Tab.Screen name="Thông tin" component={ProfileOrganizerScreen} />
     </Tab.Navigator>

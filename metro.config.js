@@ -8,6 +8,19 @@ const {
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
-const config = {};
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+// Lấy cấu hình mặc định
+const defaultConfig = getDefaultConfig(__dirname);
+// Chỉnh sửa cấu hình để hỗ trợ SVG
+defaultConfig.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
+defaultConfig.resolver.assetExts = defaultConfig.resolver.assetExts.filter(ext => ext !== 'svg');
+defaultConfig.resolver.sourceExts.push('svg');
+
+// Bọc với cấu hình của reanimated
+const config = wrapWithReanimatedMetroConfig(
+  mergeConfig(defaultConfig, {
+    projectRoot: __dirname,
+  })
+);
+
+module.exports = config;

@@ -1,31 +1,58 @@
-import { StyleSheet, Text, View, Image, Platform } from 'react-native'
+import { StyleSheet, Text, View, Image, Platform, RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import ButtonComponent from '../../components/ButtonComponent'
-import TextComponent from '../../components/TextComponent'
-
+import { ButtonComponent, RowComponent, TextComponent } from '../../components'
 import { ScrollView, TouchableOpacity } from 'react-native'
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import ProfileOrganizerHeader from './ProfileOrganizerHeader'
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { AxiosInstance } from '../../services';
-import OrganizerHeaderComponent from '../../components/OrganizerHeaderComponent';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import LoadingModal from "../../modals/LoadingModal";
-import { CommonActions } from "@react-navigation/native";
-import { useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { appColors } from '../../constants/appColors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions } from '@react-navigation/native';
 import { logout } from '../../redux/slices/authSlice';
-const getRandomColor = () => {
-  const r = Math.floor(Math.random() * 256);
-  const g = Math.floor(Math.random() * 256);
-  const b = Math.floor(Math.random() * 256);
-  return `rgb(${r}, ${g}, ${b})`;
-};
-const ProfileOrganizer = ({ navigation }) => {
-  const interest = ["Thể thao", "Âm nhạc", "Giải trí", "Kịch", "Hội thảo", "Khác"];
-  const [isLoading, setIsLoading] = useState(false);
+import CustomLogoutDialog from '../../components/CustomLogoutDialog'; // Import component dialog
+
+const ProfileOrganizerScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  const userId = useSelector(state => state.auth.userId);
+
+  const [name, setName] = useState('');
+  const [image, setImage] = useState('');
+  const [email, setEmail] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false); // State cho dialog
+
+  const getUserInfo = async () => {
+    try {
+      if (userId) {
+        const response = await AxiosInstance().get(`users/getUser/${userId}`);
+        setName(response.data.username);
+        setImage(response.data.picUrl);
+        setEmail(response.data.email);
+      }
+    } catch (error) {
+      console.log('Lỗi khi lấy thông tin người dùng:', error);
+    }
+  };
+
+  useEffect(() => {
+    getUserInfo();
+  }, [userId]);
+
+  // Hàm hiển thị dialog đăng xuất
+  const showLogoutConfirmation = () => {
+    setShowLogoutDialog(true);
+  };
+
+  // Hàm đóng dialog
+  const hideLogoutDialog = () => {
+    setShowLogoutDialog(false);
+  };
 
   const handleSignout = async () => {
     setIsLoading(true);
@@ -38,217 +65,329 @@ const ProfileOrganizer = ({ navigation }) => {
       // Xoá trong Redux
       dispatch(logout());
 
-      // Reset về màn Login
+      // Đóng dialog
+      setShowLogoutDialog(false);
+
+      
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: "LoginOrganizer" }],
+          routes: [{ name: "Welcome" }],
         })
       );
     } catch (error) {
       console.log("Sign out failed:", error);
+      // Có thể hiện thị thông báo lỗi ở đây
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return <LoadingModal visible />;
-  }
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Gọi lại API để cập nhật thông tin
+      await getUserInfo();
 
+      // Thêm delay nhỏ để người dùng thấy hiệu ứng loading
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 500);
+    } catch (error) {
+      console.log('Lỗi khi refresh:', error);
+      setRefreshing(false);
+    }
+  }, [userId]);
 
   return (
+    <View style={styles.container}>
+      {/* Header với background pattern */}
+      <View style={styles.headerContainer}>
+        <Image
+          source={require('../../../assets/images/bannerprofile.png')}
+          style={styles.headerBackground}
+          resizeMode="cover"
+        />
+      </View>
 
-    <ScrollView showsVerticalScrollIndicator={true}
-      contentContainerStyle={{ flexGrow: 1 }}>
-      <View style={styles.container}>
-        <OrganizerHeaderComponent title="Thông tin" />
-        <ProfileOrganizerHeader />
-
-        <View style={styles.editBtnContainer}>
-          <ButtonComponent
-            text='Chỉnh sửa'
-            textStyles={{ fontSize: 24, color: '#5669FF', margin: 0 }}
-            icon={<MaterialCommunityIcons name="square-edit-outline" size={24} color="#5669FF" />}
-            iconFlex='left'
-            type='primary'
-            styles={styles.editBtn}
-            onPress={() => {
-              navigation.navigate("ProfileEditOrganizer")
+      {/* Avatar container - nằm giữa header và content */}
+      <View style={styles.avatarSection}>
+        <View style={styles.avatarContainer}>
+          <Image
+            style={styles.profileAVT}
+            source={{
+              uri: image ? image : 'https://avatar.iran.liara.run/public'
             }}
           />
         </View>
 
-        <View style={{ marginTop: 40 }}>
-          <ButtonComponent
-            text="Đăng xuất"
-            type="primary"
-            styles={{
-              backgroundColor: '#FF3B30',
-              paddingHorizontal: 24,
-              paddingVertical: 12,
-              borderRadius: 10,
-            }}
-            textStyles={{ color: 'white', fontSize: 16 }}
-            onPress={handleSignout}
-          />
-        </View>
-
-
-        <TextComponent
-          text='Về tôi'
-          textStyles={{ fontWeight: 'bold' }}
-          styles={styles.aboutMeTitle} />
-        <View style={styles.aboutMeContainer}>
-          <View style={styles.aboutMeContentContainer}>
-            <Text>
-              Thưởng thức món ăn yêu thích của bạn và có một khoảng thời gian vui vẻ cùng bạn bè và gia đình của bạn.
-              Thực phẩm từ xe tải thực phẩm địa phương sẽ có sẵn để mua.
-              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#5669FF', height: 15, alignItems: 'center' }}> Thêm </Text>
-              </TouchableOpacity>
-            </Text>
-          </View>
-        </View>
-
-
+        {/* Tên người dùng nằm dưới avatar */}
         <View>
-          <View style={styles.interestContainer}>
-            <TextComponent
-              text='Quan tâm'
-              styles={styles.interestText}
-            />
-          </View>
-        </View>
-
-        <View style={styles.interestBtnContainer}>
-          {interest.map((item, index) => (
-            <ButtonComponent
-              key={index}
-              text={item}
-              type="primary"
-              styles={[styles.interestBtn, { backgroundColor: getRandomColor() }]}
-              textStyles={styles.interestTitle}
-            />
-          ))}
+          <TextComponent
+            text={name || 'Người dùng'}
+            styles={styles.userName}
+          />
         </View>
       </View>
-    </ScrollView>
 
+      {/* Nội dung chính */}
+      <ScrollView
+        style={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[appColors.primary]} // Android
+            tintColor={appColors.primary} // iOS
+            title="Đang cập nhật..." // iOS
+            titleColor={appColors.primary} // iOS
+          />
+        }
+      >
+
+        {/* Phần Cài đặt tài khoản */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="person" size={20} color="#333" />
+            <TextComponent text="Cài đặt tài khoản" styles={styles.sectionTitle} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('ProfileEdit')}
+          >
+            <View style={styles.menuItemContent}>
+              <TextComponent text="Thông tin tài khoản" styles={styles.menuText} />
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
+            </View>
+          </TouchableOpacity>
+
+        </View>
+
+        {/* Phần Cài đặt ứng dụng */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="settings" size={20} color="#333" />
+            <TextComponent text="Cài đặt ứng dụng" styles={styles.sectionTitle} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('LanguageSettings')}
+          >
+            <View style={styles.menuItemContent}>
+              <TextComponent text="Thay đổi ngôn ngữ" styles={styles.menuText} />
+              <View style={styles.languageContainer}>
+                <Image
+                  source={{ uri: 'https://flagcdn.com/w20/vn.png' }}
+                  style={styles.flagIcon}
+                />
+                <TextComponent text="Vie" styles={styles.languageText} />
+                <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Menu khác */}
+        <View style={styles.sectionContainer}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Support')}
+          >
+            <View style={styles.menuItemContent}>
+              <MaterialIcons name="help-outline" size={20} color="#333" />
+              <TextComponent text="Trung tâm trợ giúp" styles={styles.menuText} />
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.menuItem, styles.logoutItem]}
+            onPress={showLogoutConfirmation}
+            disabled={isLoading}
+          >
+            <View style={styles.menuItemContent}>
+              <MaterialIcons name="logout" size={20} color="black" />
+              <TextComponent
+                text={isLoading ? "Đang đăng xuất..." : "Đăng xuất"}
+                styles={styles.menuText}
+              />
+              {!isLoading && <MaterialCommunityIcons name="chevron-right" size={20} color="#E53E3E" />}
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Version info */}
+        <View style={styles.versionContainer}>
+          <TextComponent text="Phiên bản 1.0.1(21625)" styles={styles.versionText} />
+        </View>
+
+      </ScrollView>
+
+      {/* Custom Logout Dialog */}
+      <CustomLogoutDialog
+        visible={showLogoutDialog}
+        onClose={hideLogoutDialog}
+        onConfirm={handleSignout}
+        isLoading={isLoading}
+      />
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    height: '100%',
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: Platform.OS === "ios" ? 66 : 23,
+    flex: 1,
+    backgroundColor: '#F5F5F5',
   },
-  backButtonContainer: {
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    marginTop: 20,
-    boxShadow: 'none',
-    borderBlockColor: 'none'
-  },
-  backButton: {
-    width: 100,
-    backgroundColor: "white",
-    boxShadow: 'none',
 
+  // Header styles - chỉ background
+  headerContainer: {
+    backgroundColor: appColors.primary, // Màu xanh lá như trong ảnh
+    height: 120, // Chiều cao cố định cho header
+    
+    position: 'relative',
   },
-  editBtnContainer: {
-    display: 'flex',
+
+  headerBackground: {
+    position: 'absolute',
+    
+    width: '100%',
+    height: '100%',
+    zIndex: 1, // đẩy ảnh nền xuống dưới các thành phần khác
+  },
+
+
+
+  // Avatar section - nằm giữa header và content
+  avatarSection: {
     alignItems: 'center',
-    justifyContent: 'space-evenly',
-    flexDirection: 'row',
-    marginTop: 21
+    marginTop: -50,
+    marginBottom: 10, // Đẩy avatar lên để nằm một nửa trên header
+    zIndex: 1,
   },
-  editBtn: {
-    width: 154,
-    height: 50,
-    display: 'flex',
-    justifyContent: 'center',
+
+  avatarContainer: {
     alignItems: 'center',
+    marginBottom: 15,
+    // Shadow cho avatar
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+
+  profileAVT: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // Đảm bảo có background trắng
+  },
+
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'black',
+    textAlign: 'center',
+  },
+
+  // Content styles
+  contentContainer: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 20,
+  },
+
+  sectionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 20,
+    paddingVertical: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+
+  sectionHeader: {
     flexDirection: 'row',
-    borderWidth: 2.5,
-    borderColor: '#5669FF',
-    borderRadius: 8,
-    backgroundColor: 'white',
-    paddingVertical: 10
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  aboutMeContainer: {
-    marginTop: 25,
-  },
-  aboutMeTitle: {
-    fontSize: 18,
-    lineHeight: 34,
-    fontWeight: 'bold'
-  },
-  aboutMeContent: {
+
+  sectionTitle: {
     fontSize: 16,
-    lineHeight: 25
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 10,
   },
-  aboutMeContentContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
+
+  menuItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8F8F8',
   },
-  readMoreBtn: {
-    padding: 0,
-    marginLeft: 8,
-  },
-  interestContainer: {
+
+  menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20
   },
-  interestText: {
-    fontSize: 18,
-    fontWeight: 'bold'
+
+  menuText: {
+    fontSize: 15,
+    color: '#333',
+    flex: 1,
+    marginLeft: 10,
   },
-  changeBtn: {
-    width: 'auto',
-    minHeight: 10,
+
+  // Logout specific styles
+  logoutItem: {
+    borderBottomWidth: 0,
+  },
+
+  languageContainer: {
     flexDirection: 'row',
-    backgroundColor: '#5669FF25',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    borderRadius: 20,
-    marginBottom: 0,
-    paddingBottom: 7,
-    paddingTop: 7,
-    paddingStart: 14,
-    paddingEnd: 14
   },
-  interestBtnContainer: {
-    marginTop: 22,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 0
 
-  },
-  interestBtn: {
-    minHeight: 10,
-    width: 'auto',
-    paddingBottom: 7,
-    paddingTop: 7,
-    paddingStart: 15,
-    paddingEnd: 15,
+  flagIcon: {
+    width: 20,
+    height: 15,
     marginRight: 8,
-    marginBottom: 8,
-    borderRadius: 20,
-
   },
-  interestTitle: {
-    fontSize: 16,
-    lineHeight: 25,
-    color: '#ffffff',
-    whiteSpace: 'nowrap'
+
+  languageText: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 10,
+  },
+
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+
+  versionText: {
+    fontSize: 12,
+    color: '#999',
   },
 })
 
-export default ProfileOrganizer;
+export default ProfileOrganizerScreen

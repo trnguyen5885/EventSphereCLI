@@ -38,13 +38,14 @@ const EventItem = (props: Props) => {
         {
           width: Dimensions.get('window').width * 0.7,
           alignItems: 'flex-start',
+          position: 'relative',
         },
         styles,
       ]}>
       <Image
         style={{
           width: '100%',
-          height: 150,
+          height: 165,
           objectFit: 'cover',
           borderRadius: 15,
           borderBottomLeftRadius: 0,
@@ -52,50 +53,60 @@ const EventItem = (props: Props) => {
         }}
         source={{uri: item.avatar}}
       />
+      <TouchableOpacity
+        onPress={handlePressHeart}
+        style={{position: 'absolute', top: 15, right: 15, zIndex: 2}}>
+        <Ionicons
+          name={isFilled ? 'heart' : 'heart-outline'}
+          size={24}
+          color={isFilled ? appColors.danger : 'white'}
+        />
+      </TouchableOpacity>
       <View
         style={{
           paddingHorizontal: 10,
           paddingBottom: 10,
           width: '100%',
+          rowGap: 10,
         }}>
-        <RowComponent styles={{marginTop: 10}} justify="flex-start">
-          <View
-            style={{
-              backgroundColor: appColors.danger,
-              paddingVertical: 2,
-              paddingHorizontal: 12,
-              borderRadius: 20,
-              marginRight: 3,
-            }}>
-            <TextComponent text="Giải trí" color="white" size={12} />
-          </View>
-          <View
-            style={{
-              backgroundColor: appColors.link,
-              paddingVertical: 2,
-              paddingHorizontal: 12,
-              borderRadius: 20,
-              marginRight: 3,
-            }}>
-            <TextComponent text="Concert" color="white" size={12} />
-          </View>
-          <View
-            style={{
-              backgroundColor: 'green',
-              paddingVertical: 2,
-              paddingHorizontal: 12,
-              borderRadius: 20,
-              marginRight: 3,
-            }}>
-            <TextComponent text="Âm nhạc" color="white" size={12} />
-          </View>
-        </RowComponent>
+        {/* <RowComponent styles={{marginTop: 10}}  justify='flex-start'>
+        <View
+          style={{
+            backgroundColor: appColors.danger,
+            paddingVertical: 2,
+            paddingHorizontal: 12,
+            borderRadius: 20,
+            marginRight: 3
+          }}>
+          <TextComponent text="Giải trí" color='white' size={12}/>
+        </View>
+        <View
+          style={{
+            backgroundColor: appColors.link,
+            paddingVertical: 2,
+            paddingHorizontal: 12,
+            borderRadius: 20,
+            marginRight: 3
+          }}>
+          <TextComponent text="Concert" color='white' size={12}/>
+        </View>
+        <View
+          style={{
+            backgroundColor: 'green',
+            paddingVertical: 2,
+            paddingHorizontal: 12,
+            borderRadius: 20,
+            marginRight: 3
+          }}>
+          <TextComponent text="Âm nhạc" color='white' size={12}/>
+        </View>
+      </RowComponent> */}
         <TextComponent
           numberOfLine={1}
           title
           size={18}
           text={item.name}
-          styles={{marginTop: 5}}
+          styles={{marginTop: 15, fontWeight: 'bold'}}
         />
         <TextComponent
           text={`Từ ${formatPrice(item.minTicketPrice)}`}
@@ -111,18 +122,6 @@ const EventItem = (props: Props) => {
             <Text>{formatDate(item.timeEnd)}</Text>
           </View>
         </View>
-        <RowComponent
-          justify="flex-end"
-          styles={{alignItems: 'center', marginTop: 5}}>
-          <TouchableOpacity onPress={handlePressHeart} style={{}}>
-            <Ionicons
-              name={isFilled ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isFilled ? appColors.danger : 'black'}
-            />
-          </TouchableOpacity>
-          <TextComponent text="10k" size={15} styles={{marginLeft: 1}} />
-        </RowComponent>
       </View>
     </CardComponent>
   ) : (
