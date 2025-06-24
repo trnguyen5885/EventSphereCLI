@@ -199,11 +199,16 @@ const ProfileEdit = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={appColors.primary} barStyle="light-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <RowComponent onPress={handleNavigation} styles={styles.headerRow}>
-          <Ionicons name="chevron-back" size={26} color="white" />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Thông tin tài khoản</Text>
           <View style={{ width: 26 }} /> {/* Placeholder for alignment */}
         </RowComponent>
@@ -211,7 +216,7 @@ const ProfileEdit = ({ navigation }) => {
 
       <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          
+
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
             <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
@@ -223,7 +228,7 @@ const ProfileEdit = ({ navigation }) => {
                 <Ionicons name="camera" size={25} color="white" />
               </View>
             </TouchableOpacity>
-            
+
             <Text style={styles.avatarHint}>
               Cung cấp thông tin chính xác sẽ hỗ trợ bạn trong quá trình mua vé, hoặc khi cần xác thực về
             </Text>
@@ -231,7 +236,7 @@ const ProfileEdit = ({ navigation }) => {
 
           {/* Form Section */}
           <View style={styles.formSection}>
-            
+
             {/* Name Field */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Họ và tên</Text>
@@ -304,14 +309,14 @@ const ProfileEdit = ({ navigation }) => {
 
             {/* Password Fields - Hidden by default, can be shown with toggle */}
             {/* You can add a toggle button to show/hide password fields */}
-            
+
           </View>
 
           {/* Save Button */}
           <View style={styles.buttonContainer}>
-            <ButtonComponent 
-              text="Hoàn thành" 
-              type="primary" 
+            <ButtonComponent
+              text="Hoàn thành"
+              type="primary"
               onPress={handleEditProfile}
               styles={styles.saveButton}
             />
@@ -334,6 +339,14 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 15,
     paddingHorizontal: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerRow: {
     alignItems: 'center',

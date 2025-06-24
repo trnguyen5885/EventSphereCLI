@@ -60,7 +60,7 @@ const EventCard = ({ name, timeStart, timeEnd, ticketPrice, soldTickets, image, 
 // Sửa FilterTabs component - thêm navigation vào props
 const FilterTabs = ({ activeTab, setActiveTab, navigation }) => (
   <View style={styles.filterContainer}>
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.searchButton}
       onPress={() => navigation.navigate('SearchEventOrganizer')}
     >
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: 'white',
-    paddingTop: 50,
+    paddingTop: 30,
     paddingBottom: 20,
     paddingHorizontal: 20,
   },
@@ -208,8 +208,8 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 4,
-    paddingVertical: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
     borderRadius: 6,
     marginRight: 12,
   },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#00D4AA',
+    color: "black",
   },
   filterContainer: {
     flexDirection: 'row',
@@ -293,12 +293,19 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 0.5,
-    borderColor: '#2A2A2A',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: appColors.primary + '40', // thêm độ đậm cho viền
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    position: 'relative',
   },
+
   cardHeader: {
     flexDirection: 'row',
     marginBottom: 16,

@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,8 @@ import {
   Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {AxiosInstance} from '../../services';
-import {globalStyles} from '../../constants/globalStyles';
+import { AxiosInstance } from '../../services';
+import { globalStyles } from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
@@ -23,27 +23,27 @@ import {
   SpaceComponent,
   TextComponent,
 } from '../../components';
-import {appColors} from '../../constants/appColors';
-import {formatDate} from '../../services/index';
-import {formatPrice} from '../../services/utils/price';
+import { appColors } from '../../constants/appColors';
+import { formatDate } from '../../services/index';
+import { formatPrice } from '../../services/utils/price';
 import RatingAndReview from '../review/RatingAndReview';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
 import ListInviteComponent from './components/ListInviteComponent';
 import InviteComponent from './components/InviteComponent';
 import MapPreview from '../map/MapPreview';
-import {TypeBase} from '@/app/models/explore/ExploreModels';
+import { TypeBase } from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
-import {formatTimeRange} from '../../services/utils/time';
+import { formatTimeRange } from '../../services/utils/time';
 
-const EventDetailScreen = ({navigation, route}: any) => {
-  const {id} = route.params;
+const EventDetailScreen = ({ navigation, route }: any) => {
+  const { id } = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
-  const [organizer, setOrganizer] = useState<any>(null); // Thêm state cho thông tin người tổ chức
+  const [organizer, setOrganizer] = useState<any>(null);
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
   const [isEventInfoExpanded, setIsEventInfoExpanded] = useState(false);
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
   const [isLocationExpanded, setIsLocationExpanded] = useState(false);
-  const [isOrganizerExpanded, setIsOrganizerExpanded] = useState(false); // Thêm state cho phần ban tổ chức
+  const [isOrganizerExpanded, setIsOrganizerExpanded] = useState(false);
   const sheetRef = useRef<any>(null);
 
   // Animation values
@@ -61,7 +61,6 @@ const EventDetailScreen = ({navigation, route}: any) => {
         setDetailEvent(response.data);
         console.log('Detail ', response.data);
 
-        // Gọi API lấy thông tin người tổ chức nếu có userId
         if (response.data?.userId) {
           getOrganizerInfo(response.data.userId);
         }
@@ -70,7 +69,6 @@ const EventDetailScreen = ({navigation, route}: any) => {
       }
     };
 
-    // Hàm lấy thông tin người tổ chức
     const getOrganizerInfo = async (userId: string) => {
       try {
         const response = await AxiosInstance().get(`users/getUser/${userId}`);
@@ -85,7 +83,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
 
     return () => {
       setDetailEvent(null);
-      setOrganizer(null); // Cleanup organizer state
+      setOrganizer(null);
     };
   }, []);
 
@@ -179,24 +177,54 @@ const EventDetailScreen = ({navigation, route}: any) => {
     navigation.goBack();
   };
 
-  const {width} = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
-  // Truncate description to show only first part
   const getTruncatedDescription = (
     description: string,
     maxLength: number = 500,
   ) => {
     if (!description) return '';
-    if (description.length <= maxLength) return description;
-    return description.substring(0, maxLength) + '...';
+
+    // Nếu đã expand thì trả về HTML đầy đủ
+    if (isEventInfoExpanded) return description;
+
+    // Nếu chưa expand, cắt HTML nhưng vẫn giữ format
+    const textOnly = description.replace(/<[^>]*>/g, '');
+    if (textOnly.length <= maxLength) return description;
+
+    // Tìm vị trí cắt an toàn (không cắt giữa tag)
+    let truncatedHtml = description;
+    let currentLength = 0;
+    let inTag = false;
+
+    for (let i = 0; i < description.length; i++) {
+      if (description[i] === '<') {
+        inTag = true;
+      } else if (description[i] === '>') {
+        inTag = false;
+      } else if (!inTag) {
+        currentLength++;
+        if (currentLength >= maxLength) {
+          truncatedHtml = description.substring(0, i) + '...';
+          break;
+        }
+      }
+    }
+
+    return truncatedHtml;
   };
 
   return (
-    <View style={[globalStyles.container]}>
+    <View style={[globalStyles.container, styles.mainContainer]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
-          <Ionicons name="chevron-back" size={26} color="white" />
+        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
         </RowComponent>
 
@@ -205,14 +233,14 @@ const EventDetailScreen = ({navigation, route}: any) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.body}>
+      <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{uri: detailEvent?.avatar}}>
+          source={{ uri: detailEvent?.avatar }}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{uri: detailEvent?.avatar}}
+              source={{ uri: detailEvent?.avatar }}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -252,12 +280,12 @@ const EventDetailScreen = ({navigation, route}: any) => {
             <TextComponent
               text="Giới thiệu"
               size={18}
-              styles={{fontWeight: 'bold', color: 'black'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
             <Ionicons
               name={isEventInfoExpanded ? 'chevron-up' : 'chevron-down'}
               size={24}
-              color="black"
+              color="#2D3748"
             />
           </TouchableOpacity>
 
@@ -269,16 +297,14 @@ const EventDetailScreen = ({navigation, route}: any) => {
                   source={{
                     html: isEventInfoExpanded
                       ? detailEvent.description
-                      : getTruncatedDescription(
-                          detailEvent.description.replace(/<[^>]*>/g, ''),
-                          500,
-                        ),
+                      : getTruncatedDescription(detailEvent.description, 500), // Sử dụng HTML gốc thay vì remove tags
                   }}
                   enableCSSInlineProcessing={true}
                   tagsStyles={{
-                    strong: {fontWeight: 'bold'},
-                    b: {fontWeight: 'bold'},
-                    div: {marginBottom: 8},
+                    strong: { fontWeight: 'bold', color: '#2D3748' },
+                    b: { fontWeight: 'bold', color: '#2D3748' },
+                    div: { marginBottom: 8 },
+                    p: { color: '#4A5568', lineHeight: 20 },
                   }}
                 />
               )}
@@ -295,18 +321,17 @@ const EventDetailScreen = ({navigation, route}: any) => {
               <TextComponent
                 text="Thông tin vé"
                 size={18}
-                styles={{fontWeight: 'bold', color: 'black'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
               <Ionicons
                 name={isTicketInfoExpanded ? 'chevron-up' : 'chevron-down'}
                 size={24}
-                color="black"
+                color="#2D3748"
               />
             </TouchableOpacity>
 
             <View style={styles.sectionContent}>
               <View style={styles.contentWrapper}>
-                {/* Showtime Selection */}
                 <View style={styles.showtimeContainer}>
                   {detailEvent.showtimes.map(showTime => (
                     <TouchableOpacity
@@ -326,16 +351,11 @@ const EventDetailScreen = ({navigation, route}: any) => {
                         </Text>
                       </View>
                       <TouchableOpacity
-                        style={{
-                          paddingVertical: 10,
-                          paddingHorizontal: 14,
-                          backgroundColor: appColors.primary,
-                          borderRadius: 5,
-                        }}
+                        style={styles.buyTicketSmallButton}
                         onPress={() =>
                           handleNavigation(detailEvent?.typeBase, showTime._id)
                         }>
-                        <Text style={{color: 'white', fontWeight: 'bold'}}>
+                        <Text style={styles.buyTicketSmallText}>
                           Mua vé ngay
                         </Text>
                       </TouchableOpacity>
@@ -355,19 +375,19 @@ const EventDetailScreen = ({navigation, route}: any) => {
             <TextComponent
               text="Vị trí sự kiện"
               size={18}
-              styles={{fontWeight: 'bold', color: 'black'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
             <Ionicons
               name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
               size={24}
-              color="black"
+              color="#2D3748"
             />
           </TouchableOpacity>
 
           {isLocationExpanded && (
             <View style={styles.sectionContent}>
               <View style={styles.contentWrapper}>
-                <View style={styles.detailRow}>
+                <View style={styles.detailRowLocation}>
                   <Ionicons
                     name="location"
                     size={22}
@@ -392,20 +412,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
         {/* Organizer Section - Ban tổ chức */}
         {organizer && (
           <View style={styles.sectionContainer}>
-            <TouchableOpacity
-              style={styles.sectionHeader}
-              onPress={toggleOrganizerInfo}>
+            <View style={styles.sectionHeader}>
               <TextComponent
                 text="Ban tổ chức"
                 size={18}
-                styles={{fontWeight: 'bold', color: 'black'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
-              <Ionicons
-                name={isOrganizerExpanded ? 'chevron-up' : 'chevron-down'}
-                size={24}
-                color="black"
-              />
-            </TouchableOpacity>
+            </View>
 
             <View style={styles.sectionContent}>
               <View style={styles.contentWrapper}>
@@ -427,38 +440,18 @@ const EventDetailScreen = ({navigation, route}: any) => {
                     </Text>
                   </View>
                 </View>
-                {isOrganizerExpanded && (
-                  <View style={styles.organizerDetails}>
-                    <View style={styles.organizerStats}>
-                      <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>25</Text>
-                        <Text style={styles.statLabel}>Sự kiện</Text>
-                      </View>
-                      <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>1.2K</Text>
-                        <Text style={styles.statLabel}>Người theo dõi</Text>
-                      </View>
-                      <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>4.8</Text>
-                        <Text style={styles.statLabel}>Đánh giá</Text>
-                      </View>
-                    </View>
-
-                    <TouchableOpacity style={styles.followButton}>
-                      <Ionicons name="person-add" size={16} color="white" />
-                      <Text style={styles.followButtonText}>Theo dõi</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
               </View>
             </View>
           </View>
         )}
 
         <RatingAndReview detailEventId={detailEvent?._id} />
+
+        {/* Add some bottom spacing */}
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      <View>
+      <View style={styles.bottomButtonContainer}>
         <ButtonComponent
           onPress={() => {
             handleNavigation(detailEvent?.typeBase);
@@ -486,6 +479,10 @@ const EventDetailScreen = ({navigation, route}: any) => {
 export default EventDetailScreen;
 
 const styles = StyleSheet.create({
+  // Main container with white background
+  mainContainer: {
+    backgroundColor: '#FFFFFF',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -493,14 +490,31 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: appColors.primary,
     paddingTop: Platform.OS === 'ios' ? 66 : 22,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   headerTitle: {
     color: appColors.white2,
     fontSize: 22,
     fontWeight: '500',
   },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   body: {
     flex: 1,
+    backgroundColor: '#F7FAFC', // Light gray background for scroll area
   },
   imageBackground: {
     width: '100%',
@@ -508,24 +522,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   containerEventDetail: {
-    padding: 10,
+    padding: 16,
   },
   imageEventDetail: {
     width: '100%',
     height: 200,
     objectFit: 'cover',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   containerEventDetailInfo: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
   detailRow: {
-    columnGap: 10,
+    columnGap: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  detailRowLocation: {
+    columnGap: 12,
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 5,
@@ -543,34 +564,192 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   titleLocation: {
-    color: 'black',
+    color: '#2D3748',
     maxWidth: 320,
     marginTop: 2,
+    fontSize: 16,
+    fontWeight: '500',
   },
+  // Enhanced section containers
   sectionContainer: {
-    marginHorizontal: 12,
-    marginTop: 20,
-    backgroundColor: 'white',
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   sectionContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   contentWrapper: {
+    padding: 20,
+    paddingTop: 16,
+  },
+  // Enhanced organizer section
+  organizerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
     padding: 16,
-    paddingTop: 0,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  organizerAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  organizerInfo: {
+    flex: 1,
+  },
+  organizerName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D3748',
+    marginBottom: 4,
+  },
+  organizerRole: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  // Enhanced showtime section
+  showtimeContainer: {
+    flexDirection: 'column',
+    gap: 12,
+    marginBottom: 8,
+  },
+  showtimeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  showtimeText: {
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#2D3748',
+  },
+  showtimeDateText: {
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  buyTicketSmallButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: appColors.primary,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+  buyTicketSmallText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  // Enhanced bottom button
+  bottomButtonContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    // paddingBottom: Platform.OS === 'ios' ? 16 : 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  buyTicketButton: {
+    backgroundColor: appColors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  buyTicketText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  aboutSection: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  aboutText: {
+    textAlign: 'justify',
+    color: '#4A5568',
+    fontSize: 16,
+    lineHeight: 26,
+    letterSpacing: 0.5,
   },
   ticketPriceContainer: {
-    marginTop: 10,
+    marginTop: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   ticketPriceRow: {
     flexDirection: 'row',
@@ -578,10 +757,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: '#E2E8F0',
   },
   ticketPriceLabel: {
-    color: 'white',
+    color: '#2D3748',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -590,124 +769,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // Thêm styles cho phần Ban tổ chức
-  organizerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  organizerAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 12,
-  },
-  organizerInfo: {
-    flex: 1,
-  },
-  organizerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'black',
-    marginBottom: 4,
-  },
-  organizerRole: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  organizerDetails: {
-    marginTop: 16,
-  },
-  organizerStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-    paddingVertical: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: appColors.primary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  followButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: appColors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    gap: 8,
-  },
-  followButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  aboutSection: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  aboutText: {
-    textAlign: 'justify',
-    color: '#6B7280',
-    fontSize: 16,
-    lineHeight: 26,
-    letterSpacing: 0.5,
-  },
-  buyTicketButton: {
-    backgroundColor: '#4F46E5',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 12,
-  },
-  buyTicketText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  showtimeContainer: {
-    flexDirection: 'column',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  showtimeButton: {
-    paddingHorizontal: 4,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    minWidth: 120,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  showtimeText: {
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  showtimeDateText: {
-    fontSize: 12,
-    marginTop: 5,
-    fontWeight: '500',
-  },
   ticketListContainer: {
-    backgroundColor: '#2D3748',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   ticketRow: {
     flexDirection: 'row',
@@ -715,16 +782,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: '#E2E8F0',
   },
   ticketType: {
-    color: 'white',
+    color: '#2D3748',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 1,
   },
   ticketPrice: {
-    color: '#48BB78', // Green color for prices
+    color: '#48BB78',
     fontSize: 16,
     fontWeight: 'bold',
   },

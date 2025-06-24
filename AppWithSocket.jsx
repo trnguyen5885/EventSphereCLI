@@ -33,6 +33,7 @@ import OtpOrganizerVerificationScreen from './app/screens/authOrganizer/OtpOrgan
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 import OrganizerTabs from './app/screens/organizer/OrganizerTabs';
 import ProfileEditOrganizer from './app/screens/organizer/ProfileEditOrganizer';
+import SupportScreen from './app/screens/profile/SupportScreen';
 
 import {HandleNotification} from './app/utils/handleNotification';
 import {
@@ -218,6 +219,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="OtpForgetPasswordOrganizer" component={OtpForgetPasswordOrganizerScreen} />
           <Stack.Screen name="ResetPasswordOrganizer" component={ResetPasswordOrganizerScreen} />
           <Stack.Screen name="SearchEventOrganizer" component={SearchEventOrganizer} />
+          <Stack.Screen name="Support" component={SupportScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

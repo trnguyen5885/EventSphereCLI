@@ -10,6 +10,7 @@ import {
   TextInput,
   SafeAreaView,
   StatusBar,
+  Platform,
 } from 'react-native';
 import AxiosInstance from '../../services/api/AxiosInstance';
 import { useNavigation } from '@react-navigation/native';
@@ -136,7 +137,7 @@ const SearchEventOrganizer = ({ navigation }) => {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchBarIcon}>🔍</Text>
+          <Ionicons name="search" color="#000" size={20} />
           <TextInput
             style={styles.searchInput}
             placeholder="Tìm kiếm theo tên sự kiện, mô tả, địa điểm..."
@@ -220,6 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     backgroundColor: appColors.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#DDD',
@@ -247,6 +249,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderWidth: 1,
     borderColor: '#DDD',
+    gap: 8,
   },
   searchBarIcon: {
     fontSize: 16,
@@ -339,19 +342,19 @@ const styles = StyleSheet.create({
   manageBtn: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#00D4AA',
+    borderColor: appColors.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginBottom: 6,
   },
   manageBtnText: {
-    color: '#00D4AA',
+    color: appColors.primary,
     fontSize: 12,
     fontWeight: '600',
   },
   scanBtn: {
-    backgroundColor: '#00D4AA',
+    backgroundColor: appColors.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,

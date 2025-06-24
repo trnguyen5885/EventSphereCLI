@@ -19,7 +19,10 @@ export interface EventModel {
     soldTicket: number,
     eventId: string,
     typeBase: TypeBase,
-    showtimes: any[]
+    showtimes: any[],
+    minTicketPrice: number,
+    maxTicketPrice: number,
+    isActive: boolean,
 }
 
 interface MapEvent {
