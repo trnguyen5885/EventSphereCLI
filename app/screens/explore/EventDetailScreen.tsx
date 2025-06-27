@@ -34,6 +34,7 @@ import MapPreview from '../map/MapPreview';
 import { TypeBase } from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
 import { formatTimeRange } from '../../services/utils/time';
+import LoadingModal from '../../modals/LoadingModal';
 
 const EventDetailScreen = ({ navigation, route }: any) => {
   const { id } = route.params;
@@ -209,6 +210,10 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
   const scrollRef = useRef<ScrollView>(null);
   const showtimeSectionRef = useRef<View>(null);
+
+  if (!detailEvent) {
+    return <LoadingModal visible={true} />;
+  }
 
   return (
     <View style={[globalStyles.container, styles.mainContainer]}>
@@ -476,7 +481,6 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           iconFlex="right"
         />
       </View>
-      <ListInviteComponent sheetRef={sheetRef} eventId={detailEvent?._id} />
     </View>
   );
 };

@@ -36,7 +36,7 @@ const EventItem = (props: Props) => {
       onPress={onPress}
       styles={[
         {
-          width: Dimensions.get('window').width * 0.7,
+          width: Dimensions.get('window').width * 0.6,
           alignItems: 'flex-start',
           position: 'relative',
         },
@@ -45,11 +45,9 @@ const EventItem = (props: Props) => {
       <Image
         style={{
           width: '100%',
-          height: 165,
+          height: 135,
           objectFit: 'cover',
           borderRadius: 15,
-          borderBottomLeftRadius: 0,
-          borderBottomRightRadius: 0,
         }}
         source={{uri: item.avatar}}
       />
@@ -64,10 +62,8 @@ const EventItem = (props: Props) => {
       </TouchableOpacity>
       <View
         style={{
-          paddingHorizontal: 10,
-          paddingBottom: 10,
           width: '100%',
-          rowGap: 10,
+          rowGap: 5,
         }}>
         {/* <RowComponent styles={{marginTop: 10}}  justify='flex-start'>
         <View
@@ -102,18 +98,18 @@ const EventItem = (props: Props) => {
         </View>
       </RowComponent> */}
         <TextComponent
-          numberOfLine={1}
+          numberOfLine={2}
           title
-          size={18}
+          size={16}
           text={item.name}
-          styles={{marginTop: 15, fontWeight: 'bold'}}
+          styles={{marginTop: 15, fontWeight: 'bold', height: 39}}
         />
         <TextComponent
           text={`Từ ${formatPrice(item.minTicketPrice)}`}
           styles={{fontSize: 17, fontWeight: 'bold', color: appColors.primary}}
         />
 
-        <View style={[globalStyles.row, {marginTop: 5, columnGap: 5}]}>
+        <View style={[globalStyles.row, { columnGap: 5}]}>
           <View>
             <Ionicons name="calendar" size={18} color={appColors.primary} />
           </View>

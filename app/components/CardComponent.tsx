@@ -23,7 +23,6 @@ const CardComponent = (props: Props) => {
       activeOpacity={0.8}
       onPress={onPress}
       style={[
-        globalStyles.shadow,
         globalStyles.card,
         {
           backgroundColor: bgColor ?? appColors.white,

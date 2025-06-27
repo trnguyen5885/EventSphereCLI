@@ -54,6 +54,6 @@ export const globalStyles = StyleSheet.create({
       card: {
         borderRadius: 12,
         backgroundColor: appColors.white,
-        margin: 12,
+        marginHorizontal: 5
       },
 });

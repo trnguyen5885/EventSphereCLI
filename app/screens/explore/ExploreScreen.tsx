@@ -204,11 +204,10 @@ const ExploreScreen = ({navigation}: any) => {
         const response = await AxiosInstance().get<EventModel[], any>(
           'events/home',
         );
-        console.log(response);
         const res = await AxiosInstance().get<EventModel[], any>(
           'interactions/topViewed',
         );
-        setPopulateEvents(res);
+        setPopulateEvents(response);
         const now = Date.now();
         const ongoingEvents = response.filter(
           (eventItem: EventModel) =>
@@ -246,8 +245,6 @@ const ExploreScreen = ({navigation}: any) => {
     return <LoadingModal visible={true} />;
   }
 
-  console.log('Event Incoming: ' + JSON.stringify(populateEvents));
-
   return (
     <ScrollView style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.9)'}}>
       <StatusBar
@@ -257,10 +254,8 @@ const ExploreScreen = ({navigation}: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 145 + (Platform.OS === 'ios' ? 16 : 0),
-          borderBottomLeftRadius: 35,
-          borderBottomRightRadius: 35,
-          paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 52,
+          height: 120 + (Platform.OS === 'ios' ? 16 : 0),
+          paddingVertical: 15
         }}>
         <View style={{paddingHorizontal: 16}}>
           <RowComponent>
