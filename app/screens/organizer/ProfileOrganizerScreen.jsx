@@ -15,7 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
 import { logout } from '../../redux/slices/authSlice';
 import CustomLogoutDialog from '../../components/CustomLogoutDialog'; // Import component dialog
-
+import { ToastAndroid, Alert } from 'react-native'
 const ProfileOrganizerScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const userId = useSelector(state => state.auth.userId);
@@ -68,11 +68,11 @@ const ProfileOrganizerScreen = ({ navigation }) => {
       // Đóng dialog
       setShowLogoutDialog(false);
 
-      
+      // Reset về màn Login
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: "Welcome" }],
+          routes: [{ name: "Login" }],
         })
       );
     } catch (error) {
@@ -98,6 +98,14 @@ const ProfileOrganizerScreen = ({ navigation }) => {
       setRefreshing(false);
     }
   }, [userId]);
+
+  const showLanguageToast = () => {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show('Ngôn ngữ khác đang được phát triển', ToastAndroid.SHORT);
+  } else {
+    Alert.alert('Thông báo', 'Ngôn ngữ khác đang được phát triển');
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -174,7 +182,7 @@ const ProfileOrganizerScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => navigation.navigate('LanguageSettings')}
+            onPress={showLanguageToast}
           >
             <View style={styles.menuItemContent}>
               <TextComponent text="Thay đổi ngôn ngữ" styles={styles.menuText} />

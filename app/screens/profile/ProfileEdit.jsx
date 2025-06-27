@@ -1,7 +1,8 @@
 import {
   StyleSheet, Text, View, Platform, StatusBar,
-  Image, KeyboardAvoidingView, ScrollView, Alert, TouchableOpacity, TextInput
+  Image, KeyboardAvoidingView, ScrollView, ToastAndroid, TouchableOpacity, TextInput, Alert
 } from 'react-native';
+
 import Clipboard from '@react-native-clipboard/clipboard';
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -14,6 +15,7 @@ import LoadingModal from '../../modals/LoadingModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { loginSuccess } from '../../redux/slices/authSlice';
+
 
 const ProfileEdit = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -58,9 +60,15 @@ const ProfileEdit = ({ navigation }) => {
   const handleCopyEmail = () => {
     if (email) {
       Clipboard.setString(email);
-      Alert.alert('Thành công', 'Đã sao chép email vào bộ nhớ');
+
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Đã sao chép email vào bộ nhớ', ToastAndroid.SHORT);
+      } else {
+        Alert.alert('Thành công', 'Đã sao chép email vào bộ nhớ');
+      }
     }
   };
+
 
   const pickImage = async () => {
     try {

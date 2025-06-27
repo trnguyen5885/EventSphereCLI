@@ -225,11 +225,15 @@ const TicketEventScreen = ({navigation, route}: any) => {
   }
 
   return (
-    <View style={[globalStyles.container]}>
+    <View style={[globalStyles.container, styles.mainContainer]}>
       {/* Header */}
       <View style={styles.header}>
         <RowComponent onPress={handleNavigation} styles={{columnGap: 25}}>
-          <Ionicons name="chevron-back" size={26} color="white" />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Thanh toán</Text>
         </RowComponent>
       </View>
@@ -239,11 +243,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <View style={styles.eventInfoContainer}>
           <Text style={styles.eventName}>{eventInfo?.name}</Text>
           <View style={styles.locationContainer}>
-            <Ionicons name="location-outline" size={16} color="#fff" />
+            <Ionicons name="location-outline" size={16} color={appColors.primary} />
             <Text style={styles.eventLocation}>{eventInfo?.location}</Text>
           </View>
           <View style={styles.timeContainer}>
-            <Ionicons name="calendar-outline" size={16} color="#fff" />
+            <Ionicons name="calendar-outline" size={16} color={appColors.primary} />
             <Text style={styles.eventTime}>
               {eventInfo?.timeStart ? formatDate(eventInfo.timeStart) : ''} -{' '}
               {eventInfo?.timeEnd ? formatDate(eventInfo.timeEnd) : ''}
@@ -426,18 +430,38 @@ const TicketEventScreen = ({navigation, route}: any) => {
 export default TicketEventScreen;
 
 const styles = StyleSheet.create({
+  // Main container with white background
+  mainContainer: {
+    backgroundColor: '#FFFFFF',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
     backgroundColor: appColors.primary,
-    paddingTop: Platform.OS === 'ios' ? 66 : 32,
+    paddingTop: Platform.OS === 'ios' ? 66 : 22,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   headerTitle: {
-    color: 'white',
-    fontSize: 18,
+    color: appColors.white2,
+    fontSize: 22,
     fontWeight: '500',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   countdownContainer: {
     backgroundColor: appColors.primary,
@@ -451,27 +475,39 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F7FAFC', // Light gray background for scroll area
   },
+  // Enhanced section containers
   eventInfoContainer: {
-    backgroundColor: '#1a1a1a',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   eventName: {
-    color: 'white',
-    fontSize: 16,
+    color: '#2D3748',
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   eventLocation: {
-    color: 'white',
+    color: '#4A5568',
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -481,44 +517,76 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eventTime: {
-    color: 'white',
+    color: '#4A5568',
     fontSize: 14,
     marginLeft: 8,
   },
   ticketInfoContainer: {
-    backgroundColor: '#333',
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   sectionTitle: {
-    color: appColors.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#2D3748',
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 12,
   },
   ticketInfoText: {
-    color: 'white',
+    color: '#4A5568',
     fontSize: 14,
     marginBottom: 8,
   },
   userEmail: {
-    color: 'white',
+    color: '#2D3748',
     fontSize: 14,
     fontWeight: '500',
   },
   paymentMethodsContainer: {
-    backgroundColor: '#333',
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   paymentMethod: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#555',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   paymentMethodContent: {
     flexDirection: 'row',
@@ -529,7 +597,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#666',
+    borderColor: '#CBD5E0',
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -544,31 +612,43 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   paymentText: {
-    color: 'white',
+    color: '#2D3748',
     fontSize: 14,
+    fontWeight: '500',
   },
   cardLogos: {
     flexDirection: 'row',
     marginTop: 4,
   },
   cardLogo: {
-    color: '#666',
+    color: '#6B7280',
     fontSize: 12,
     marginRight: 8,
-    backgroundColor: '#555',
+    backgroundColor: '#E2E8F0',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   selectedPayment: {
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: appColors.primary,
   },
   promoContainer: {
-    backgroundColor: '#333',
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   promoHeader: {
     flexDirection: 'row',
@@ -578,43 +658,57 @@ const styles = StyleSheet.create({
   },
   promoButton: {
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: '#CBD5E0',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderStyle: 'dashed',
   },
   promoButtonText: {
-    color: '#888',
+    color: '#6B7280',
     fontSize: 14,
     textAlign: 'center',
   },
   orderSummaryContainer: {
-    backgroundColor: 'white',
-    margin: 16,
-    marginTop: 0,
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   orderSummaryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   orderSummaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D3748',
   },
   changeTicketText: {
-    color: '#007AFF',
+    color: appColors.primary,
     fontSize: 14,
+    fontWeight: '500',
   },
   ticketDetailContainer: {
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
   },
   ticketDetailHeader: {
     flexDirection: 'row',
@@ -623,13 +717,13 @@ const styles = StyleSheet.create({
   },
   ticketTypeText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
+    fontWeight: '600',
+    color: '#2D3748',
   },
   ticketQuantityText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
+    fontWeight: '600',
+    color: '#2D3748',
   },
   ticketDetailRow: {
     flexDirection: 'row',
@@ -639,14 +733,14 @@ const styles = StyleSheet.create({
   },
   ticketDetailName: {
     fontSize: 14,
-    color: '#000',
+    color: '#4A5568',
     flex: 1,
     marginRight: 12,
   },
   ticketDetailQuantity: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: '#2D3748',
   },
   ticketPriceRow: {
     flexDirection: 'row',
@@ -655,12 +749,12 @@ const styles = StyleSheet.create({
   },
   ticketPrice: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
   },
   ticketTotalPrice: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: '#2D3748',
   },
   ticketTag: {
     alignSelf: 'flex-start',
@@ -675,15 +769,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   orderInfoContainer: {
-    padding: 16,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: '#F1F5F9',
   },
   orderInfoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D3748',
     marginBottom: 12,
   },
   orderInfoRow: {
@@ -693,24 +787,24 @@ const styles = StyleSheet.create({
   },
   orderInfoLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
   },
   orderInfoValue: {
     fontSize: 14,
-    color: '#000',
+    color: '#2D3748',
   },
   orderTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: '#F1F5F9',
     marginBottom: 16,
   },
   orderTotalLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#2D3748',
   },
   orderTotalValue: {
     fontSize: 16,
@@ -719,17 +813,26 @@ const styles = StyleSheet.create({
   },
   agreementText: {
     fontSize: 12,
-    color: '#666',
+    color: '#6B7280',
     lineHeight: 18,
   },
   linkText: {
-    color: '#007AFF',
+    color: appColors.primary,
   },
   bottomContainer: {
-    backgroundColor: '#000',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
     paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   totalContainer: {
     flexDirection: 'row',
@@ -738,8 +841,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   totalLabel: {
-    color: 'white',
+    color: '#2D3748',
     fontSize: 16,
+    fontWeight: '500',
   },
   totalAmount: {
     color: appColors.primary,
@@ -749,11 +853,19 @@ const styles = StyleSheet.create({
   paymentButton: {
     backgroundColor: appColors.primary,
     paddingVertical: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   paymentButtonDisabled: {
-    backgroundColor: '#555',
+    backgroundColor: '#CBD5E0',
   },
   paymentButtonText: {
     color: 'white',

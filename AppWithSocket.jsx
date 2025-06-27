@@ -63,6 +63,8 @@ import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
 import AuthLoadingScreen from './app/screens/auth/AuthLoadingScreen';
 
+
+
 const Stack = createNativeStackNavigator();
 
 const AppWithSocket = () => {

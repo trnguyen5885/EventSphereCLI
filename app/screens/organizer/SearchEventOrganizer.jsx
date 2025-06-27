@@ -140,7 +140,7 @@ const SearchEventOrganizer = ({ navigation }) => {
           <Ionicons name="search" color="#000" size={20} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm theo tên sự kiện, mô tả, địa điểm..."
+            placeholder="Tìm kiếm theo tên sự kiện..."
             placeholderTextColor="#888888"
             value={searchQuery}
             onChangeText={handleSearch}

@@ -1,22 +1,20 @@
 import {
   StyleSheet, Text, View, Platform, StatusBar,
-  Image, KeyboardAvoidingView, ScrollView, Alert, TouchableOpacity
+  Image, KeyboardAvoidingView, ScrollView, ToastAndroid, TouchableOpacity, TextInput, Alert
 } from 'react-native';
+
+import Clipboard from '@react-native-clipboard/clipboard';
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
 import { ButtonComponent, InputComponent, RowComponent } from '../../components';
-import { Lock, Personalcard, Sms, User } from 'iconsax-react-native';
+import { Call, Lock, Personalcard, Sms, User } from 'iconsax-react-native';
 import { AxiosInstance } from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { loginSuccess } from '../../redux/slices/authSlice';
-
-
-
-
 
 
 const ProfileEditOrganizer = ({ navigation }) => {
@@ -26,6 +24,8 @@ const ProfileEditOrganizer = ({ navigation }) => {
   const [name, setName] = useState(userData?.username || '');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
+  const [birthDate, setBirthDate] = useState('01/01/2013');
+  const [gender, setGender] = useState('Nam');
 
   const [image, setImage] = useState(userData?.picUrl || '');
 
@@ -56,6 +56,19 @@ const ProfileEditOrganizer = ({ navigation }) => {
   const handleNavigation = () => {
     navigation.goBack();
   };
+
+  const handleCopyEmail = () => {
+    if (email) {
+      Clipboard.setString(email);
+
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Đã sao chép email vào bộ nhớ', ToastAndroid.SHORT);
+      } else {
+        Alert.alert('Thành công', 'Đã sao chép email vào bộ nhớ');
+      }
+    }
+  };
+
 
   const pickImage = async () => {
     try {
@@ -168,76 +181,155 @@ const ProfileEditOrganizer = ({ navigation }) => {
     }
   };
 
+  const GenderSelector = () => (
+    <View style={styles.genderContainer}>
+      <Text style={styles.genderLabel}>Giới tính</Text>
+      <View style={styles.genderOptions}>
+        {['Nam', 'Nữ', 'Khác'].map((option) => (
+          <TouchableOpacity
+            key={option}
+            style={styles.genderOption}
+            onPress={() => setGender(option)}
+          >
+            <View style={[
+              styles.radioButton,
+              gender === option && styles.radioButtonSelected
+            ]}>
+              {gender === option && <View style={styles.radioButtonInner} />}
+            </View>
+            <Text style={styles.genderText}>{option}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
   return (
-    <View style={globalStyles.container}>
-      <KeyboardAvoidingView>
-        <ScrollView>
-          <View style={styles.header}>
-            <StatusBar animated backgroundColor={appColors.primary} />
-            <RowComponent onPress={handleNavigation} styles={{ columnGap: 25 }}>
-              <Ionicons name="chevron-back" size={26} color="white" />
-              <Text style={styles.headerTitle}>Chỉnh sửa cá nhân</Text>
-            </RowComponent>
+    <View style={styles.container}>
+      <StatusBar backgroundColor={appColors.primary} barStyle="light-content" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <RowComponent onPress={handleNavigation} styles={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Thông tin tài khoản</Text>
+          <View style={{ width: 26 }} /> {/* Placeholder for alignment */}
+        </RowComponent>
+      </View>
+
+      <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+
+          {/* Avatar Section */}
+          <View style={styles.avatarSection}>
+            <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
+              <Image
+                source={{ uri: image || 'https://via.placeholder.com/150' }}
+                style={styles.avatar}
+              />
+              <View style={styles.cameraIcon}>
+                <Ionicons name="camera" size={25} color="white" />
+              </View>
+            </TouchableOpacity>
+
+            <Text style={styles.avatarHint}>
+              Cung cấp thông tin chính xác sẽ hỗ trợ bạn trong quá trình mua vé, hoặc khi cần xác thực về
+            </Text>
           </View>
 
-          <View style={styles.body}>
-            <View style={{ alignItems: 'center' }}>
-              <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
-                <Image
-                  source={{ uri: image || 'https://via.placeholder.com/150' }}
-                  style={styles.avatar}
+          {/* Form Section */}
+          <View style={styles.formSection}>
+
+            {/* Name Field */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Họ và tên</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  placeholder="Nhập họ và tên"
+                  value={name}
+                  onChangeText={(text) => setName(text)}
+                  style={styles.textInput}
                 />
-              </TouchableOpacity>
+                <View style={styles.suffixIcon}>
+                  <User size={20} color={appColors.gray} />
+                </View>
+              </View>
             </View>
 
-            <InputComponent
-              placeholder="Tên của bạn"
-              value={name}
-              onChange={(text) => setName(text)}
-              suffix={<User size={22} color={appColors.gray} />}
-            />
+            {/* Phone Field */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Số điện thoại</Text>
+              <View style={styles.phoneContainer}>
+                <View style={styles.countryCode}>
+                  <Text style={styles.countryCodeText}>+84</Text>
+                  <Ionicons name="chevron-down" size={16} color={appColors.gray} />
+                </View>
+                <View style={styles.phoneInputWrapper}>
+                  <TextInput
+                    placeholder="Nhập Số điện thoại"
+                    value={phoneNumber}
+                    onChangeText={(text) => setPhoneNumber(text)}
+                    keyboardType="phone-pad"
+                    style={styles.textInput}
+                  />
+                </View>
+              </View>
+            </View>
 
-            <InputComponent
-              placeholder="Email"
-              editable={false}
-              value={email}
-              suffix={<Sms size={22} color={appColors.gray} />}
-            />
+            {/* Email Field */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  placeholder="Email"
+                  editable={false}
+                  value={email}
+                  style={[styles.textInput, styles.disabledInput]}
+                />
+                <TouchableOpacity style={styles.suffixIcon} onPress={handleCopyEmail}>
+                  <Ionicons name="copy-outline" size={20} color={appColors.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-            <InputComponent
-              placeholder="Số điện thoại"
-              value={phoneNumber}
-              onChange={(text) => setPhoneNumber(text)}
-              suffix={<Personalcard size={22} color={appColors.gray} />}
-            />
+            {/* Birth Date Field */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>
+                Ngày tháng năm sinh <Text style={styles.required}>*</Text>
+              </Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  placeholder="DD/MM/YYYY"
+                  value={birthDate}
+                  onChangeText={(text) => setBirthDate(text)}
+                  style={styles.textInput}
+                />
+              </View>
+            </View>
 
-            <InputComponent
-              value={oldPassword}
-              placeholder="Nhập mật khẩu cũ"
-              onChange={setOldPassword}
-              isPassword
-              allowClear
-              affix
-            />
-            <InputComponent
-              value={newPassword}
-              placeholder="Nhập mật khẩu mới"
-              onChange={setNewPassword}
-              isPassword
-              allowClear
-              affix
-            />
-            <InputComponent
-              value={reNewPassword}
-              placeholder="Xác nhận mật khẩu mới"
-              onChange={setReNewPassword}
-              isPassword
-              allowClear
-              affix
-            />
+            {/* Gender Selector */}
+            <GenderSelector />
 
-            <ButtonComponent text="Lưu thông tin" type="primary" onPress={handleEditProfile} />
+            {/* Password Fields - Hidden by default, can be shown with toggle */}
+            {/* You can add a toggle button to show/hide password fields */}
+
           </View>
+
+          {/* Save Button */}
+          <View style={styles.buttonContainer}>
+            <ButtonComponent
+              text="Hoàn thành"
+              type="primary"
+              onPress={handleEditProfile}
+              styles={styles.saveButton}
+            />
+          </View>
+
         </ScrollView>
         <LoadingModal visible={isLoading} />
       </KeyboardAvoidingView>
@@ -246,38 +338,203 @@ const ProfileEditOrganizer = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
   header: {
-    flexDirection: 'row',
+    backgroundColor: appColors.primary,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingBottom: 15,
+    paddingHorizontal: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerRow: {
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
-    backgroundColor: appColors.primary,
-    paddingTop: Platform.OS === 'ios' ? 66 : 22,
+    columnGap: 20,
   },
   headerTitle: {
-    color: appColors.white2,
-    fontSize: 22,
-    fontWeight: '500',
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '600',
   },
-  body: {
-    rowGap: 20,
-    marginTop: 40,
-    paddingHorizontal: 15,
+  keyboardAvoid: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  avatarSection: {
+    backgroundColor: 'white',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
   avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: 20,
+    position: 'relative',
   },
   avatar: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain',
+    resizeMode: 'cover',
+  },
+  cameraIcon: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarHint: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 10,
+  },
+  formSection: {
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  fieldContainer: {
+    marginBottom: 25,
+  },
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  required: {
+    color: 'red',
+  },
+  inputWrapper: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e8e9ea',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    height: 50,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 0,
+  },
+  suffixIcon: {
+    marginLeft: 10,
+    padding: 5,
+  },
+  disabledInput: {
+    opacity: 0.7,
+    color: '#666',
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e8e9ea',
+  },
+  countryCode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    backgroundColor: '#ffffff',
+    borderRightWidth: 1,
+    borderRightColor: '#e8e9ea',
+    gap: 5,
+  },
+  countryCodeText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  phoneInputWrapper: {
+    flex: 1,
+    paddingHorizontal: 15,
+  },
+  copyIcon: {
+    padding: 5,
+  },
+  genderContainer: {
+    marginBottom: 25,
+  },
+  genderLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 15,
+  },
+  genderOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  genderOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  radioButtonSelected: {
+    borderColor: appColors.primary,
+  },
+  radioButtonInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: appColors.primary,
+  },
+  genderText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  buttonContainer: {
+    padding: 20,
+    backgroundColor: 'white',
+  },
+  saveButton: {
+    backgroundColor: appColors.primary,
+    borderRadius: 12,
+    paddingVertical: 15,
   },
 });
 

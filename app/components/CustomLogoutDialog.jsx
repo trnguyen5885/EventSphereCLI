@@ -54,7 +54,7 @@ const CustomLogoutDialog = ({
               disabled={isLoading}
             >
               <Text style={styles.confirmButtonText}>
-                {isLoading ? "Đang đăng xuất..." : confirmText}
+                {confirmText}
               </Text>
             </TouchableOpacity>
           </View>
