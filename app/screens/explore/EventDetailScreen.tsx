@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useState, useRef } from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,8 @@ import {
   Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { AxiosInstance } from '../../services';
-import { globalStyles } from '../../constants/globalStyles';
+import {AxiosInstance} from '../../services';
+import {globalStyles} from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
@@ -23,20 +23,20 @@ import {
   SpaceComponent,
   TextComponent,
 } from '../../components';
-import { appColors } from '../../constants/appColors';
-import { formatDate } from '../../services/index';
-import { formatPrice } from '../../services/utils/price';
+import {appColors} from '../../constants/appColors';
+import {formatDate} from '../../services/index';
+import {formatPrice} from '../../services/utils/price';
 import RatingAndReview from '../review/RatingAndReview';
-import { EventModel } from '@/app/models';
+import {EventModel} from '@/app/models';
 import ListInviteComponent from './components/ListInviteComponent';
 import InviteComponent from './components/InviteComponent';
 import MapPreview from '../map/MapPreview';
-import { TypeBase } from '@/app/models/explore/ExploreModels';
+import {TypeBase} from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
-import { formatTimeRange } from '../../services/utils/time';
+import {formatTimeRange} from '../../services/utils/time';
 
-const EventDetailScreen = ({ navigation, route }: any) => {
-  const { id } = route.params;
+const EventDetailScreen = ({navigation, route}: any) => {
+  const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [organizer, setOrganizer] = useState<any>(null);
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
@@ -177,7 +177,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     navigation.goBack();
   };
 
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
 
   const getTruncatedDescription = (
     description: string,
@@ -218,11 +218,10 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     <View style={[globalStyles.container, styles.mainContainer]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
+        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
+            onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
@@ -237,10 +236,10 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{ uri: detailEvent?.avatar }}>
+          source={{uri: detailEvent?.avatar}}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{ uri: detailEvent?.avatar }}
+              source={{uri: detailEvent?.avatar}}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -280,7 +279,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
             <TextComponent
               text="Giới thiệu"
               size={18}
-              styles={{ fontWeight: 'bold', color: '#2D3748' }}
+              styles={{fontWeight: 'bold', color: '#2D3748'}}
             />
             <Ionicons
               name={isEventInfoExpanded ? 'chevron-up' : 'chevron-down'}
@@ -301,10 +300,10 @@ const EventDetailScreen = ({ navigation, route }: any) => {
                   }}
                   enableCSSInlineProcessing={true}
                   tagsStyles={{
-                    strong: { fontWeight: 'bold', color: '#2D3748' },
-                    b: { fontWeight: 'bold', color: '#2D3748' },
-                    div: { marginBottom: 8 },
-                    p: { color: '#4A5568', lineHeight: 20 },
+                    strong: {fontWeight: 'bold', color: '#2D3748'},
+                    b: {fontWeight: 'bold', color: '#2D3748'},
+                    div: {marginBottom: 8},
+                    p: {color: '#4A5568', lineHeight: 20},
                   }}
                 />
               )}
@@ -321,7 +320,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
               <TextComponent
                 text="Thông tin vé"
                 size={18}
-                styles={{ fontWeight: 'bold', color: '#2D3748' }}
+                styles={{fontWeight: 'bold', color: '#2D3748'}}
               />
               <Ionicons
                 name={isTicketInfoExpanded ? 'chevron-up' : 'chevron-down'}
@@ -375,7 +374,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
             <TextComponent
               text="Vị trí sự kiện"
               size={18}
-              styles={{ fontWeight: 'bold', color: '#2D3748' }}
+              styles={{fontWeight: 'bold', color: '#2D3748'}}
             />
             <Ionicons
               name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
@@ -416,7 +415,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
               <TextComponent
                 text="Ban tổ chức"
                 size={18}
-                styles={{ fontWeight: 'bold', color: '#2D3748' }}
+                styles={{fontWeight: 'bold', color: '#2D3748'}}
               />
             </View>
 
@@ -448,7 +447,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         <RatingAndReview detailEventId={detailEvent?._id} />
 
         {/* Add some bottom spacing */}
-        <View style={{ height: 100 }} />
+        <View style={{height: 100}} />
       </ScrollView>
 
       <View style={styles.bottomButtonContainer}>
