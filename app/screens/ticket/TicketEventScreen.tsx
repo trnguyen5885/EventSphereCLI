@@ -28,6 +28,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
   const {id, typeBase, totalPrice, quantity, bookingId} = route.params;
   const [userInfo, setUserInfo] = useState<UserModel | null>();
   const [isLoading, setIsLoading] = useState(false);
+  const [countdown, setCountdown] = useState({minutes: 11, seconds: 31});
   const userId = useSelector(state => state.auth.userId);
 
   const [eventInfo, setEventInfo] = useState<EventModel | null>(null);
@@ -49,7 +50,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
     },
     vip: {
       name: 'Vé VIP',
-      price: eventInfo ? eventInfo.ticketPrice * 2 : 0,
+      price: eventInfo ? eventInfo.ticketPrice : 0,
     },
   };
 
@@ -77,11 +78,10 @@ const TicketEventScreen = ({navigation, route}: any) => {
     };
   }, [userId, id]);
 
-  // Reset loading khi quay lại màn hình
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       console.log('🔄 Màn hình TicketEvent được focus lại');
-      setIsLoading(false); // Reset loading state
+      setIsLoading(false);
     });
 
     return unsubscribe;
@@ -124,7 +124,6 @@ const TicketEventScreen = ({navigation, route}: any) => {
     try {
       if (formData.paymentMethod === 'zalo') {
         const totalAmount = calculateTotal();
-        // Body for Payment
         const bodyPayment = {
           amount: typeBase === undefined ? totalAmount : quantity,
           urlCalbackSuccess:
@@ -134,7 +133,6 @@ const TicketEventScreen = ({navigation, route}: any) => {
           nameUser: userInfo?.username,
         };
         const response = await AxiosInstance().post('/payments', bodyPayment);
-        // ZALO PAY NOT RETURN DATA
         ZaloPayModule.payOrder(response.data.zp_trans_token);
 
         const bodyOrder = {
@@ -175,7 +173,6 @@ const TicketEventScreen = ({navigation, route}: any) => {
               {
                 text: 'OK',
                 onPress: () => {
-                  // Chỉ quay lại khi người dùng bấm OK
                   navigation.navigate('Drawer');
                 },
               },
@@ -188,7 +185,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
       }
 
       if (formData.paymentMethod === 'banking') {
-        setIsLoading(false); // Reset loading trước khi navigate
+        setIsLoading(false);
         navigation.navigate('PaymentQRCode', {
           amount: eventInfo?.ticketPrice,
         });
@@ -196,7 +193,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
 
       if (formData.paymentMethod === 'payos') {
         const totalAmount = calculateTotal();
-        setIsLoading(false); // Reset loading trước khi navigate
+        setIsLoading(false);
         navigation.navigate('PayOSQRScreen', {
           eventName: eventInfo?.name || 'Thanh toán vé',
           eventId: id,
@@ -228,136 +225,153 @@ const TicketEventScreen = ({navigation, route}: any) => {
   }
 
   return (
-    <View style={[globalStyles.container]}>
+    <View style={[globalStyles.container, styles.mainContainer]}>
+      {/* Header */}
       <View style={styles.header}>
         <RowComponent onPress={handleNavigation} styles={{columnGap: 25}}>
-          <Ionicons name="chevron-back" size={26} color="white" />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Thanh toán</Text>
         </RowComponent>
       </View>
 
-      <ScrollView>
+      <ScrollView style={styles.scrollView}>
         {/* Event Information */}
-
-        <CardComponent
-          styles={{
-            shadowColor: '#000',
-            shadowOffset: {
-              width: 0,
-              height: 2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-          }}>
-          <Text style={styles.title}>Thông tin sự kiện</Text>
-          <View style={styles.eventInfo}>
-            <Text style={styles.eventName}>{eventInfo?.name}</Text>
-            <Text style={styles.eventDetail}>
-              Ngày:{' '}
-              {`${formatDate(eventInfo?.timeStart)} - ${formatDate(
-                eventInfo?.timeEnd,
-              )} `}
-            </Text>
-            {/* <Text style={styles.eventDetail}>Thời gian: {eventInfo.time}</Text> */}
-            <Text style={styles.eventDetail}>
-              Địa điểm: {eventInfo?.location}
+        <View style={styles.eventInfoContainer}>
+          <Text style={styles.eventName}>{eventInfo?.name}</Text>
+          <View style={styles.locationContainer}>
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={appColors.primary}
+            />
+            <Text style={styles.eventLocation}>{eventInfo?.location}</Text>
+          </View>
+          <View style={styles.timeContainer}>
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={appColors.primary}
+            />
+            <Text style={styles.eventTime}>
+              {eventInfo?.timeStart ? formatDate(eventInfo.timeStart) : ''} -{' '}
+              {eventInfo?.timeEnd ? formatDate(eventInfo.timeEnd) : ''}
             </Text>
           </View>
-        </CardComponent>
+        </View>
+
+        {/* Ticket Information */}
+        <View style={styles.ticketInfoContainer}>
+          <Text style={styles.sectionTitle}>Thông tin nhận vé</Text>
+          <Text style={styles.ticketInfoText}>
+            Vé điện tử sẽ được hiển thị trong mục "Vé của tôi" của tài khoản
+          </Text>
+          <Text style={styles.userEmail}>
+            {userInfo?.email || 'trungnguyenk4.it@gmail.com'}
+          </Text>
+        </View>
 
         {/* Ticket Selection */}
-        {typeBase === undefined || typeBase === null || typeBase === 'none' ? (
-          <View style={styles.card}>
-            <Text style={styles.title}>Chọn loại vé</Text>
+        {typeBase === 'none' ||
+          typeBase === null ||
+          (typeBase === undefined && (
+            <View
+              style={{
+                marginHorizontal: 16,
+                marginTop: 16,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                padding: 20,
+                elevation: 3,
+                borderColor: '#E2E8F0',
+                borderWidth: 1,
+              }}>
+              <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
 
-            {/* Normal Ticket */}
-            <View style={styles.ticketType}>
-              <View style={styles.ticketInfo}>
-                <Text style={styles.ticketName}>{ticketTypes.normal.name}</Text>
-                <Text style={styles.ticketPrice}>
-                  {ticketTypes.normal.price.toLocaleString('vi-VN')} VND
+              {/* Vé Thường */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 12,
+                }}>
+                <Text style={{fontSize: 16, color: '#2D3748'}}>
+                  {ticketTypes.normal.name}
                 </Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('normal', -1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                    {formData.tickets.normal}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('normal', 1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.quantitySelector}>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    formData.tickets.normal <= 0 && styles.buttonDisabled,
-                  ]}
-                  onPress={() => updateTicketQuantity('normal', -1)}
-                  disabled={formData.tickets.normal <= 0}>
-                  <Text style={styles.buttonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.quantity}>{formData.tickets.normal}</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    formData.tickets.normal >= 10 && styles.buttonDisabled,
-                  ]}
-                  onPress={() => updateTicketQuantity('normal', 1)}
-                  disabled={formData.tickets.normal >= 10}>
-                  <Text style={styles.buttonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            {/* VIP Ticket */}
-            {/*
-            <View style={styles.ticketType}>
-              <View style={styles.ticketInfo}>
-                <Text style={styles.ticketName}>{ticketTypes.vip.name}</Text>
-                <Text style={styles.ticketPrice}>
-                  {ticketTypes.vip.price.toLocaleString('vi-VN')} VND
-                </Text>
-              </View>
-              <View style={styles.quantitySelector}>
-                <TouchableOpacity
-                  style={[styles.button, formData.tickets.vip <= 0 && styles.buttonDisabled]}
-                  onPress={() => updateTicketQuantity('vip', -1)}
-                  disabled={formData.tickets.vip <= 0}
-                >
-                  <Text style={styles.buttonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.quantity}>{formData.tickets.vip}</Text>
-                <TouchableOpacity
-                  style={[styles.button, formData.tickets.vip >= 10 && styles.buttonDisabled]}
-                  onPress={() => updateTicketQuantity('vip', 1)}
-                  disabled={formData.tickets.vip >= 10}
-                >
-                  <Text style={styles.buttonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            */}
 
-            <View style={styles.totalContainer}>
-              <Text style={styles.totalLabel}>Tổng tiền:</Text>
-              <Text style={styles.totalPrice}>
-                {calculateTotal().toLocaleString('vi-VN')} VND
-              </Text>
+              {/* Vé VIP */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                <Text style={{fontSize: 16, color: '#2D3748'}}>
+                  {ticketTypes.vip.name}
+                </Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('vip', -1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                    {formData.tickets.vip}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('vip', 1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        ) : null}
+          ))}
 
         {/* Payment Methods */}
-        <View style={styles.card}>
-          <Text style={styles.title}>Phương thức thanh toán</Text>
+        <View style={styles.paymentMethodsContainer}>
+          <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+
+          {/* ZALO PAY */}
           <TouchableOpacity
             style={[
               styles.paymentMethod,
               formData.paymentMethod === 'zalo' && styles.selectedPayment,
             ]}
             onPress={() => setFormData({...formData, paymentMethod: 'zalo'})}>
-            <Text style={styles.paymentText}>Zalo Pay</Text>
+            <View style={styles.paymentMethodContent}>
+              <View style={styles.radioButton}>
+                {formData.paymentMethod === 'zalo' && (
+                  <View style={styles.radioButtonSelected} />
+                )}
+              </View>
+              <View style={styles.paymentMethodInfo}>
+                <Text style={styles.paymentText}>Zalo Pay</Text>
+              </View>
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.paymentMethod,
-              formData.paymentMethod === 'payos' && styles.selectedPayment,
-            ]}
-            onPress={() => setFormData({...formData, paymentMethod: 'payos'})}>
-            <Text style={styles.paymentText}>PayOS</Text>
-          </TouchableOpacity>
+
+          {/* Banking */}
           <TouchableOpacity
             style={[
               styles.paymentMethod,
@@ -366,27 +380,94 @@ const TicketEventScreen = ({navigation, route}: any) => {
             onPress={() =>
               setFormData({...formData, paymentMethod: 'banking'})
             }>
-            <Text style={styles.paymentText}>Chuyển khoản ngân hàng</Text>
+            <View style={styles.paymentMethodContent}>
+              <View style={styles.radioButton}>
+                {formData.paymentMethod === 'banking' && (
+                  <View style={styles.radioButtonSelected} />
+                )}
+              </View>
+              <View style={styles.paymentMethodInfo}>
+                <Text style={styles.paymentText}>Chuyển khoản ngân hàng</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         </View>
 
-        {/* Checkout Button */}
+        {/* Order Summary */}
+        <View style={styles.orderSummaryContainer}>
+          {/* <View style={styles.orderSummaryHeader}>
+            <Text style={styles.orderSummaryTitle}>Thông tin đặt vé</Text>
+            <TouchableOpacity>
+              <Text style={styles.changeTicketText}>Chọn lại vé</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.ticketDetailContainer}>
+            <View style={styles.ticketDetailHeader}>
+              <Text style={styles.ticketTypeText}>Loại vé</Text>
+              <Text style={styles.ticketQuantityText}>Số lượng</Text>
+            </View>
+
+            <View style={styles.ticketDetailRow}>
+              <Text style={styles.ticketDetailName}>
+                Hạng Regular (Không dành cho trẻ dưới 16 tuổi)
+              </Text>
+              <Text style={styles.ticketDetailQuantity}>01</Text>
+            </View>
+
+            <View style={styles.ticketPriceRow}>
+              <Text style={styles.ticketPrice}>250.000 đ</Text>
+              <Text style={styles.ticketTotalPrice}>250.000 đ</Text>
+            </View>
+
+            <View style={styles.ticketTag}>
+              <Text style={styles.ticketTagText}>M-1</Text>
+            </View>
+          </View> */}
+
+          <View style={styles.orderInfoContainer}>
+            <Text style={styles.orderInfoTitle}>Thông tin đơn hàng</Text>
+
+            <View style={styles.orderInfoRow}>
+              <Text style={styles.orderInfoLabel}>Tạm tính</Text>
+              <Text style={styles.orderInfoValue}>
+                {calculateTotal().toLocaleString('vi-VN')} VND
+              </Text>
+            </View>
+
+            <View style={styles.orderTotalRow}>
+              <Text style={styles.orderTotalLabel}>Tổng tiền</Text>
+              <Text style={styles.orderTotalValue}>
+                {calculateTotal().toLocaleString('vi-VN')} VND
+              </Text>
+            </View>
+
+            <Text style={styles.agreementText}>
+              Bằng việc tiến hành đặt mua, bạn đã đồng ý với{' '}
+              <Text style={styles.linkText}>Điều Kiện Giao Dịch Chung</Text>
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Payment Button */}
+      <View style={styles.bottomContainer}>
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalLabel}>Tổng tiền</Text>
+          <Text style={styles.totalAmount}>
+            {calculateTotal().toLocaleString('vi-VN')} VND
+          </Text>
+        </View>
         <TouchableOpacity
           style={[
-            styles.checkoutButton,
-            typeBase === undefined || typeBase === 'none'
-              ? !isFormValid() && styles.buttonDisabled
-              : null,
+            styles.paymentButton,
+            !formData.paymentMethod && styles.paymentButtonDisabled,
           ]}
-          disabled={
-            typeBase === undefined || typeBase === 'none'
-              ? !isFormValid()
-              : false
-          }
+          disabled={!formData.paymentMethod}
           onPress={confirmOrder}>
-          <Text style={styles.checkoutButtonText}>Thanh toán</Text>
+          <Text style={styles.paymentButtonText}>Thanh toán</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -394,9 +475,9 @@ const TicketEventScreen = ({navigation, route}: any) => {
 export default TicketEventScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  // Main container with white background
+  mainContainer: {
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -405,18 +486,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: appColors.primary,
     paddingTop: Platform.OS === 'ios' ? 66 : 22,
-  },
-  headerTitle: {
-    color: appColors.white2,
-    fontSize: 22,
-    fontWeight: '500',
-  },
-  card: {
-    backgroundColor: 'white',
-    margin: 16,
-    marginBottom: 8,
-    padding: 16,
-    borderRadius: 12,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -424,123 +494,441 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
   },
-  title: {
+  headerTitle: {
+    color: appColors.white2,
+    fontSize: 22,
+    fontWeight: '500',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countdownContainer: {
+    backgroundColor: appColors.primary,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  countdownText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#F7FAFC', // Light gray background for scroll area
+  },
+  // Enhanced section containers
+  eventInfoContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  eventName: {
+    color: '#2D3748',
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
   },
-  eventInfo: {
-    marginBottom: 8,
-  },
-  eventName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  eventDetail: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
-    fontSize: 16,
   },
-  ticketType: {
-    marginBottom: 16,
+  eventLocation: {
+    color: '#4A5568',
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
   },
-  ticketInfo: {
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  eventTime: {
+    color: '#4A5568',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  ticketInfoContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  sectionTitle: {
+    color: '#2D3748',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  ticketInfoText: {
+    color: '#4A5568',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  userEmail: {
+    color: '#2D3748',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  paymentMethodsContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  paymentMethod: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  paymentMethodContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#CBD5E0',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioButtonSelected: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: appColors.primary,
+  },
+  paymentMethodInfo: {
+    flex: 1,
+  },
+  paymentText: {
+    color: '#2D3748',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  cardLogos: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  cardLogo: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginRight: 8,
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  selectedPayment: {
+    borderColor: appColors.primary,
+  },
+  promoContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  promoHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  ticketName: {
-    fontSize: 16,
+  promoButton: {
+    borderWidth: 1,
+    borderColor: '#CBD5E0',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderStyle: 'dashed',
+  },
+  promoButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  orderSummaryContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  orderSummaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  orderSummaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D3748',
+  },
+  changeTicketText: {
+    color: appColors.primary,
+    fontSize: 14,
     fontWeight: '500',
   },
-  ticketPrice: {
-    fontSize: 16,
-    color: '#666',
+  ticketDetailContainer: {
+    padding: 20,
+    backgroundColor: '#FFFFFF',
   },
-  quantitySelector: {
+  ticketDetailHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  button: {
-    width: 36,
-    height: 36,
-    backgroundColor: appColors.primary,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+  ticketTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D3748',
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+  ticketQuantityText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D3748',
   },
-  buttonText: {
-    color: 'white',
+  ticketDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  ticketDetailName: {
+    fontSize: 14,
+    color: '#4A5568',
+    flex: 1,
+    marginRight: 12,
+  },
+  ticketDetailQuantity: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D3748',
+  },
+  ticketPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  ticketPrice: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  ticketTotalPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D3748',
+  },
+  ticketTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  ticketTagText: {
+    fontSize: 12,
+    color: '#1976D2',
+    fontWeight: '500',
+  },
+  orderInfoContainer: {
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  orderInfoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#2D3748',
+    marginBottom: 12,
   },
-  quantity: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginHorizontal: 20,
+  orderInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  orderInfoLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  orderInfoValue: {
+    fontSize: 14,
+    color: '#2D3748',
+  },
+  orderTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    marginBottom: 16,
+  },
+  orderTotalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2D3748',
+  },
+  orderTotalValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: appColors.primary,
+  },
+  agreementText: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  linkText: {
+    color: appColors.primary,
+  },
+  bottomContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   totalContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
+    marginBottom: 12,
   },
   totalLabel: {
+    color: '#2D3748',
     fontSize: 16,
-    color: '#666',
+    fontWeight: '500',
   },
-  totalPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  totalAmount: {
     color: appColors.primary,
+    fontSize: 18,
+    fontWeight: '600',
   },
-  paymentMethod: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  selectedPayment: {
-    borderColor: appColors.primary,
-    backgroundColor: '#f0f9ff',
-  },
-  paymentText: {
-    fontSize: 16,
-  },
-  checkoutButton: {
+  paymentButton: {
+    marginVertical: 10,
     backgroundColor: appColors.primary,
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  checkoutButtonText: {
+  paymentButtonDisabled: {
+    backgroundColor: '#CBD5E0',
+  },
+  paymentButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  qrImage: {
-    width: 200,
-    height: 200,
+  quantityButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CBD5E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2D3748',
   },
 });

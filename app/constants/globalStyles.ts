@@ -4,7 +4,7 @@ import { appColors } from './appColors';
 export const globalStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: appColors.white,
+        backgroundColor: appColors.gray5,
         justifyContent: 'center',
     },
     text:{
@@ -54,6 +54,6 @@ export const globalStyles = StyleSheet.create({
       card: {
         borderRadius: 12,
         backgroundColor: appColors.white,
-        margin: 12,
+        marginHorizontal: 5
       },
 });

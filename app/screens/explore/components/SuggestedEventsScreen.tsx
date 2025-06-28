@@ -5,16 +5,16 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import React, {useEffect, useState, useCallback} from 'react';
-import {EventModel} from '@/app/models';
-import {globalStyles} from '../../../constants/globalStyles';
-import {appColors} from '../../../constants/appColors';
-import {RowComponent, TextComponent} from '../../../components';
-import {ArrowRight2} from 'iconsax-react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { EventModel } from '@/app/models';
+import { globalStyles } from '../../../constants/globalStyles';
+import { appColors } from '../../../constants/appColors';
+import { RowComponent, TextComponent } from '../../../components';
+import { ArrowRight2 } from 'iconsax-react-native';
 import EventItem from '../../../components/EventItem';
-import {AxiosInstance} from '../../../services';
+import { AxiosInstance } from '../../../services';
 import BannerComponent from '../components/BannerComponent';
-import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import TopEventItem from './TopEventItem';
 import SVG1 from '../../../../assets/svgs/SVG1.svg';
 import SVG2 from '../../../../assets/svgs/SVG2.svg';
@@ -26,6 +26,7 @@ import SVG7 from '../../../../assets/svgs/SVG7.svg';
 import SVG8 from '../../../../assets/svgs/SVG8.svg';
 import SVG9 from '../../../../assets/svgs/SVG9.svg';
 import SVG10 from '../../../../assets/svgs/SVG10.svg';
+import BassicBannerComponent from './BassicBannerComponent';
 
 const SVGItems = [
   {
@@ -84,24 +85,25 @@ const EventSection = ({
         style={[
           globalStyles.row,
           styles.paddingContent,
-          {marginVertical: 15, justifyContent: 'space-between'},
+          { marginVertical: 15, justifyContent: 'space-between' },
         ]}>
         <TextComponent text={title} size={18} title />
       </View>
-
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={data}
-        keyExtractor={item => item._id}
-        renderItem={({item}) => (
-          <EventItem
-            onPress={() => onPressItem(item)}
-            type="card"
-            item={item}
-          />
-        )}
-      />
+      <View style={{ marginLeft: 6 }}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={data}
+          keyExtractor={item => item._id}
+          renderItem={({ item }) => (
+            <EventItem
+              onPress={() => onPressItem(item)}
+              type="card"
+              item={item}
+            />
+          )}
+        />
+      </View>
     </>
   );
 };
@@ -124,17 +126,16 @@ const EventTopSection = ({
         style={[
           globalStyles.row,
           styles.paddingContent,
-          {marginVertical: 15, justifyContent: 'space-between'},
+          { marginVertical: 15, justifyContent: 'space-between' },
         ]}>
         <TextComponent text={title} size={18} title />
       </View>
-
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
         data={data}
         keyExtractor={item => item._id}
-        renderItem={({item, index}) => {
+        renderItem={({ item, index }) => {
           const SvgIcon = SVGItems[index % SVGItems.length].Svg;
           return (
             <TopEventItem
@@ -150,28 +151,29 @@ const EventTopSection = ({
 };
 
 const SuggestedEventsScreen = ({
-  populateEvents,
   handleInteraction,
   navigation,
 }: SuggestedEventsScreenProps) => {
-  const [eventsIscoming, setEventsIscoming] = useState<EventModel[]>([]);
+  const [eventsOngoing, setEventsOngoing] = useState<EventModel[]>([]);
   const [eventsUpcoming, setEventsUpcoming] = useState<EventModel[]>([]);
+  const [eventsTrending, setEventsTrending] = useState<EventModel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchEvents = async () => {
     try {
-      const response = await AxiosInstance().get<EventModel[]>('events/home');
+      const response = await AxiosInstance().get<EventModel[]>("events/home");
       const now = Date.now();
 
-      const ongoing = response.data.filter(
-        (e: EventModel) => now >= e.timeStart && now <= e.timeEnd,
-      );
-      const upcoming = response.data.filter(
-        (e: EventModel) => e.timeStart > now,
-      );
+      const allEvents = response.data || [];
 
-      setEventsIscoming(response.data);
+      const ongoing = allEvents.filter(
+        (e) => now >= e.timeStart && now <= e.timeEnd
+      );
+      const upcoming = allEvents.filter((e) => e.timeStart > now);
+
+      setEventsOngoing(ongoing);
       setEventsUpcoming(upcoming);
+      setEventsTrending(allEvents.slice(0, 10)); // Thay đổi logic nếu có trường trending riêng
     } catch (e) {
       console.log(e);
     } finally {
@@ -182,44 +184,45 @@ const SuggestedEventsScreen = ({
   useEffect(() => {
     fetchEvents();
     return () => {
-      setEventsIscoming([]);
+      setEventsOngoing([]);
       setEventsUpcoming([]);
+      setEventsTrending([]);
     };
   }, []);
 
   const onPressEvent = useCallback(
     (item: EventModel) => {
       handleInteraction(item._id);
-      navigation.navigate('Detail', {id: item._id});
+      navigation.navigate('Detail', { id: item._id });
     },
-    [handleInteraction, navigation],
+    [handleInteraction, navigation]
   );
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: 40 }} />;
+  }
 
   return (
     <ScrollView
-      contentContainerStyle={{paddingBottom: 20}} // 👈 tránh bị che
-      showsVerticalScrollIndicator={false}>
-      <BannerComponent bannerData={eventsIscoming?.slice(0, 5) || []} />
+      contentContainerStyle={{ paddingBottom: 20 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <BassicBannerComponent events={[...eventsOngoing, ...eventsUpcoming].slice(0, 5)} />
 
       <EventTopSection
         title="Sự kiện xu hướng 🔥"
-        data={eventsIscoming?.slice(0, 10)}
-        onPressItem={item => {
-          handleInteraction(item._id);
-          navigation.navigate('Detail', {
-            id: item._id,
-          });
-        }}
-      />
-
-      <EventSection
-        title="Sự kiện đang diễn ra 🎉"
-        data={eventsIscoming}
+        data={eventsTrending}
         onPressItem={onPressEvent}
       />
 
       <EventSection
-        title="Sự kiện sắp diễn ra 	⏰"
+        title="Sự kiện đang diễn ra 🎉"
+        data={eventsOngoing}
+        onPressItem={onPressEvent}
+      />
+
+      <EventSection
+        title="Sự kiện sắp diễn ra ⏰"
         data={eventsUpcoming}
         onPressItem={onPressEvent}
       />

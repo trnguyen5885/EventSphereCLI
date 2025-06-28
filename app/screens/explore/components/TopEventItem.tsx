@@ -26,7 +26,7 @@ const TopEventItem = (props: Props) => {
         onPress={onPress}
         styles={[
           {
-            width: Dimensions.get('window').width * 0.8,
+            width: Dimensions.get('window').width * 0.6,
             alignItems: 'flex-start',
           },
           styles,
@@ -34,7 +34,7 @@ const TopEventItem = (props: Props) => {
         <Image
           style={{
             width: '100%',
-            height: 200,
+            height: 120,
             objectFit: 'cover',
             borderRadius: 10,
           }}
