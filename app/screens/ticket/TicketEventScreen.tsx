@@ -46,11 +46,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
   const ticketTypes = {
     normal: {
       name: 'Vé Thường',
-      price: 100,
+      price: eventInfo ? eventInfo.ticketPrice : 0,
     },
     vip: {
       name: 'Vé VIP',
-      price: 100,
+      price: eventInfo ? eventInfo.ticketPrice : 0,
     },
   };
 
@@ -243,11 +243,19 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <View style={styles.eventInfoContainer}>
           <Text style={styles.eventName}>{eventInfo?.name}</Text>
           <View style={styles.locationContainer}>
-            <Ionicons name="location-outline" size={16} color={appColors.primary} />
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={appColors.primary}
+            />
             <Text style={styles.eventLocation}>{eventInfo?.location}</Text>
           </View>
           <View style={styles.timeContainer}>
-            <Ionicons name="calendar-outline" size={16} color={appColors.primary} />
+            <Ionicons
+              name="calendar-outline"
+              size={16}
+              color={appColors.primary}
+            />
             <Text style={styles.eventTime}>
               {eventInfo?.timeStart ? formatDate(eventInfo.timeStart) : ''} -{' '}
               {eventInfo?.timeEnd ? formatDate(eventInfo.timeEnd) : ''}
@@ -266,89 +274,120 @@ const TicketEventScreen = ({navigation, route}: any) => {
           </Text>
         </View>
 
+        {/* Ticket Selection */}
+        {typeBase === 'none' ||
+          typeBase === null ||
+          (typeBase === undefined && (
+            <View
+              style={{
+                marginHorizontal: 16,
+                marginTop: 16,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                padding: 20,
+                elevation: 3,
+                borderColor: '#E2E8F0',
+                borderWidth: 1,
+              }}>
+              <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
+
+              {/* Vé Thường */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 12,
+                }}>
+                <Text style={{fontSize: 16, color: '#2D3748'}}>
+                  {ticketTypes.normal.name}
+                </Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('normal', -1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                    {formData.tickets.normal}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('normal', 1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Vé VIP */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                <Text style={{fontSize: 16, color: '#2D3748'}}>
+                  {ticketTypes.vip.name}
+                </Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('vip', -1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                    {formData.tickets.vip}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => updateTicketQuantity('vip', 1)}
+                    style={styles.quantityButton}>
+                    <Text style={styles.quantityButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))}
+
         {/* Payment Methods */}
         <View style={styles.paymentMethodsContainer}>
           <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
 
-          {/* VNPAY */}
+          {/* ZALO PAY */}
           <TouchableOpacity
             style={[
               styles.paymentMethod,
-              formData.paymentMethod === 'vnpay' && styles.selectedPayment,
+              formData.paymentMethod === 'zalo' && styles.selectedPayment,
             ]}
-            onPress={() => setFormData({...formData, paymentMethod: 'vnpay'})}>
+            onPress={() => setFormData({...formData, paymentMethod: 'zalo'})}>
             <View style={styles.paymentMethodContent}>
               <View style={styles.radioButton}>
-                {formData.paymentMethod === 'vnpay' && (
+                {formData.paymentMethod === 'zalo' && (
                   <View style={styles.radioButtonSelected} />
                 )}
               </View>
               <View style={styles.paymentMethodInfo}>
-                <Text style={styles.paymentText}>VNPAY/Ứng dụng ngân hàng</Text>
+                <Text style={styles.paymentText}>Zalo Pay</Text>
               </View>
             </View>
           </TouchableOpacity>
 
-          {/* VietQR */}
+          {/* Banking */}
           <TouchableOpacity
             style={[
               styles.paymentMethod,
-              formData.paymentMethod === 'vietqr' && styles.selectedPayment,
-            ]}
-            onPress={() => setFormData({...formData, paymentMethod: 'vietqr'})}>
-            <View style={styles.paymentMethodContent}>
-              <View style={styles.radioButton}>
-                {formData.paymentMethod === 'vietqr' && (
-                  <View style={styles.radioButtonSelected} />
-                )}
-              </View>
-              <View style={styles.paymentMethodInfo}>
-                <Text style={styles.paymentText}>VietQR</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          {/* ShopeePay */}
-          <TouchableOpacity
-            style={[
-              styles.paymentMethod,
-              formData.paymentMethod === 'shopeepay' && styles.selectedPayment,
+              formData.paymentMethod === 'banking' && styles.selectedPayment,
             ]}
             onPress={() =>
-              setFormData({...formData, paymentMethod: 'shopeepay'})
+              setFormData({...formData, paymentMethod: 'banking'})
             }>
             <View style={styles.paymentMethodContent}>
               <View style={styles.radioButton}>
-                {formData.paymentMethod === 'shopeepay' && (
+                {formData.paymentMethod === 'banking' && (
                   <View style={styles.radioButtonSelected} />
                 )}
               </View>
               <View style={styles.paymentMethodInfo}>
-                <Text style={styles.paymentText}>ShopeePay</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          {/* Credit/Debit Card */}
-          <TouchableOpacity
-            style={[
-              styles.paymentMethod,
-              formData.paymentMethod === 'card' && styles.selectedPayment,
-            ]}
-            onPress={() => setFormData({...formData, paymentMethod: 'card'})}>
-            <View style={styles.paymentMethodContent}>
-              <View style={styles.radioButton}>
-                {formData.paymentMethod === 'card' && (
-                  <View style={styles.radioButtonSelected} />
-                )}
-              </View>
-              <View style={styles.paymentMethodInfo}>
-                <Text style={styles.paymentText}>Thẻ ghi nợ/Thẻ tín dụng</Text>
-                <View style={styles.cardLogos}>
-                  <Text style={styles.cardLogo}>VISA</Text>
-                  <Text style={styles.cardLogo}>MC</Text>
-                  <Text style={styles.cardLogo}>JCB</Text>
-                </View>
+                <Text style={styles.paymentText}>Chuyển khoản ngân hàng</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -356,7 +395,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
 
         {/* Order Summary */}
         <View style={styles.orderSummaryContainer}>
-          <View style={styles.orderSummaryHeader}>
+          {/* <View style={styles.orderSummaryHeader}>
             <Text style={styles.orderSummaryTitle}>Thông tin đặt vé</Text>
             <TouchableOpacity>
               <Text style={styles.changeTicketText}>Chọn lại vé</Text>
@@ -384,19 +423,23 @@ const TicketEventScreen = ({navigation, route}: any) => {
             <View style={styles.ticketTag}>
               <Text style={styles.ticketTagText}>M-1</Text>
             </View>
-          </View>
+          </View> */}
 
           <View style={styles.orderInfoContainer}>
             <Text style={styles.orderInfoTitle}>Thông tin đơn hàng</Text>
 
             <View style={styles.orderInfoRow}>
               <Text style={styles.orderInfoLabel}>Tạm tính</Text>
-              <Text style={styles.orderInfoValue}>250.000 đ</Text>
+              <Text style={styles.orderInfoValue}>
+                {calculateTotal().toLocaleString('vi-VN')} VND
+              </Text>
             </View>
 
             <View style={styles.orderTotalRow}>
               <Text style={styles.orderTotalLabel}>Tổng tiền</Text>
-              <Text style={styles.orderTotalValue}>250.000 đ</Text>
+              <Text style={styles.orderTotalValue}>
+                {calculateTotal().toLocaleString('vi-VN')} VND
+              </Text>
             </View>
 
             <Text style={styles.agreementText}>
@@ -411,7 +454,9 @@ const TicketEventScreen = ({navigation, route}: any) => {
       <View style={styles.bottomContainer}>
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Tổng tiền</Text>
-          <Text style={styles.totalAmount}>250.000 đ</Text>
+          <Text style={styles.totalAmount}>
+            {calculateTotal().toLocaleString('vi-VN')} VND
+          </Text>
         </View>
         <TouchableOpacity
           style={[
@@ -630,7 +675,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   selectedPayment: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
     borderColor: appColors.primary,
   },
   promoContainer: {
@@ -851,6 +895,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   paymentButton: {
+    marginVertical: 10,
     backgroundColor: appColors.primary,
     paddingVertical: 16,
     borderRadius: 12,
@@ -871,5 +916,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  quantityButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CBD5E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2D3748',
   },
 });
