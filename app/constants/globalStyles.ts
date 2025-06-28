@@ -24,11 +24,13 @@ export const globalStyles = StyleSheet.create({
     section: {
         paddingHorizontal: 16,
         paddingBottom: 15,      
+        
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'flex-start',
-        alignItems: 'center'
+        alignItems: 'center',
+        
     },
     column:{
         flexDirection: 'column',

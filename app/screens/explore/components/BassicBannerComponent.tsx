@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, {useRef, useEffect} from 'react';
 import {
   View,
   Animated,
@@ -8,11 +8,12 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { StackNavigationProp } from "@react-navigation/stack";
+} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import type {StackNavigationProp} from '@react-navigation/stack';
+import {appColors} from '../../../constants/appColors';
 
-const { width } = Dimensions.get("window");
+const {width} = Dimensions.get('window');
 
 interface EventItem {
   _id: string | number;
@@ -26,7 +27,7 @@ interface BannerProps {
 
 const MAX_BANNERS = 5;
 
-export default function AnimatedBanner({ events }: BannerProps) {
+export default function AnimatedBanner({events}: BannerProps) {
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const navigation = useNavigation<StackNavigationProp<any>>();
@@ -41,7 +42,7 @@ export default function AnimatedBanner({ events }: BannerProps) {
     const timer = setInterval(() => {
       currentIndex = (currentIndex + 1) % displayEvents.length;
       if (scrollRef.current) {
-        scrollRef.current.scrollTo({ x: width * currentIndex, animated: true });
+        scrollRef.current.scrollTo({x: width * currentIndex, animated: true});
       }
     }, 3000);
     return () => clearInterval(timer);
@@ -57,19 +58,21 @@ export default function AnimatedBanner({ events }: BannerProps) {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
+          [{nativeEvent: {contentOffset: {x: scrollX}}}],
+          {useNativeDriver: false},
         )}
         scrollEventThrottle={16}
-        style={{ width, height: 200}}
-      >
+        style={{width, height: 200}}>
         {displayEvents.map((event, i) => (
-          <View key={event._id} style={{ width, height: 200 }}>
-            <Image source={{ uri: event.avatar }} style={styles.bannerImage} resizeMode="cover" />
+          <View key={event._id} style={{width, height: 200}}>
+            <Image
+              source={{uri: event.avatar}}
+              style={styles.bannerImage}
+              resizeMode="cover"
+            />
             <TouchableOpacity
               style={styles.detailButton}
-              onPress={() => navigation.navigate('Detail', { id: event._id })}
-            >
+              onPress={() => navigation.navigate('Detail', {id: event._id})}>
               <Text style={styles.detailText}>Xem chi tiết</Text>
             </TouchableOpacity>
           </View>
@@ -82,12 +85,12 @@ export default function AnimatedBanner({ events }: BannerProps) {
           const scale = scrollX.interpolate({
             inputRange,
             outputRange: [1, 1.5, 1],
-            extrapolate: "clamp",
+            extrapolate: 'clamp',
           });
           const opacity = scrollX.interpolate({
             inputRange,
             outputRange: [0.6, 1, 0.6],
-            extrapolate: "clamp",
+            extrapolate: 'clamp',
           });
           return (
             <Animated.View
@@ -95,9 +98,9 @@ export default function AnimatedBanner({ events }: BannerProps) {
               style={[
                 styles.indicator,
                 {
-                  transform: [{ scale }],
+                  transform: [{scale}],
                   opacity,
-                  backgroundColor: "#2ecc71",
+                  backgroundColor: appColors.primary,
                 },
               ]}
             />
@@ -110,26 +113,26 @@ export default function AnimatedBanner({ events }: BannerProps) {
 
 const styles = StyleSheet.create({
   bannerImage: {
-    width: "100%",
+    width: '100%',
     height: 200,
   },
   detailButton: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 20,
     left: 16,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 14,
   },
   detailText: {
-    color: "#222",
-    fontWeight: "bold",
+    color: '#222',
+    fontWeight: 'bold',
     fontSize: 16,
   },
   indicatorContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 10,
   },
   indicator: {
@@ -137,6 +140,6 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     marginHorizontal: 4,
-    backgroundColor: "#2ecc71",
+    backgroundColor: '#2ecc71',
   },
 });
