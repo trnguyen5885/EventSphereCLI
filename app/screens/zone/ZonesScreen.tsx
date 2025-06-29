@@ -5,9 +5,13 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import AxiosInstance from '../../services/api/AxiosInstance';
+import {appColors} from '../../../app/constants/appColors';
+import RowComponent from '../../../app/components/RowComponent';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const ZonesScreen = ({navigation, route}: any) => {
   const [zones, setZones] = useState<any[]>([]);
@@ -64,7 +68,7 @@ const ZonesScreen = ({navigation, route}: any) => {
 
   const renderQuantitySection = zone => (
     <View style={styles.quantitySection}>
-      <Text style={styles.subTitle}>Số lượng vé:</Text>
+      <Text style={styles.subTitle}>Số lượng vé</Text>
       <View style={styles.quantityContainer}>
         <TouchableOpacity
           onPress={() => setQuantity(Math.max(1, quantity - 1))}
@@ -78,14 +82,11 @@ const ZonesScreen = ({navigation, route}: any) => {
           onPress={() =>
             setQuantity(Math.min(quantity + 1, zone.availableCount))
           }
-          style={styles.qtyButton}>
+          style={styles.qtyButton}
+          activeOpacity={0.5}>
           <Text style={styles.qtyButtonText}>+</Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.totalPrice}>
-        Tổng: {(zone.price * quantity).toLocaleString('vi-VN')} đ
-      </Text>
     </View>
   );
 
@@ -99,7 +100,22 @@ const ZonesScreen = ({navigation, route}: any) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: '#F7FAFC'}]}>
+      <View style={styles.header}>
+        <StatusBar animated backgroundColor={appColors.primary} />
+        <RowComponent styles={{columnGap: 25}}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Khu vực vé</Text>
+        </RowComponent>
+
+        <TouchableOpacity>
+          <Ionicons name="map-outline" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
       <ScrollView style={{flex: 1}}>
         <Text style={styles.sectionTitle}>Chọn khu vực:</Text>
         {zones.map(zone => {
@@ -141,11 +157,20 @@ const ZonesScreen = ({navigation, route}: any) => {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerTotal}>
-          Tổng: {totalPrice.toLocaleString('vi-VN')} đ
+          Tổng:{' '}
+          <Text
+            style={{
+              color: appColors.primary,
+              fontWeight: 'bold',
+              fontSize: 20,
+            }}>
+            {totalPrice.toLocaleString('vi-VN')} đ
+          </Text>
         </Text>
         <TouchableOpacity
           style={[styles.button, !selectedZone && {backgroundColor: '#ccc'}]}
           onPress={handleContinue}
+          activeOpacity={0.6}
           disabled={!selectedZone}>
           <Text style={styles.buttonText}>Tiếp tục thanh toán</Text>
         </TouchableOpacity>
@@ -158,42 +183,82 @@ export default ZonesScreen;
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#fff'},
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    backgroundColor: appColors.primary,
+    paddingTop: Platform.OS === 'ios' ? 66 : 22,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  headerTitle: {
+    color: appColors.white2,
+    fontSize: 22,
+    fontWeight: '500',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   sectionTitle: {fontSize: 16, fontWeight: '600', margin: 16},
   zoneWrapper: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
     borderRadius: 8,
     marginHorizontal: 16,
     marginBottom: 12,
-  },
-  selectedZone: {
-    borderColor: '#3498db',
-    backgroundColor: '#f0f8ff',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   zoneItem: {
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  zoneText: {fontSize: 16},
-  zonePrice: {fontSize: 16, color: '#888'},
+  zoneText: {fontSize: 16, fontWeight: '500'},
+  zonePrice: {fontSize: 16, color: appColors.primary, fontWeight: 'bold'},
   quantitySection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingBottom: 12,
   },
-  subTitle: {marginTop: 8, fontSize: 14},
+  subTitle: {marginTop: 8, fontSize: 16, fontWeight: '500'},
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 8,
+    columnGap: 10,
   },
   qtyButton: {
-    backgroundColor: '#ddd',
-    padding: 10,
-    borderRadius: 6,
-    marginHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(86, 105, 255, 0.85)',
+    width: 35,
+    height: 35,
+    borderRadius: 5,
   },
-  qtyButtonText: {fontSize: 20, fontWeight: 'bold'},
+  qtyButtonText: {fontSize: 20, fontWeight: 'bold', color: appColors.white2},
   qtyText: {fontSize: 16},
   totalPrice: {
     fontSize: 16,
@@ -212,8 +277,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   button: {
-    backgroundColor: '#3498db',
-    paddingVertical: 12,
+    backgroundColor: appColors.primary,
+    paddingVertical: 20,
     borderRadius: 8,
     alignItems: 'center',
   },

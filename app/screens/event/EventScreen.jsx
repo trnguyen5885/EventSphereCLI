@@ -194,10 +194,10 @@ const styles = StyleSheet.create({
     detailButton: {
         marginTop: 14,
         paddingVertical: 10,
-        backgroundColor: '#007BFF',
+        backgroundColor: appColors.primary,
         borderRadius: 6,
         alignItems: 'center',
-        shadowColor: '#007BFF',
+        shadowColor: appColors.primary,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.12,
         shadowRadius: 2,

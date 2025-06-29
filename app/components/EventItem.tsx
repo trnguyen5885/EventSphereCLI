@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import React, {useState} from 'react';
-import {CardComponent, RowComponent, TextComponent} from '.';
+import {CardComponent, TextComponent} from '.';
 import {appColors} from '../constants/appColors';
 import {formatDate} from '../services';
 import {formatPrice} from '../services/utils/price';
