@@ -51,7 +51,7 @@ export default function AnimatedBanner({events}: BannerProps) {
   if (!displayEvents || displayEvents.length === 0) return null;
 
   return (
-    <View>
+    <View style={{marginTop: 1}}>
       <Animated.ScrollView
         ref={scrollRef}
         horizontal

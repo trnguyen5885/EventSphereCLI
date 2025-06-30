@@ -454,9 +454,6 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         )}
 
         <RatingAndReview detailEventId={detailEvent?._id} />
-
-        {/* Add some bottom spacing */}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       <View style={styles.bottomButtonContainer}>
@@ -523,7 +520,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    backgroundColor: '#F7FAFC', // Light gray background for scroll area
+    backgroundColor: 'white', // Light gray background for scroll area
   },
   imageBackground: {
     width: '100%',
@@ -586,7 +583,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
-    elevation: 3,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -704,21 +701,20 @@ const styles = StyleSheet.create({
   },
   // Enhanced bottom button
   bottomButtonContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     paddingHorizontal: 16,
     paddingTop: 16,
-    // paddingBottom: Platform.OS === 'ios' ? 16 : 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    elevation: 8,
-    shadowColor: '#000',
+    borderTopWidth: 0, // Bỏ viền nếu không cần
+    elevation: 0,       // Bỏ bóng nếu không cần
+    shadowColor: 'transparent',
     shadowOffset: {
       width: 0,
-      height: -2,
+      height: 0,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
+
   buyTicketButton: {
     backgroundColor: appColors.primary,
     flexDirection: 'row',
