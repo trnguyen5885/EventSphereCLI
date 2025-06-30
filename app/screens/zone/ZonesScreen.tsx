@@ -5,19 +5,32 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  StatusBar,
+  Alert,
+  Platform,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import AxiosInstance from '../../services/api/AxiosInstance';
+import { appColors } from '../../../app/constants/appColors';
+import RowComponent from '../../../app/components/RowComponent';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import LoadingModal from '../../modals/LoadingModal';
 
-const ZonesScreen = ({navigation, route}: any) => {
+const ZonesScreen = ({ navigation, route }: any) => {
   const [zones, setZones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const {id, showtimeId, typeBase} = route.params;
+  // Thay đổi: sử dụng object để lưu số lượng của từng zone
+  const [zoneQuantities, setZoneQuantities] = useState<{ [key: string]: number }>({});
+  const { id, showtimeId, typeBase } = route.params;
 
-  const selectedZone = zones.find(z => z._id === selectedZoneId);
-  const totalPrice = selectedZone ? selectedZone.price * quantity : 0;
+  // Tính tổng tiền từ tất cả các zone đã chọn
+  const totalPrice = zones.reduce((total, zone) => {
+    const quantity = zoneQuantities[zone._id] || 0;
+    return total + (zone.price * quantity);
+  }, 0);
+
+  // Tính tổng số lượng vé đã chọn
+  const totalQuantity = Object.values(zoneQuantities).reduce((total, qty) => total + qty, 0);
 
   useEffect(() => {
     const getZone = async () => {
@@ -36,103 +49,164 @@ const ZonesScreen = ({navigation, route}: any) => {
   }, []);
 
   const handleContinue = async () => {
-    if (!selectedZone) return;
-    console.log({
-      eventId: id,
-      zoneId: selectedZoneId,
-      showtimeId: showtimeId,
-      quantity: quantity,
-    });
+    if (totalQuantity === 0) {
+      Alert.alert('Thông báo', 'Vui lòng chọn ít nhất một vé');
+      return;
+    }
+
+    // Hiển thị loading
+    setLoading(true);
+
     try {
-      const response = await AxiosInstance().post('/zones/reserveZoneTicket', {
+      // Tạo array các zone đã chọn theo format API yêu cầu
+      const zonesData = zones.filter(zone => zoneQuantities[zone._id] > 0)
+        .map(zone => ({
+          zoneId: zone._id,
+          quantity: zoneQuantities[zone._id]
+        }));
+
+      const requestData = {
         eventId: id,
-        zoneId: selectedZoneId,
+        zones: zonesData,
         showtimeId: showtimeId,
-        quantity: quantity,
-      });
-      navigation.navigate('Ticket', {
-        id: id, // EventID
-        typeBase: typeBase, // typeBase Event
-        totalPrice: totalPrice,
-        quantity: quantity,
-        bookingId: response.bookingId,
-      });
-    } catch (e) {
-      console.log(e);
+        quantity: totalQuantity
+      };
+
+      console.log('Request data:', requestData);
+
+      // Gọi API reserve tickets
+      const response = await AxiosInstance().post('/zones/reserveZoneTicket', requestData);
+
+      console.log('API Response:', response);
+
+      // Kiểm tra response có đúng format không
+      if (response && response.reservations) {
+        const reservations = response.reservations;
+
+        navigation.navigate('Ticket', {
+          id: id,
+          typeBase: typeBase,
+          totalPrice: totalPrice,
+          quantity: totalQuantity,
+          reservations: reservations,
+          bookingId: reservations.length > 0 ? reservations[0].bookingId : null,
+        });
+      } else {
+        // Nếu response không có reservations, vẫn navigate nhưng với dữ liệu khác
+        console.warn('No reservations in response, navigating anyway');
+        navigation.navigate('Ticket', {
+          id: id,
+          typeBase: typeBase || 'zone', // Đảm bảo có typeBase
+          totalPrice: totalPrice,
+          quantity: totalQuantity,
+          reservations: [],
+          bookingId: null,
+        });
+      }
+
+    } catch (error) {
+      console.error('Error in handleContinue:', error);
+
+      // Hiển thị lỗi chi tiết
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        Alert.alert('Lỗi', error.response.data.message || 'Có lỗi xảy ra khi đặt vé');
+      } else {
+        Alert.alert('Lỗi', 'Không thể kết nối đến server');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderQuantitySection = zone => (
-    <View style={styles.quantitySection}>
-      <Text style={styles.subTitle}>Số lượng vé:</Text>
+  // Hàm cập nhật số lượng cho từng zone
+  const updateZoneQuantity = (zoneId: string, newQuantity: number, maxQuantity: number) => {
+    const clampedQuantity = Math.max(0, Math.min(newQuantity, maxQuantity));
+    setZoneQuantities(prev => ({
+      ...prev,
+      [zoneId]: clampedQuantity
+    }));
+  };
+
+  // Component hiển thị control số lượng cho từng zone
+  const renderQuantityControls = (zone: any) => {
+    const currentQuantity = zoneQuantities[zone._id] || 0;
+
+    return (
       <View style={styles.quantityContainer}>
         <TouchableOpacity
-          onPress={() => setQuantity(Math.max(1, quantity - 1))}
-          style={styles.qtyButton}>
+          onPress={() => updateZoneQuantity(zone._id, currentQuantity - 1, zone.availableCount)}
+          style={[styles.qtyButton, currentQuantity === 0 && styles.qtyButtonDisabled]}>
           <Text style={styles.qtyButtonText}>-</Text>
         </TouchableOpacity>
 
-        <Text style={styles.qtyText}>{quantity}</Text>
+        <Text style={styles.qtyText}>{currentQuantity}</Text>
 
         <TouchableOpacity
-          onPress={() =>
-            setQuantity(Math.min(quantity + 1, zone.availableCount))
-          }
-          style={styles.qtyButton}>
+          onPress={() => updateZoneQuantity(zone._id, currentQuantity + 1, zone.availableCount)}
+          style={[styles.qtyButton, currentQuantity >= zone.availableCount && styles.qtyButtonDisabled]}
+          disabled={currentQuantity >= zone.availableCount}>
           <Text style={styles.qtyButtonText}>+</Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.totalPrice}>
-        Tổng: {(zone.price * quantity).toLocaleString('vi-VN')} đ
-      </Text>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text>Đang tải khu vực...</Text>
-      </View>
-    );
+    return <LoadingModal visible={true} />;
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={{flex: 1}}>
-        <Text style={styles.sectionTitle}>Chọn khu vực:</Text>
+    <View style={[styles.container, { backgroundColor: '#F7FAFC' }]}>
+      <View style={styles.header}>
+        <StatusBar animated backgroundColor={appColors.primary} />
+        <RowComponent styles={{ columnGap: 25 }}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Khu vực vé</Text>
+        </RowComponent>
+
+        <TouchableOpacity>
+          <Ionicons name="map-outline" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={{ flex: 1 }}>
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionTitle}>Loại vé</Text>
+          <Text style={styles.sectionTitle}>Số lượng</Text>
+        </View>
+
         {zones.map(zone => {
-          const isSelected = selectedZoneId === zone._id;
           const isSoldOut = zone.availableCount < 1;
+          const currentQuantity = zoneQuantities[zone._id] || 0;
+          const isSelected = currentQuantity > 0;
 
           return (
             <View
               key={zone._id}
-              style={[styles.zoneWrapper, isSelected && styles.selectedZone]}>
-              <TouchableOpacity
-                disabled={isSoldOut}
-                style={[
-                  styles.zoneItem,
-                  isSoldOut && {opacity: 0.5}, // làm mờ khu hết vé
-                ]}
-                onPress={() => {
-                  if (isSelected) {
-                    setSelectedZoneId(null);
-                  } else {
-                    setSelectedZoneId(zone._id);
-                    setQuantity(1);
-                  }
-                }}>
-                <Text style={styles.zoneText}>{zone.name}</Text>
-                <Text
-                  style={[styles.zonePrice, isSoldOut && {color: '#e74c3c'}]}>
-                  {isSoldOut
-                    ? 'Hết vé'
-                    : `${zone.price.toLocaleString('vi-VN')} đ`}
-                </Text>
-              </TouchableOpacity>
-              {!isSoldOut && isSelected && renderQuantitySection(zone)}
+              style={[
+                styles.zoneWrapper,
+                isSelected && styles.selectedZone,
+                isSoldOut && styles.soldOutZone
+              ]}>
+              <View style={styles.zoneItem}>
+                <View style={styles.zoneInfo}>
+                  <Text style={[styles.zoneText, isSoldOut && styles.soldOutText]}>
+                    {zone.name}
+                  </Text>
+                  <Text style={[styles.zonePrice, isSoldOut && styles.soldOutPrice]}>
+                    {isSoldOut
+                      ? 'Hết vé'
+                      : `${zone.price.toLocaleString('vi-VN')} đ`}
+                  </Text>
+                </View>
+
+                {!isSoldOut && renderQuantityControls(zone)}
+              </View>
             </View>
           );
         })}
@@ -140,13 +214,22 @@ const ZonesScreen = ({navigation, route}: any) => {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerTotal}>
-          Tổng: {totalPrice.toLocaleString('vi-VN')} đ
-        </Text>
+        <View style={styles.footerInfo}>
+          <Text style={styles.footerQuantity}>
+            Tổng số vé: {totalQuantity}
+          </Text>
+          <Text style={styles.footerTotal}>
+            Tổng: {' '}
+            <Text style={styles.totalAmount}>
+              {totalPrice.toLocaleString('vi-VN')} đ
+            </Text>
+          </Text>
+        </View>
         <TouchableOpacity
-          style={[styles.button, !selectedZone && {backgroundColor: '#ccc'}]}
+          style={[styles.button, totalQuantity === 0 && styles.buttonDisabled]}
           onPress={handleContinue}
-          disabled={!selectedZone}>
+          activeOpacity={0.6}
+          disabled={totalQuantity === 0}>
           <Text style={styles.buttonText}>Tiếp tục thanh toán</Text>
         </TouchableOpacity>
       </View>
@@ -157,48 +240,122 @@ const ZonesScreen = ({navigation, route}: any) => {
 export default ZonesScreen;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fff'},
-  sectionTitle: {fontSize: 16, fontWeight: '600', margin: 16},
+  container: { flex: 1, backgroundColor: '#fff' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    backgroundColor: appColors.primary,
+    paddingTop: Platform.OS === 'ios' ? 66 : 22,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  headerTitle: {
+    color: appColors.white2,
+    fontSize: 22,
+    fontWeight: '500',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   zoneWrapper: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
     borderRadius: 8,
     marginHorizontal: 16,
     marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   selectedZone: {
-    borderColor: '#3498db',
-    backgroundColor: '#f0f8ff',
+    borderColor: appColors.primary,
+    borderWidth: 1,
+  },
+  soldOutZone: {
+    opacity: 0.5,
+    backgroundColor: '#f8f9fa',
   },
   zoneItem: {
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  zoneText: {fontSize: 16},
-  zonePrice: {fontSize: 16, color: '#888'},
-  quantitySection: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+  zoneInfo: {
+    flex: 1,
   },
-  subTitle: {marginTop: 8, fontSize: 14},
+  zoneText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  zonePrice: {
+    fontSize: 14,
+    color: appColors.primary,
+    fontWeight: 'bold',
+  },
+  soldOutText: {
+    color: '#6c757d',
+  },
+  soldOutPrice: {
+    color: '#e74c3c',
+  },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 8,
+    columnGap: 12,
   },
   qtyButton: {
-    backgroundColor: '#ddd',
-    padding: 10,
-    borderRadius: 6,
-    marginHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: appColors.primary,
+    width: 35,
+    height: 35,
+    borderRadius: 5,
   },
-  qtyButtonText: {fontSize: 20, fontWeight: 'bold'},
-  qtyText: {fontSize: 16},
-  totalPrice: {
-    fontSize: 16,
+  qtyButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  qtyButtonText: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#e74c3c',
+    color: appColors.white2,
+  },
+  qtyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    minWidth: 20,
+    textAlign: 'center',
   },
   footer: {
     padding: 16,
@@ -206,16 +363,32 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
     backgroundColor: '#fff',
   },
+  footerInfo: {
+    marginBottom: 12,
+  },
+  footerQuantity: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+    color: '#6c757d',
+  },
   footerTotal: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 10,
+  },
+  totalAmount: {
+    color: appColors.primary,
+    fontWeight: 'bold',
+    fontSize: 20,
   },
   button: {
-    backgroundColor: '#3498db',
-    paddingVertical: 12,
+    backgroundColor: appColors.primary,
+    paddingVertical: 20,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: '#fff',

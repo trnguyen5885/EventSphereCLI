@@ -7,18 +7,19 @@ import {
   StatusBar,
   FlatList,
   ListRenderItemInfo,
+  TouchableOpacity,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {InputComponent, RowComponent} from '../../components';
+import { InputComponent, RowComponent } from '../../components';
 import EventItem from '../../components/EventItem';
-import {globalStyles} from '../../constants/globalStyles';
-import {appColors} from '../../constants/appColors';
+import { globalStyles } from '../../constants/globalStyles';
+import { appColors } from '../../constants/appColors';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {AxiosInstance} from '../../services';
-import {EventModel} from '@/app/models';
+import { AxiosInstance } from '../../services';
+import { EventModel } from '@/app/models';
 
-const EventSearch = ({navigation}: any) => {
+const EventSearch = ({ navigation }: any) => {
   const [values, setValues] = useState('');
   const [eventsSearch, setEventsSearch] = useState<EventModel[]>([]);
 
@@ -49,9 +50,12 @@ const EventSearch = ({navigation}: any) => {
     <View style={[globalStyles.container]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleNavigation} styles={{columnGap: 25}}>
-          <Ionicons name="chevron-back" size={26} color="white" />
-
+        <RowComponent onPress={handleNavigation} styles={{ columnGap: 25, justifyContent: "center", alignItems: "center" }}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Tìm kiếm</Text>
         </RowComponent>
 
@@ -60,7 +64,7 @@ const EventSearch = ({navigation}: any) => {
           onChange={text => setValues(text)}
           placeholder="Nhập từ khoá..."
           allowClear
-          customStyles={{minHeight: 46}}
+          customStyles={{ minHeight: 46 }}
           affix={
             <MaterialIcons name="search" size={24} color="rgba(0,0,0,0.5)" />
           }
@@ -69,7 +73,7 @@ const EventSearch = ({navigation}: any) => {
 
       <FlatList
         data={eventsSearch}
-        renderItem={({item}: ListRenderItemInfo<EventModel>) => (
+        renderItem={({ item }: ListRenderItemInfo<EventModel>) => (
           <EventItem
             onPress={() => {
               navigation.navigate('Detail', {
@@ -77,7 +81,7 @@ const EventSearch = ({navigation}: any) => {
               });
             }}
             type="card"
-            styles={{width: '95%'}}
+            styles={{ width: '95%', padding: 10, margin: 10 }}
             item={item}
           />
         )}
@@ -100,5 +104,13 @@ const styles = StyleSheet.create({
     color: appColors.white2,
     fontSize: 22,
     fontWeight: '500',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

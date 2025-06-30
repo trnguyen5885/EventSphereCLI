@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, Button, ActivityIndicator, StyleSheet, Alert, Platform, TouchableOpacity } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import createPaymentQRCode from '../../services/createPaymentQRCode';
 import checkPaymentStatus from '../../services/checkPaymentStatus';
@@ -16,7 +16,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('PENDING'); // PENDING, CHECKING, PAID, ERROR
   const [intervalRef, setIntervalRef] = useState(null); // Lưu reference của interval
-  
+
   console.log("Amount", amount);
   console.log("EventName", eventName)
   console.log("UserId", userId)
@@ -25,7 +25,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
   console.log("BookingId", bookingId)
 
 
-  
+
 
   // Hàm tạo QR Code
   const handleGenerateQR = async () => {
@@ -79,21 +79,21 @@ const PayOSQRScreen = ({ route, navigation }) => {
             setIntervalRef(null);
 
             setTimeout(() => {
-                Alert.alert(
-                  '✅ Thành công',
-                  'Bạn đã thanh toán thành công!',
-                  [
-                    {
-                      text: 'OK',
-                      onPress: () => {
-                        console.log("👆 User đã nhấn OK, chuyển về Drawer");
-                        navigation.navigate('Drawer');
-                      },
+              Alert.alert(
+                '✅ Thành công',
+                'Bạn đã thanh toán thành công!',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      console.log("👆 User đã nhấn OK, chuyển về Drawer");
+                      navigation.navigate('Drawer');
                     },
-                  ],
-                  { cancelable: false } // Không cho phép đóng bằng cách tap bên ngoài
-                );
-              }, 100);
+                  },
+                ],
+                { cancelable: false } // Không cho phép đóng bằng cách tap bên ngoài
+              );
+            }, 100);
 
             // Tạo đơn hàng và vé sau khi thanh toán thành công
             try {
@@ -103,7 +103,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
                 userId: userId,
                 amount: amount,
                 bookingType: bookingType ?? 'none',
-                ...((bookingType !== undefined || bookingType !== null || bookingType !== 'none') && {bookingId: bookingId}),
+                ...((bookingType !== undefined || bookingType !== null || bookingType !== 'none') && { bookingId: bookingId }),
                 totalPrice: totalPrice
               };
 
@@ -195,8 +195,12 @@ const PayOSQRScreen = ({ route, navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <RowComponent onPress={() => navigation.goBack()} styles={{ columnGap: 25 }}>
-          <Ionicons name="chevron-back" size={26} color="white" />
-          <Text style={styles.headerTitle}>Thanh toán PayOS</Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Chuyển khoản ngân hàng</Text>
         </RowComponent>
       </View>
 
@@ -265,6 +269,14 @@ const styles = StyleSheet.create({
     color: appColors.white2,
     fontSize: 22,
     fontWeight: "500"
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   container: {
     flex: 1,

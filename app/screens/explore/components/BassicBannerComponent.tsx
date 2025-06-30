@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   indicator: {
-    width: 10,
-    height: 10,
+    width: 7,
+    height: 7,
     borderRadius: 5,
     marginHorizontal: 4,
     backgroundColor: '#2ecc71',

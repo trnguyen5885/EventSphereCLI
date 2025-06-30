@@ -184,14 +184,8 @@ const TicketEventScreen = ({navigation, route}: any) => {
         }
       }
 
-      if (formData.paymentMethod === 'banking') {
-        setIsLoading(false);
-        navigation.navigate('PaymentQRCode', {
-          amount: eventInfo?.ticketPrice,
-        });
-      }
 
-      if (formData.paymentMethod === 'payos') {
+      if (formData.paymentMethod === 'banking') {
         const totalAmount = calculateTotal();
         setIsLoading(false);
         navigation.navigate('PayOSQRScreen', {
@@ -431,14 +425,24 @@ const TicketEventScreen = ({navigation, route}: any) => {
             <View style={styles.orderInfoRow}>
               <Text style={styles.orderInfoLabel}>Tạm tính</Text>
               <Text style={styles.orderInfoValue}>
-                {calculateTotal().toLocaleString('vi-VN')} VND
+                {typeBase === undefined ||
+                typeBase === null ||
+                typeBase === 'none'
+                  ? calculateTotal().toLocaleString('vi-VN')
+                  : totalPrice.toLocaleString('vi-VN')}{' '}
+                VND
               </Text>
             </View>
 
             <View style={styles.orderTotalRow}>
               <Text style={styles.orderTotalLabel}>Tổng tiền</Text>
               <Text style={styles.orderTotalValue}>
-                {calculateTotal().toLocaleString('vi-VN')} VND
+                {typeBase === undefined ||
+                typeBase === null ||
+                typeBase === 'none'
+                  ? calculateTotal().toLocaleString('vi-VN')
+                  : totalPrice.toLocaleString('vi-VN')}{' '}
+                VND
               </Text>
             </View>
 
@@ -455,7 +459,10 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Tổng tiền</Text>
           <Text style={styles.totalAmount}>
-            {calculateTotal().toLocaleString('vi-VN')} VND
+            {typeBase === undefined || typeBase === null || typeBase === 'none'
+              ? calculateTotal().toLocaleString('vi-VN')
+              : totalPrice.toLocaleString('vi-VN')}{' '}
+            VND
           </Text>
         </View>
         <TouchableOpacity
