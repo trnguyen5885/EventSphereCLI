@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,24 +11,24 @@ import {
   NativeModules,
   Alert,
 } from 'react-native';
-import {CardComponent, RowComponent} from '../../components';
-import {appColors} from '../../constants/appColors';
-import {globalStyles} from '../../constants/globalStyles';
-import {AxiosInstance} from '../../services';
-import {formatDate} from '../../services/utils/date';
+import { CardComponent, RowComponent } from '../../components';
+import { appColors } from '../../constants/appColors';
+import { globalStyles } from '../../constants/globalStyles';
+import { AxiosInstance } from '../../services';
+import { formatDate } from '../../services/utils/date';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LoadingModal from '../../modals/LoadingModal';
-import {UserModel} from '@/app/models/user/UserModel';
-import {EventModel} from '@/app/models';
-import {useSelector} from 'react-redux';
+import { UserModel } from '@/app/models/user/UserModel';
+import { EventModel } from '@/app/models';
+import { useSelector } from 'react-redux';
 
-const {ZaloPayModule} = NativeModules;
+const { ZaloPayModule } = NativeModules;
 
-const TicketEventScreen = ({navigation, route}: any) => {
-  const {id, typeBase, totalPrice, quantity, bookingId} = route.params;
+const TicketEventScreen = ({ navigation, route }: any) => {
+  const { id, typeBase, totalPrice, quantity, bookingId } = route.params;
   const [userInfo, setUserInfo] = useState<UserModel | null>();
   const [isLoading, setIsLoading] = useState(false);
-  const [countdown, setCountdown] = useState({minutes: 11, seconds: 31});
+  const [countdown, setCountdown] = useState({ minutes: 11, seconds: 31 });
   const userId = useSelector(state => state.auth.userId);
 
   const [eventInfo, setEventInfo] = useState<EventModel | null>(null);
@@ -145,7 +145,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
               : quantity,
           ...((typeBase !== undefined ||
             typeBase !== null ||
-            typeBase !== 'none') && {bookingId: bookingId}),
+            typeBase !== 'none') && { bookingId: bookingId }),
           totalPrice:
             typeBase === undefined || typeBase === null || typeBase === 'none'
               ? calculateTotal()
@@ -205,7 +205,9 @@ const TicketEventScreen = ({navigation, route}: any) => {
             typeBase === undefined || typeBase === null || typeBase === 'none'
               ? calculateTotal()
               : totalPrice,
+          showtimeId: route.params?.showtimeId,
         });
+
       }
     } catch (error) {
       console.log('Lỗi khi thanh toán:', error);
@@ -222,7 +224,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
     <View style={[globalStyles.container, styles.mainContainer]}>
       {/* Header */}
       <View style={styles.header}>
-        <RowComponent onPress={handleNavigation} styles={{columnGap: 25}}>
+        <RowComponent onPress={handleNavigation} styles={{ columnGap: 25 }}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
@@ -293,16 +295,16 @@ const TicketEventScreen = ({navigation, route}: any) => {
                   justifyContent: 'space-between',
                   marginBottom: 12,
                 }}>
-                <Text style={{fontSize: 16, color: '#2D3748'}}>
+                <Text style={{ fontSize: 16, color: '#2D3748' }}>
                   {ticketTypes.normal.name}
                 </Text>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <TouchableOpacity
                     onPress={() => updateTicketQuantity('normal', -1)}
                     style={styles.quantityButton}>
                     <Text style={styles.quantityButtonText}>-</Text>
                   </TouchableOpacity>
-                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                  <Text style={{ marginHorizontal: 12, fontSize: 16 }}>
                     {formData.tickets.normal}
                   </Text>
                   <TouchableOpacity
@@ -320,16 +322,16 @@ const TicketEventScreen = ({navigation, route}: any) => {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                 }}>
-                <Text style={{fontSize: 16, color: '#2D3748'}}>
+                <Text style={{ fontSize: 16, color: '#2D3748' }}>
                   {ticketTypes.vip.name}
                 </Text>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <TouchableOpacity
                     onPress={() => updateTicketQuantity('vip', -1)}
                     style={styles.quantityButton}>
                     <Text style={styles.quantityButtonText}>-</Text>
                   </TouchableOpacity>
-                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                  <Text style={{ marginHorizontal: 12, fontSize: 16 }}>
                     {formData.tickets.vip}
                   </Text>
                   <TouchableOpacity
@@ -352,7 +354,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
               styles.paymentMethod,
               formData.paymentMethod === 'zalo' && styles.selectedPayment,
             ]}
-            onPress={() => setFormData({...formData, paymentMethod: 'zalo'})}>
+            onPress={() => setFormData({ ...formData, paymentMethod: 'zalo' })}>
             <View style={styles.paymentMethodContent}>
               <View style={styles.radioButton}>
                 {formData.paymentMethod === 'zalo' && (
@@ -372,7 +374,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
               formData.paymentMethod === 'banking' && styles.selectedPayment,
             ]}
             onPress={() =>
-              setFormData({...formData, paymentMethod: 'banking'})
+              setFormData({ ...formData, paymentMethod: 'banking' })
             }>
             <View style={styles.paymentMethodContent}>
               <View style={styles.radioButton}>
@@ -426,8 +428,8 @@ const TicketEventScreen = ({navigation, route}: any) => {
               <Text style={styles.orderInfoLabel}>Tạm tính</Text>
               <Text style={styles.orderInfoValue}>
                 {typeBase === undefined ||
-                typeBase === null ||
-                typeBase === 'none'
+                  typeBase === null ||
+                  typeBase === 'none'
                   ? calculateTotal().toLocaleString('vi-VN')
                   : totalPrice.toLocaleString('vi-VN')}{' '}
                 VND
@@ -438,8 +440,8 @@ const TicketEventScreen = ({navigation, route}: any) => {
               <Text style={styles.orderTotalLabel}>Tổng tiền</Text>
               <Text style={styles.orderTotalValue}>
                 {typeBase === undefined ||
-                typeBase === null ||
-                typeBase === 'none'
+                  typeBase === null ||
+                  typeBase === 'none'
                   ? calculateTotal().toLocaleString('vi-VN')
                   : totalPrice.toLocaleString('vi-VN')}{' '}
                 VND

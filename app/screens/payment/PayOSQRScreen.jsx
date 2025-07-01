@@ -10,7 +10,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { globalStyles } from '../../constants/globalStyles';
 
 const PayOSQRScreen = ({ route, navigation }) => {
-  const { amount, eventName, userId, eventId, bookingType, bookingId, totalPrice } = route.params;
+  const { amount, eventName, userId, eventId, bookingType, bookingId, totalPrice, showtimeId } = route.params;
   const [qrData, setQrData] = useState(null);
   const [orderCode, setOrderCode] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -23,6 +23,8 @@ const PayOSQRScreen = ({ route, navigation }) => {
   console.log("EventId", eventId)
   console.log("BookingType", bookingType)
   console.log("BookingId", bookingId)
+  console.log("TotalPrice", totalPrice)
+  console.log("ShowtimeId", showtimeId);
 
 
 
@@ -98,14 +100,20 @@ const PayOSQRScreen = ({ route, navigation }) => {
             // Tạo đơn hàng và vé sau khi thanh toán thành công
             try {
               console.log("🏗️ Đang tạo đơn hàng...");
+              console.log("📤 bodyOrder gửi đi:", JSON.stringify(bodyOrder, null, 2));
+
               const bodyOrder = {
                 eventId: eventId,
                 userId: userId,
                 amount: amount,
                 bookingType: bookingType ?? 'none',
-                ...((bookingType !== undefined || bookingType !== null || bookingType !== 'none') && { bookingId: bookingId }),
-                totalPrice: totalPrice
+                ...(bookingType === 'zone' && bookingId && { bookingIds: [bookingId] }),
+                totalPrice: totalPrice,
+                showtimeId: showtimeId,
               };
+
+
+
 
               const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
               console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
