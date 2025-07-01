@@ -43,42 +43,42 @@ const DrawerCustom = ({ navigation }: any) => {
   const profileMenu = [
     {
       key: "MyProfile",
-      title: "My Profile",
+      title: "Trang cá nhân",
       icon: <User size={size} color={color} />,
     },
     {
       key: "Message",
-      title: "Message",
+      title: "Thông báo",
       icon: <Message2 size={size} color={color} />,
     },
     {
       key: "Calendar",
-      title: "Calendar",
+      title: "Lịch sự kiện",
       icon: <Calendar size={size} color={color} />,
     },
     {
       key: "Bookmark",
-      title: "Bookmark",
+      title: "Đánh dấu",
       icon: <Bookmark2 size={size} color={color} />,
     },
     {
       key: "ContactUs",
-      title: "Contact Us",
+      title: "Liên hệ chúng tôi",
       icon: <Sms size={size} color={color} />,
     },
     {
       key: "Settings",
-      title: "Settings",
+      title: "Cài đặt",
       icon: <Setting2 size={size} color={color} />,
     },
     {
       key: "HelpAndFAQs",
-      title: "Help & FAQs",
+      title: "Trợ giúp & Câu hỏi",
       icon: <MessageQuestion size={size} color={color} />,
     },
     {
       key: "SignOut",
-      title: "Sign Out",
+      title: "Đăng xuất",
       icon: <Logout size={size} color={color} />,
     },
   ];

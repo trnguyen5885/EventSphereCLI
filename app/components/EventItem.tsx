@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import React, {useState} from 'react';
-import {CardComponent, RowComponent, TextComponent} from '.';
+import {CardComponent, TextComponent} from '.';
 import {appColors} from '../constants/appColors';
 import {formatDate} from '../services';
 import {formatPrice} from '../services/utils/price';
@@ -45,7 +45,7 @@ const EventItem = (props: Props) => {
       <Image
         style={{
           width: '100%',
-          height: 135,
+          height: 140,
           objectFit: 'cover',
           borderRadius: 15,
         }}
@@ -109,7 +109,7 @@ const EventItem = (props: Props) => {
           styles={{fontSize: 17, fontWeight: 'bold', color: appColors.primary}}
         />
 
-        <View style={[globalStyles.row, { columnGap: 5}]}>
+        <View style={[globalStyles.row, {columnGap: 5}]}>
           <View>
             <Ionicons name="calendar" size={18} color={appColors.primary} />
           </View>

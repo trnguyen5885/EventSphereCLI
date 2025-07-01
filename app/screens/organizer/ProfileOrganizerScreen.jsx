@@ -72,7 +72,7 @@ const ProfileOrganizerScreen = ({ navigation }) => {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: "Login" }],
+          routes: [{ name: "Welcome" }],
         })
       );
     } catch (error) {
@@ -219,7 +219,7 @@ const ProfileOrganizerScreen = ({ navigation }) => {
             <View style={styles.menuItemContent}>
               <MaterialIcons name="logout" size={20} color="black" />
               <TextComponent
-                text={isLoading ? "Đang đăng xuất..." : "Đăng xuất"}
+                text={"Đăng xuất"}
                 styles={styles.menuText}
               />
               {!isLoading && <MaterialCommunityIcons name="chevron-right" size={20} color="#E53E3E" />}

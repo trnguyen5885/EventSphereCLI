@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useState, useRef } from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -14,45 +14,41 @@ import {
   Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { AxiosInstance } from '../../services';
-import { globalStyles } from '../../constants/globalStyles';
+import {AxiosInstance} from '../../services';
+import {globalStyles} from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
   RowComponent,
-  SpaceComponent,
   TextComponent,
 } from '../../components';
-import { appColors } from '../../constants/appColors';
-import { formatDate } from '../../services/index';
-import { formatPrice } from '../../services/utils/price';
+import {appColors} from '../../constants/appColors';
+import {formatDate} from '../../services/index';
 import RatingAndReview from '../review/RatingAndReview';
-import { EventModel } from '@/app/models';
-import ListInviteComponent from './components/ListInviteComponent';
-import InviteComponent from './components/InviteComponent';
+import {EventModel} from '@/app/models';
 import MapPreview from '../map/MapPreview';
-import { TypeBase } from '@/app/models/explore/ExploreModels';
+import {TypeBase} from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
-import { formatTimeRange } from '../../services/utils/time';
+import {formatTimeRange} from '../../services/utils/time';
 import LoadingModal from '../../modals/LoadingModal';
 
-const EventDetailScreen = ({ navigation, route }: any) => {
-  const { id } = route.params;
+const EventDetailScreen = ({navigation, route}: any) => {
+  const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [organizer, setOrganizer] = useState<any>(null);
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
-  const [isEventInfoExpanded, setIsEventInfoExpanded] = useState(false);
-  const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
-  const [isLocationExpanded, setIsLocationExpanded] = useState(false);
+  // Thay đổi: Đặt tất cả các section ở trạng thái mở rộng mặc định
+  const [isEventInfoExpanded, setIsEventInfoExpanded] = useState(true);
+  const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(true);
+  const [isLocationExpanded, setIsLocationExpanded] = useState(true);
   const [ticketInfoPositionY, setTicketInfoPositionY] = useState(0);
-
 
   const sheetRef = useRef<any>(null);
 
-  // Animation values
-  const eventInfoAnimation = useRef(new Animated.Value(0)).current;
-  const ticketInfoAnimation = useRef(new Animated.Value(0)).current;
-  const locationAnimation = useRef(new Animated.Value(0)).current;
+  // Animation values - Khởi tạo với giá trị 1 (mở rộng)
+  const eventInfoAnimation = useRef(new Animated.Value(1)).current;
+  const ticketInfoAnimation = useRef(new Animated.Value(1)).current;
+  const locationAnimation = useRef(new Animated.Value(1)).current;
 
   console.log('Id Event: ', detailEvent?._id);
   console.log('Detail Event', detailEvent);
@@ -89,41 +85,6 @@ const EventDetailScreen = ({ navigation, route }: any) => {
       setOrganizer(null);
     };
   }, []);
-
-  const toggleEventInfo = () => {
-    const toValue = isEventInfoExpanded ? 0 : 1;
-    setIsEventInfoExpanded(!isEventInfoExpanded);
-
-    Animated.timing(eventInfoAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const toggleTicketInfo = () => {
-    const toValue = isTicketInfoExpanded ? 0 : 1;
-    setIsTicketInfoExpanded(!isTicketInfoExpanded);
-
-    Animated.timing(ticketInfoAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const toggleLocationInfo = () => {
-    const toValue = isLocationExpanded ? 0 : 1;
-    setIsLocationExpanded(!isLocationExpanded);
-
-    Animated.timing(locationAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-
 
   const handleNavigation = (
     typeBase: TypeBase | undefined,
@@ -171,16 +132,19 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     navigation.goBack();
   };
 
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
+
+  // Thêm state để quản lý việc mở rộng nội dung description
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const getTruncatedDescription = (
     description: string,
-    maxLength: number = 500,
+    maxLength: number = 300, // Giảm độ dài để dễ thấy hiệu ứng
   ) => {
     if (!description) return '';
 
-    // Nếu đã expand thì trả về HTML đầy đủ
-    if (isEventInfoExpanded) return description;
+    // Nếu đã expand description thì trả về HTML đầy đủ
+    if (isDescriptionExpanded) return description;
 
     // Nếu chưa expand, cắt HTML nhưng vẫn giữ format
     const textOnly = description.replace(/<[^>]*>/g, '');
@@ -208,8 +172,14 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     return truncatedHtml;
   };
 
+  // Function để kiểm tra xem description có dài không
+  const isDescriptionLong = (description: string, maxLength: number = 300) => {
+    if (!description) return false;
+    const textOnly = description.replace(/<[^>]*>/g, '');
+    return textOnly.length > maxLength;
+  };
+
   const scrollRef = useRef<ScrollView>(null);
-  const showtimeSectionRef = useRef<View>(null);
 
   if (!detailEvent) {
     return <LoadingModal visible={true} />;
@@ -219,7 +189,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     <View style={[globalStyles.container, styles.mainContainer]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
+        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
@@ -240,10 +210,10 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{ uri: detailEvent?.avatar }}>
+          source={{uri: detailEvent?.avatar}}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{ uri: detailEvent?.avatar }}
+              source={{uri: detailEvent?.avatar}}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -277,39 +247,53 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
         {/* Event Info Section - Giới thiệu */}
         <View style={styles.sectionContainer}>
-          <TouchableOpacity
+          <View
             style={styles.sectionHeader}
-            onPress={toggleEventInfo}>
+            >
             <TextComponent
               text="Giới thiệu"
               size={18}
-              styles={{ fontWeight: 'bold', color: '#2D3748' }}
+              styles={{fontWeight: 'bold', color: '#2D3748'}}
             />
-            <Ionicons
-              name={isEventInfoExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color="#2D3748"
-            />
-          </TouchableOpacity>
+            
+          </View>
 
+          {/* Thay đổi: Luôn hiển thị content, không cần kiểm tra isEventInfoExpanded */}
           <View style={styles.sectionContent}>
             <View style={styles.contentWrapper}>
               {detailEvent?.description && (
-                <RenderHtml
-                  contentWidth={width - 40}
-                  source={{
-                    html: isEventInfoExpanded
-                      ? detailEvent.description
-                      : getTruncatedDescription(detailEvent.description, 500), // Sử dụng HTML gốc thay vì remove tags
-                  }}
-                  enableCSSInlineProcessing={true}
-                  tagsStyles={{
-                    strong: { fontWeight: 'bold', color: '#2D3748' },
-                    b: { fontWeight: 'bold', color: '#2D3748' },
-                    div: { marginBottom: 8 },
-                    p: { color: '#4A5568', lineHeight: 20 },
-                  }}
-                />
+                <>
+                  <RenderHtml
+                    contentWidth={width - 40}
+                    source={{
+                      html: getTruncatedDescription(detailEvent.description, 300),
+                    }}
+                    enableCSSInlineProcessing={true}
+                    tagsStyles={{
+                      strong: {fontWeight: 'bold', color: '#2D3748'},
+                      b: {fontWeight: 'bold', color: '#2D3748'},
+                      div: {marginBottom: 8},
+                      p: {color: '#4A5568', lineHeight: 20},
+                    }}
+                  />
+                  
+                  {/* Thêm nút "Xem thêm/Thu gọn" nếu nội dung dài */}
+                  {isDescriptionLong(detailEvent.description, 300) && (
+                    <TouchableOpacity
+                      style={styles.expandButton}
+                      onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                      <Text style={styles.expandButtonText}>
+                        {isDescriptionExpanded ? 'Thu gọn' : 'Xem thêm'}
+                      </Text>
+                      <Ionicons
+                        name={isDescriptionExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color={appColors.primary}
+                        style={styles.expandIcon}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </View>
           </View>
@@ -322,30 +306,23 @@ const EventDetailScreen = ({ navigation, route }: any) => {
             onLayout={event =>
               setTicketInfoPositionY(event.nativeEvent.layout.y)
             }>
-
-            <TouchableOpacity
+            <View
               style={styles.sectionHeader}
-              onPress={toggleTicketInfo}>
+              >
               <TextComponent
                 text="Thông tin vé"
                 size={18}
-                styles={{ fontWeight: 'bold', color: '#2D3748' }}
+                styles={{fontWeight: 'bold', color: '#2D3748'}}
               />
-              <Ionicons
-                name={isTicketInfoExpanded ? 'chevron-up' : 'chevron-down'}
-                size={24}
-                color="#2D3748"
-              />
-            </TouchableOpacity>
+              
+            </View>
 
+            {/* Thay đổi: Luôn hiển thị content */}
             <View style={styles.sectionContent}>
               <View style={styles.contentWrapper}>
                 <View style={styles.showtimeContainer}>
                   {detailEvent.showtimes.map(showTime => (
-                    <TouchableOpacity
-                      key={showTime._id}
-                      onPress={() => setSelectedShowtimeId(showTime._id)}
-                      style={[styles.showtimeButton]}>
+                    <View key={showTime._id} style={[styles.showtimeButton]}>
                       <View>
                         <Text style={[styles.showtimeText]}>
                           {formatTimeRange(
@@ -367,7 +344,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
                           Mua vé ngay
                         </Text>
                       </TouchableOpacity>
-                    </TouchableOpacity>
+                    </View>
                   ))}
                 </View>
               </View>
@@ -377,44 +354,39 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
         {/* Location Section - Vị trí sự kiện */}
         <View style={styles.sectionContainer}>
-          <TouchableOpacity
+          <View
             style={styles.sectionHeader}
-            onPress={toggleLocationInfo}>
+            >
             <TextComponent
               text="Vị trí sự kiện"
               size={18}
-              styles={{ fontWeight: 'bold', color: '#2D3748' }}
+              styles={{fontWeight: 'bold', color: '#2D3748'}}
             />
-            <Ionicons
-              name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color="#2D3748"
-            />
-          </TouchableOpacity>
+            
+          </View>
 
-          {isLocationExpanded && (
-            <View style={styles.sectionContent}>
-              <View style={styles.contentWrapper}>
-                <View style={styles.detailRowLocation}>
-                  <Ionicons
-                    name="location"
-                    size={22}
-                    color={appColors.primary}
-                  />
-                  <View>
-                    <Text style={styles.titleLocation}>
-                      {detailEvent?.location ?? ''}
-                    </Text>
-                  </View>
-                </View>
-                <MapPreview
-                  latitude={detailEvent?.latitude}
-                  longitude={detailEvent?.longitude}
-                  location_map={detailEvent?.location_map}
+          {/* Thay đổi: Luôn hiển thị content khi isLocationExpanded = true */}
+          <View style={styles.sectionContent}>
+            <View style={styles.contentWrapper}>
+              <View style={styles.detailRowLocation}>
+                <Ionicons
+                  name="location"
+                  size={22}
+                  color={appColors.primary}
                 />
+                <View>
+                  <Text style={styles.titleLocation}>
+                    {detailEvent?.location ?? ''}
+                  </Text>
+                </View>
               </View>
+              <MapPreview
+                latitude={detailEvent?.latitude}
+                longitude={detailEvent?.longitude}
+                location_map={detailEvent?.location_map}
+              />
             </View>
-          )}
+          </View>
         </View>
 
         {/* Organizer Section - Ban tổ chức */}
@@ -424,7 +396,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
               <TextComponent
                 text="Ban tổ chức"
                 size={18}
-                styles={{ fontWeight: 'bold', color: '#2D3748' }}
+                styles={{fontWeight: 'bold', color: '#2D3748'}}
               />
             </View>
 
@@ -454,18 +426,16 @@ const EventDetailScreen = ({ navigation, route }: any) => {
         )}
 
         <RatingAndReview detailEventId={detailEvent?._id} />
-
-        {/* Add some bottom spacing */}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       <View style={styles.bottomButtonContainer}>
         <ButtonComponent
           onPress={() => {
-            scrollRef.current?.scrollTo({ y: ticketInfoPositionY - 15, animated: true });
+            scrollRef.current?.scrollTo({
+              y: ticketInfoPositionY - 15,
+              animated: true,
+            });
           }}
-
-
           text={'Mua vé ngay'}
           styles={styles.buyTicketButton}
           type="primary"
@@ -523,7 +493,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    backgroundColor: '#F7FAFC', // Light gray background for scroll area
+    backgroundColor: 'white',
   },
   imageBackground: {
     width: '100%',
@@ -579,14 +549,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  // Enhanced section containers
   sectionContainer: {
     marginHorizontal: 16,
     marginTop: 16,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
-    elevation: 3,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -614,7 +583,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 16,
   },
-  // Enhanced organizer section
   organizerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -647,7 +615,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '500',
   },
-  // Enhanced showtime section
   showtimeContainer: {
     flexDirection: 'column',
     gap: 12,
@@ -702,22 +669,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  // Enhanced bottom button
   bottomButtonContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     paddingHorizontal: 16,
     paddingTop: 16,
-    // paddingBottom: Platform.OS === 'ios' ? 16 : 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    elevation: 8,
-    shadowColor: '#000',
+    borderTopWidth: 0,
+    elevation: 0,
+    shadowColor: 'transparent',
     shadowOffset: {
       width: 0,
-      height: -2,
+      height: 0,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
   buyTicketButton: {
     backgroundColor: appColors.primary,
@@ -803,5 +767,28 @@ const styles = StyleSheet.create({
     color: '#48BB78',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Enhanced expand button for description
+  expandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    alignSelf: 'center',
+  },
+  expandButtonText: {
+    color: appColors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  expandIcon: {
+    marginLeft: 2,
   },
 });

@@ -60,6 +60,26 @@ const UserTicketsScreen = ({navigation, route}) => {
             </View>
         );
     }
+
+    // Component hiển thị khi không có vé
+    const EmptyState = () => (
+        <View style={styles.emptyContainer}>
+            <Image 
+                source={require('../../../assets/images/icon.png')} 
+                style={styles.emptyIcon}
+                resizeMode="contain"
+            />
+            <Text style={styles.emptyText}>Bạn chưa có vé nào cả!</Text>
+            <TouchableOpacity 
+                style={styles.buyTicketButton}
+                onPress={() => navigation.navigate('Explore')}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.buyTicketButtonText}>Mua vé ngay</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
     return (
         <View style={{ flex: 1, padding: 0, backgroundColor: "#f5f5f5" }}>
             {/* Header */}
@@ -112,7 +132,7 @@ const UserTicketsScreen = ({navigation, route}) => {
             </View>
             {/* Danh sách vé hoặc gợi ý */}
             {filteredEvents.length === 0 ? (
-                <View style={{ flex: 1, backgroundColor: '#000' }} />
+                <EmptyState />
             ) : (
                 <FlatList
                     data={filteredEvents}
@@ -207,5 +227,43 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 15,
         letterSpacing: 0.5,
+    },
+    // Styles cho empty state
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f5f5f5',
+        paddingHorizontal: 40,
+    },
+    emptyIcon: {
+        width: 120,
+        height: 120,
+        opacity: 0.3,
+        marginBottom: 24,
+    },
+    emptyText: {
+        fontSize: 18,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 32,
+        fontWeight: '500',
+    },
+    buyTicketButton: {
+        backgroundColor: '#22c55e',
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 25,
+        shadowColor: '#22c55e',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    buyTicketButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 })

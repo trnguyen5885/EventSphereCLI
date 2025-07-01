@@ -5,16 +5,16 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import React, { useEffect, useState, useCallback } from 'react';
-import { EventModel } from '@/app/models';
-import { globalStyles } from '../../../constants/globalStyles';
-import { appColors } from '../../../constants/appColors';
-import { RowComponent, TextComponent } from '../../../components';
-import { ArrowRight2 } from 'iconsax-react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {EventModel} from '@/app/models';
+import {globalStyles} from '../../../constants/globalStyles';
+import {appColors} from '../../../constants/appColors';
+import {RowComponent, TextComponent} from '../../../components';
+import {ArrowRight2} from 'iconsax-react-native';
 import EventItem from '../../../components/EventItem';
-import { AxiosInstance } from '../../../services';
+import {AxiosInstance} from '../../../services';
 import BannerComponent from '../components/BannerComponent';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import {useBottomTabBarHeight} from '@react-navigation/bottom-tabs';
 import TopEventItem from './TopEventItem';
 import SVG1 from '../../../../assets/svgs/SVG1.svg';
 import SVG2 from '../../../../assets/svgs/SVG2.svg';
@@ -80,22 +80,22 @@ const EventSection = ({
   if (!data || data.length === 0) return null;
   // const tabBarHeight = useBottomTabBarHeight();
   return (
-    <>
+    <View style={{marginVertical: 12}}>
       <View
         style={[
           globalStyles.row,
           styles.paddingContent,
-          { marginVertical: 15, justifyContent: 'space-between' },
+          {marginVertical: 15, justifyContent: 'space-between'},
         ]}>
         <TextComponent text={title} size={18} title />
       </View>
-      <View style={{ marginLeft: 6 }}>
+      <View style={{marginLeft: 6}}>
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
           data={data}
           keyExtractor={item => item._id}
-          renderItem={({ item }) => (
+          renderItem={({item}) => (
             <EventItem
               onPress={() => onPressItem(item)}
               type="card"
@@ -104,7 +104,7 @@ const EventSection = ({
           )}
         />
       </View>
-    </>
+    </View>
   );
 };
 
@@ -121,12 +121,12 @@ const EventTopSection = ({
   if (!data || data.length === 0) return null;
   // const tabBarHeight = useBottomTabBarHeight();
   return (
-    <>
+    <View style={{marginVertical: 15}}>
       <View
         style={[
           globalStyles.row,
           styles.paddingContent,
-          { marginVertical: 15, justifyContent: 'space-between' },
+          {marginVertical: 15, justifyContent: 'space-between'},
         ]}>
         <TextComponent text={title} size={18} title />
       </View>
@@ -135,7 +135,7 @@ const EventTopSection = ({
         showsHorizontalScrollIndicator={false}
         data={data}
         keyExtractor={item => item._id}
-        renderItem={({ item, index }) => {
+        renderItem={({item, index}) => {
           const SvgIcon = SVGItems[index % SVGItems.length].Svg;
           return (
             <TopEventItem
@@ -146,7 +146,7 @@ const EventTopSection = ({
           );
         }}
       />
-    </>
+    </View>
   );
 };
 
@@ -161,15 +161,15 @@ const SuggestedEventsScreen = ({
 
   const fetchEvents = async () => {
     try {
-      const response = await AxiosInstance().get<EventModel[]>("events/home");
+      const response = await AxiosInstance().get<EventModel[]>('events/home');
       const now = Date.now();
 
       const allEvents = response.data || [];
 
       const ongoing = allEvents.filter(
-        (e) => now >= e.timeStart && now <= e.timeEnd
+        e => now >= e.timeStart && now <= e.timeEnd,
       );
-      const upcoming = allEvents.filter((e) => e.timeStart > now);
+      const upcoming = allEvents.filter(e => e.timeStart > now);
 
       setEventsOngoing(ongoing);
       setEventsUpcoming(upcoming);
@@ -193,21 +193,22 @@ const SuggestedEventsScreen = ({
   const onPressEvent = useCallback(
     (item: EventModel) => {
       handleInteraction(item._id);
-      navigation.navigate('Detail', { id: item._id });
+      navigation.navigate('Detail', {id: item._id});
     },
-    [handleInteraction, navigation]
+    [handleInteraction, navigation],
   );
 
   if (loading) {
-    return <ActivityIndicator style={{ marginTop: 40 }} />;
+    return <ActivityIndicator style={{marginTop: 40}} />;
   }
 
   return (
     <ScrollView
-      contentContainerStyle={{ paddingBottom: 20 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <BassicBannerComponent events={[...eventsOngoing, ...eventsUpcoming].slice(0, 5)} />
+      contentContainerStyle={{paddingBottom: 20}}
+      showsVerticalScrollIndicator={false}>
+      <BassicBannerComponent
+        events={[...eventsOngoing, ...eventsUpcoming].slice(0, 5)}
+      />
 
       <EventTopSection
         title="Sự kiện xu hướng 🔥"

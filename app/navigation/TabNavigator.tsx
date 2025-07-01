@@ -38,7 +38,7 @@ const TabNavigator = () => {
               icon = <MaterialIcons name="explore" size={size} color={color} />;
               break;
 
-            case 'Sự kiện':
+            case 'Vé của tôi':
               icon = (
                 <MaterialIcons
                   name="calendar-month"
@@ -63,7 +63,8 @@ const TabNavigator = () => {
         },
       })}>
       <Tab.Screen name="Khám phá" component={ExploreScreen} />
-      <Tab.Screen name="Sự kiện" component={EventScreen} />
+      <Tab.Screen name="Vé của tôi" component={EventScreen} />
+      <Tab.Screen name="Địa điểm" component={MapScreen} />
       <Tab.Screen name="Địa điểm" component={GroupScreen} />
       <Tab.Screen name="Thông tin" component={ProfileScreen} />
     </Tab.Navigator>

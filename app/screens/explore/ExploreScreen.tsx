@@ -12,9 +12,9 @@ import {
   Linking,
   BackHandler, // Thêm BackHandler
 } from 'react-native';
-import React, {useEffect, useState, useCallback} from 'react';
-import {globalStyles} from '../../constants/globalStyles';
-import {appColors} from '../../constants/appColors';
+import React, { useEffect, useState, useCallback } from 'react';
+import { globalStyles } from '../../constants/globalStyles';
+import { appColors } from '../../constants/appColors';
 import {
   CircleComponent,
   RowComponent,
@@ -28,29 +28,30 @@ import {
   Sort,
 } from 'iconsax-react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {fontFamilies} from '../../constants/fontFamilies';
+import { fontFamilies } from '../../constants/fontFamilies';
 import CategoriesList from '../../components/CategoriesList';
 import EventItem from '../../components/EventItem';
-import {AxiosInstance} from '../../services';
+import { AxiosInstance } from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import BannerComponent from './components/BannerComponent';
 import Geolocation from '@react-native-community/geolocation';
 import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
-import {useFocusEffect} from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
 import TabComponent from './components/TabComponent';
 import PopularEventsScreen from './components/PopularEventsScreen';
 import UpcomingEventsScreen from './components/UpcomingEventsScreen';
 import SuggestedEventsScreen from './components/SuggestedEventsScreen';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const ExploreScreen = ({navigation}: any) => {
+const ExploreScreen = ({ navigation }: any) => {
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
   const [isLoading, setIsLoading] = useState(true);
   const tabs = [
-    {id: 0, name: 'Đề xuất'},
-    {id: 1, name: 'Nổi bật'},
-    {id: 2, name: 'Sắp diễn ra'},
+    { id: 0, name: 'Đề xuất' },
+    { id: 1, name: 'Nổi bật' },
+    { id: 2, name: 'Sắp diễn ra' },
   ];
   const [activeTab, setActiveTab] = useState(0);
   const [location, setLocation] = useState<{
@@ -84,7 +85,7 @@ const ExploreScreen = ({navigation}: any) => {
           onPress: () => BackHandler.exitApp(),
         },
       ],
-      {cancelable: false},
+      { cancelable: false },
     );
     return true; // Ngăn chặn hành vi back mặc định
   }, []);
@@ -123,7 +124,7 @@ const ExploreScreen = ({navigation}: any) => {
                 style: 'cancel',
               },
             ],
-            {cancelable: false},
+            { cancelable: false },
           );
         }
       } catch (err) {
@@ -157,7 +158,7 @@ const ExploreScreen = ({navigation}: any) => {
     const apiKey = 'pJ2xud8j3xprqVfQZLFKjGV51MPH60VjRuZh1i3F';
     const url = `https://rsapi.goong.io/Geocode?latlng=${latitude},${longitude}&api_key=${apiKey}`;
     try {
-      const response = await axios.get(url, {timeout: 10000});
+      const response = await axios.get(url, { timeout: 10000 });
       if (response?.data?.results?.length > 0) {
         const address = response.data.results[0];
         setAddress(address);
@@ -173,9 +174,9 @@ const ExploreScreen = ({navigation}: any) => {
   const getLocation = () => {
     Geolocation.getCurrentPosition(
       position => {
-        const {latitude, longitude} = position.coords;
+        const { latitude, longitude } = position.coords;
         console.log('ExploreScreen 107 | UserLocation:', latitude, longitude);
-        setLocation({latitude, longitude});
+        setLocation({ latitude, longitude });
         getAddressFromCoordinates(latitude, longitude);
       },
       error => {
@@ -246,7 +247,7 @@ const ExploreScreen = ({navigation}: any) => {
   }
 
   return (
-    <ScrollView style={{flex: 1, backgroundColor: 'rgba(255,255,255,0.9)'}}>
+    <ScrollView style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' }}>
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -254,15 +255,15 @@ const ExploreScreen = ({navigation}: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 120 + (Platform.OS === 'ios' ? 16 : 0),
+          height: 70 + (Platform.OS === 'ios' ? 16 : 0),
           paddingVertical: 15
         }}>
-        <View style={{paddingHorizontal: 16}}>
+        <View style={{ paddingHorizontal: 16 }}>
           <RowComponent>
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
               <HambergerMenu size={24} color={appColors.white} />
             </TouchableOpacity>
-            <View style={{flex: 1, alignItems: 'center'}}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
               <TouchableOpacity onPress={requestLocationPermission}>
                 <RowComponent>
                   <TextComponent
@@ -285,66 +286,17 @@ const ExploreScreen = ({navigation}: any) => {
               </TouchableOpacity>
             </View>
             <TouchableOpacity
-              onPress={() => navigation.navigate('Notification')}>
+              onPress={() => navigation.navigate('Search')}>
               <CircleComponent color="#524CE0" size={36}>
                 <View>
-                  <MaterialIcons
-                    name="notifications"
-                    size={24}
-                    color={appColors.white}
-                  />
-                  <View
-                    style={{
-                      backgroundColor: '#02E9FE',
-                      width: 10,
-                      height: 10,
-                      borderRadius: 4,
-                      borderWidth: 2,
-                      borderColor: '#524CE0',
-                      position: 'absolute',
-                      top: -2,
-                      right: -2,
-                    }}
-                  />
+                  <Ionicons name="search-outline" size={20} color="#fff" />
+                  
                 </View>
               </CircleComponent>
             </TouchableOpacity>
           </RowComponent>
 
-          <SpaceComponent height={24} />
-          <RowComponent>
-            <RowComponent
-              onPress={() => navigation.navigate('Search')}
-              styles={{flex: 1}}>
-              <SearchNormal1
-                variant="TwoTone"
-                size={22}
-                color={appColors.white}
-              />
-              <View
-                style={{
-                  width: 1,
-                  height: 18,
-                  marginHorizontal: 12,
-                  backgroundColor: '#A29EF0',
-                }}
-              />
-              <TextComponent text="Tìm kiếm..." color={'#A29EF0'} flex={1} />
-            </RowComponent>
-            <RowComponent
-              styles={{
-                backgroundColor: '#5D56F3',
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 100,
-              }}>
-              <CircleComponent size={19.3} color={'#A29EF0'}>
-                <Sort size={12} color={appColors.primary} />
-              </CircleComponent>
-              <SpaceComponent width={8} />
-              <TextComponent text="Lọc" color={appColors.white} />
-            </RowComponent>
-          </RowComponent>
+          
         </View>
       </View>
 

@@ -6,7 +6,6 @@ import { AxiosInstance } from '../../services';
 import { TextComponent } from '../../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
-import { appColors } from '../../constants/appColors';
 
 const UserTicketsScreen = ({navigation, route}) => {
     const [userData, setUserData] = useState(null);
@@ -61,10 +60,30 @@ const UserTicketsScreen = ({navigation, route}) => {
             </View>
         );
     }
+
+    // Component hiển thị khi không có vé
+    const EmptyState = () => (
+        <View style={styles.emptyContainer}>
+            <Image 
+                source={require('../../../assets/images/icon.png')} 
+                style={styles.emptyIcon}
+                resizeMode="contain"
+            />
+            <Text style={styles.emptyText}>Bạn chưa có vé nào cả!</Text>
+            <TouchableOpacity 
+                style={styles.buyTicketButton}
+                onPress={() => navigation.jumpTo('Khám phá')}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.buyTicketButtonText}>Mua vé ngay</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
     return (
         <View style={{ flex: 1, padding: 0, backgroundColor: "#f5f5f5" }}>
             {/* Header */}
-            <View style={{ backgroundColor: appColors.primary, paddingTop: 16, paddingBottom: 16, alignItems: 'center', paddingHorizontal: 16 }}>
+            <View style={{ backgroundColor: '#5669FF', paddingTop: 20, paddingBottom: 16, alignItems: 'center' }}>
                 <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>Vé của tôi</Text>
                 {/* Tab trạng thái */}
                 <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 18 }}>
@@ -75,16 +94,16 @@ const UserTicketsScreen = ({navigation, route}) => {
                                 key={value}
                                 style={{
                                     paddingVertical: 8,
-                                    paddingHorizontal: 12,
+                                    paddingHorizontal: 18,
                                     borderRadius: 20,
-                                    backgroundColor: statusTab === value ? '#fff' : appColors.primary,
+                                    backgroundColor: statusTab === value ? '#fff' : '#5669FF',
                                     marginHorizontal: 4,
                                     borderWidth: 1,
-                                    borderColor: statusTab === value ? appColors.primary : appColors.primary,
+                                    borderColor: statusTab === value ? '#fff' : '#5669FF',
                                 }}
                                 onPress={() => setStatusTab(value)}
                             >
-                                <Text style={{ color: statusTab === value ? appColors.primary : '#fff', fontWeight: 'bold' }}>{label}</Text>
+                                <Text style={{ color: statusTab === value ? '#5669FF' : '#fff', fontWeight: 'bold' }}>{label}</Text>
                             </TouchableOpacity>
                         );
                     })}
@@ -101,19 +120,19 @@ const UserTicketsScreen = ({navigation, route}) => {
                                 paddingVertical: 6,
                                 paddingHorizontal: 18,
                                 borderBottomWidth: 2,
-                                borderBottomColor: timeTab === value ? appColors.primary : 'transparent',
+                                borderBottomColor: timeTab === value ? '#5669FF' : 'transparent',
                                 marginHorizontal: 8,
                             }}
                             onPress={() => setTimeTab(value)}
                         >
-                            <Text style={{ color: timeTab === value ? appColors.primary : '#000', fontWeight: 'bold', fontSize: 16 }}>{label}</Text>
+                            <Text style={{ color: timeTab === value ? '#5669FF' : '#000', fontWeight: 'bold', fontSize: 16 }}>{label}</Text>
                         </TouchableOpacity>
                     );
                 })}
             </View>
             {/* Danh sách vé hoặc gợi ý */}
             {filteredEvents.length === 0 ? (
-                <View style={{ flex: 1, backgroundColor: '#fff' }} />
+                <EmptyState />
             ) : (
                 <FlatList
                     data={filteredEvents}
@@ -208,5 +227,43 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 15,
         letterSpacing: 0.5,
+    },
+    // Styles cho empty state
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        paddingHorizontal: 40,
+    },
+    emptyIcon: {
+        width: 120,
+        height: 120,
+        opacity: 0.3,
+        marginBottom: 24,
+    },
+    emptyText: {
+        fontSize: 18,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 32,
+        fontWeight: '500',
+    },
+    buyTicketButton: {
+        backgroundColor: '#5669FF',
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 25,
+        shadowColor: '#5669FF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    buyTicketButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 })

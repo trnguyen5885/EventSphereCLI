@@ -34,7 +34,7 @@ const TopEventItem = (props: Props) => {
         <Image
           style={{
             width: '100%',
-            height: 120,
+            height: 150,
             objectFit: 'cover',
             borderRadius: 10,
           }}
