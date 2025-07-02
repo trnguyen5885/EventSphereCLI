@@ -63,6 +63,8 @@ const SeatsScreen = ({navigation, route}: any) => {
         `/events/getZone/${id}?showtimeId=${showtimeId}`,
       );
 
+      console.log(response.zones[0].layout.seats);
+
       const seatObjects = response.zones[0].layout.seats.map((item: any) => {
         let status: SeatStatus;
         if (item.status === 'booked') {
@@ -104,15 +106,61 @@ const SeatsScreen = ({navigation, route}: any) => {
 
     const existingIndex = selectedSeats.findIndex(s => s.id === seat.id);
     if (existingIndex !== -1) {
-      // Đã chọn rồi → bỏ chọn
-      const newSelected = [...selectedSeats];
-      newSelected.splice(existingIndex, 1);
-      setSelectedSeats(newSelected);
+      Alert.alert(
+        'Xác nhận',
+        `Bạn có chắc muốn huỷ vé ${seat.label}?`,
+        [
+          {
+            text: 'Không',
+            style: 'cancel',
+            // không làm gì, chỉ đóng alert
+          },
+          {
+            text: 'Huỷ',
+            onPress: async () => {
+              try {
+                setIsLoading(true);
+                // Gọi API huỷ vé
+                await AxiosInstance().post('/zones/reserveSeats', {
+                  eventId: id,
+                  showtimeId: showtimeId,
+                  seat: {
+                    seatId: seat.id,
+                    zoneId: zoneId,
+                  },
+                  action: 'deselect',
+                });
+                // Cập nhật lại danh sách đã chọn
+                const newSelected = [...selectedSeats];
+                newSelected.splice(existingIndex, 1);
+                setSelectedSeats(newSelected);
+              } catch (error) {
+                Alert.alert(
+                  'Lỗi',
+                  'Có lỗi xảy ra khi huỷ vé. Vui lòng thử lại.',
+                );
+              } finally {
+                setIsLoading(false);
+              }
+            },
+          },
+        ],
+        {cancelable: true},
+      );
     } else {
       try {
         setIsLoading(true);
         // Thêm vào danh sách chọn
         const response = await AxiosInstance().post('/zones/reserveSeats', {
+          eventId: id,
+          showtimeId: showtimeId,
+          seat: {
+            seatId: seat.id,
+            zoneId: zoneId,
+          },
+          action: 'select',
+        });
+        console.log({
           eventId: id,
           showtimeId: showtimeId,
           seat: {
@@ -203,6 +251,7 @@ const SeatsScreen = ({navigation, route}: any) => {
           {seats.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.row}>
               {row.map((seat, colIndex) => {
+                const isHidden = seat.area == 'none';
                 const isSelected = selectedSeats.some(s => s.id === seat.id);
                 let bgColor;
                 if (seat.status === SeatStatus.BOOKED) {
@@ -218,9 +267,13 @@ const SeatsScreen = ({navigation, route}: any) => {
                 return (
                   <TouchableOpacity
                     key={colIndex}
-                    style={[styles.seat, {backgroundColor: bgColor}]}
+                    style={[
+                      styles.seat,
+                      {backgroundColor: bgColor},
+                      isHidden && {opacity: 0},
+                    ]}
                     onPress={() => handleSeatPress(rowIndex, colIndex)}
-                    disabled={seat.status === SeatStatus.BOOKED}>
+                    disabled={isHidden || seat.status === SeatStatus.BOOKED}>
                     <Text style={styles.seatLabel}>{seat.label}</Text>
                   </TouchableOpacity>
                 );
