@@ -44,6 +44,8 @@ import PopularEventsScreen from './components/PopularEventsScreen';
 import UpcomingEventsScreen from './components/UpcomingEventsScreen';
 import SuggestedEventsScreen from './components/SuggestedEventsScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useDispatch } from 'react-redux';
+import { setLocation as setLocationRedux } from '../../redux/slices/authSlice';
 
 const ExploreScreen = ({ navigation }: any) => {
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
@@ -54,7 +56,7 @@ const ExploreScreen = ({ navigation }: any) => {
     { id: 2, name: 'Sắp diễn ra' },
   ];
   const [activeTab, setActiveTab] = useState(0);
-  const [location, setLocation] = useState<{
+  const [location, setLocationState] = useState<{
     latitude: number | null;
     longitude: number | null;
   }>({
@@ -67,6 +69,7 @@ const ExploreScreen = ({ navigation }: any) => {
       province?: string;
     };
   }>();
+  const dispatch = useDispatch();
 
   // Xử lý nút Back - hiển thị dialog xác nhận thoát app
   const handleBackPress = useCallback(() => {
@@ -176,7 +179,8 @@ const ExploreScreen = ({ navigation }: any) => {
       position => {
         const { latitude, longitude } = position.coords;
         console.log('ExploreScreen 107 | UserLocation:', latitude, longitude);
-        setLocation({ latitude, longitude });
+        setLocationState({ latitude, longitude });
+        dispatch(setLocationRedux({ latitude, longitude }));
         getAddressFromCoordinates(latitude, longitude);
       },
       error => {

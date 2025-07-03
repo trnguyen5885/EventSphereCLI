@@ -1,10 +1,21 @@
 import React from 'react';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import { View, Dimensions, Alert, Linking, Text, StyleSheet } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
 const GroupMap = ({ members, myLocation }) => {
+  // Lấy vị trí đầu tiên hợp lệ để set initialRegion
+  const firstLocation = members.find(m => m.location && typeof m.location.latitude === 'number' && typeof m.location.longitude === 'number');
+
+  if (!myLocation && !firstLocation) {
+    return (
+      <View style={styles.mapContainer}>
+        <View style={styles.noMap}><Text>Chưa có vị trí để hiển thị bản đồ</Text></View>
+      </View>
+    );
+  }
+
   const handleMarkerPress = (member) => {
     if (!myLocation) {
       Alert.alert('Chỉ đường', 'Bạn cần chia sẻ vị trí của mình trước!');
@@ -14,22 +25,22 @@ const GroupMap = ({ members, myLocation }) => {
     Linking.openURL(url);
   };
 
-  if (!members || members.length === 0) return null;
-
   return (
     <View style={styles.mapContainer}>
       <MapView
         style={styles.map}
+        provider={PROVIDER_GOOGLE}
         initialRegion={{
-          latitude: members[0].location.latitude,
-          longitude: members[0].location.longitude,
+          latitude: (myLocation?.latitude || firstLocation.location.latitude),
+          longitude: (myLocation?.longitude || firstLocation.location.longitude),
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
+        showsUserLocation={!!myLocation}
       >
-        {members.map(member => (
+        {members.map(member => member.location && (
           <Marker
-            key={member.id}
+            key={member.id || member._id}
             coordinate={member.location}
             onPress={() => handleMarkerPress(member)}
           >
@@ -64,6 +75,7 @@ const styles = StyleSheet.create({
   calloutName: { fontWeight: 'bold', fontSize: 15, color: '#007AFF' },
   calloutEmail: { color: '#555', fontSize: 12 },
   calloutDirection: { color: '#ff9800', fontWeight: 'bold', marginTop: 4 },
+  noMap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default GroupMap; 
