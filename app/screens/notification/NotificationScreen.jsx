@@ -46,7 +46,22 @@ const NotificationScreen = ({ navigation }) => {
           status={item.data?.status}
         />
       }
-  
+      {item.type === 'group' && (
+        <TouchableOpacity
+          style={styles.notificationCard}
+          onPress={() => navigation.navigate('InviteScreen')}
+        >
+          <Image
+            source={{ uri: 'https://avatar.iran.liara.run/public' }}
+            style={styles.avatar}
+          />
+          <View style={{ marginLeft: 10, flex: 1 }}>
+            <Text style={styles.userName}>{item.title}</Text>
+            <Text style={styles.content}>{item.body}</Text>
+            <Text style={styles.timeText}>{new Date(item.createdAt).toLocaleString()}</Text>
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
