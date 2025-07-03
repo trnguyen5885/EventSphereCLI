@@ -24,40 +24,22 @@ import { fontFamilies } from "../../constants/fontFamilies";
 const { width, height } = Dimensions.get('window');
 
 const WelcomeScreen = ({ navigation }) => {
-  // Animation values
+  // Chỉ sử dụng 2 animation đơn giản
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideUpAnim = useRef(new Animated.Value(50)).current;
-  const logoScaleAnim = useRef(new Animated.Value(0.8)).current;
-  const buttonSlideAnim = useRef(new Animated.Value(100)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    // Khởi tạo animations khi component mount
-    Animated.sequence([
-      // Logo animation
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScaleAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Text animation
-      Animated.timing(slideUpAnim, {
-        toValue: 0,
-        duration: 600,
-        delay: 200,
+    // Animation đơn giản: fade in và slide up nhẹ
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
         useNativeDriver: true,
       }),
-      // Buttons animation
-      Animated.timing(buttonSlideAnim, {
+      Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 600,
-        delay: 100,
+        duration: 800,
+        delay: 200,
         useNativeDriver: true,
       }),
     ]).start();
@@ -78,7 +60,6 @@ const WelcomeScreen = ({ navigation }) => {
           styles.headerSection,
           {
             opacity: fadeAnim,
-            transform: [{ scale: logoScaleAnim }]
           }
         ]}
       >
@@ -92,7 +73,7 @@ const WelcomeScreen = ({ navigation }) => {
         
         <Animated.View
           style={{
-            transform: [{ translateY: slideUpAnim }],
+            transform: [{ translateY: slideAnim }],
             opacity: fadeAnim,
           }}
         >
@@ -118,7 +99,7 @@ const WelcomeScreen = ({ navigation }) => {
         style={[
           styles.buttonSection,
           {
-            transform: [{ translateY: buttonSlideAnim }],
+            transform: [{ translateY: slideAnim }],
             opacity: fadeAnim,
           }
         ]}
@@ -183,7 +164,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Làm overlay nhẹ hơn
   },
   headerSection: {
     flex: 1.2,
@@ -192,31 +173,25 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   logoContainer: {
-    marginBottom: 10,
-    padding: 10,
+    
+    
     backgroundColor: 'white',
-    borderRadius: 20,
-    backdropFilter: 'blur(10px)',
+    
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 250,
+    height: 250,
   },
   welcomeText: {
     textAlign: 'center',
     fontFamily: fontFamilies.bold,
     fontWeight: '700',
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: 8,
   },
   subtitleText: {
     textAlign: 'center',
     fontFamily: fontFamilies.medium,
-    opacity: 0.9,
-    textShadowColor: 'rgba(255, 255, 255, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    opacity: 0.8,
   },
   buttonSection: {
     flex: 1,
@@ -229,19 +204,19 @@ const styles = StyleSheet.create({
   customButton: {
     borderRadius: 16,
     padding: 20,
-    elevation: 8,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
   userButton: {
     backgroundColor: appColors.white,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(74, 144, 226, 0.2)',
   },
   organizerButton: {
     backgroundColor: appColors.primary || '#4A90E2',
