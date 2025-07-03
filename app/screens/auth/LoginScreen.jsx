@@ -67,7 +67,6 @@ const LoginScreen = ({ navigation }) => {
           return;
         }
 
-        // Lưu dữ liệu người dùng vào redux
         dispatch(
           loginSuccess({
             userId: id,
@@ -75,7 +74,6 @@ const LoginScreen = ({ navigation }) => {
           })
         );
 
-        // Điều hướng sang màn hình chính
         navigation.reset({
           index: 0,
           routes: [{ name: 'Drawer' }],
@@ -84,11 +82,18 @@ const LoginScreen = ({ navigation }) => {
         setPasswordError('Đăng nhập thất bại');
       }
     } catch (error) {
-      setPasswordError(error.message || 'Đăng nhập thất bại');
+      if (error.response?.data?.message) {
+        setPasswordError(error.response.data.message);
+      } else if (error.message) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordError('Đăng nhập thất bại');
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -111,7 +116,7 @@ const LoginScreen = ({ navigation }) => {
       if (error.response?.data?.message) {
         Alert.alert('Thông báo', error.response.data.message);
       } else {
-        Alert.alert('Thông báo','Email bạn nhập không đúng hoặc đã xảy ra lỗi, vui lòng thử lại!');
+        Alert.alert('Thông báo', 'Email bạn nhập không đúng hoặc đã xảy ra lỗi, vui lòng thử lại!');
       }
     } finally {
       setIsLoading(false);
@@ -168,7 +173,7 @@ const LoginScreen = ({ navigation }) => {
       <SectionComponent>
         <SocialLogin navigation={navigation} />
       </SectionComponent>
-      
+
       <SectionComponent>
         <RowComponent justify="center">
           <TextComponent text="Chưa có tài khoản?" />
@@ -179,7 +184,7 @@ const LoginScreen = ({ navigation }) => {
           />
         </RowComponent>
       </SectionComponent>
-      
+
       <LoadingModal visible={isLoading} />
     </ContainerComponent>
   );

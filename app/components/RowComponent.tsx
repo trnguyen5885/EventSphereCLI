@@ -18,7 +18,7 @@ import { globalStyles } from '../constants/globalStyles';
       | 'space-around'
       | 'space-evenly'
       | undefined;
-    styles?: StyleProp<ViewStyle>;
+    style?: StyleProp<ViewStyle>;
     children: ReactNode;
     onPress?: () => void;
   }

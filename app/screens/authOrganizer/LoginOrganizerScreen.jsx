@@ -83,7 +83,13 @@ const LoginOrganizerScreen = ({ navigation }) => {
         setPasswordError('Đăng nhập thất bại');
       }
     } catch (error) {
-      setPasswordError(error.message || 'Đăng nhập thất bại');
+      if (error.response?.data?.message) {
+        setPasswordError(error.response.data.message);
+      } else if (error.message) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordError('Đăng nhập thất bại');
+      }
     } finally {
       setIsLoading(false);
     }

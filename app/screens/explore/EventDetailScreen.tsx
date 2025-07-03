@@ -35,6 +35,8 @@ import LoadingModal from '../../modals/LoadingModal';
 const EventDetailScreen = ({navigation, route}: any) => {
   const {id} = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
+  console.log(detailEvent);
+  
   const [organizer, setOrganizer] = useState<any>(null);
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
   // Thay đổi: Đặt tất cả các section ở trạng thái mở rộng mặc định
