@@ -21,7 +21,11 @@ const TopEventItem = (props: Props) => {
         alignItems: 'center',
         marginHorizontal: 10,
       }}>
-      {SVGIcon && <SVGIcon />}
+      {SVGIcon && (
+        <View style={{marginRight: -9}}>
+          <SVGIcon />
+        </View>
+      )}
       <CardComponent
         onPress={onPress}
         styles={[
