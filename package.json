@@ -8,7 +8,7 @@
     "lint": "eslint .",
     "start": "react-native start --reset-cache",
     "test": "jest",
-    "reset-android": "cd android && ./gradlew clean"
+    "reset-android": "cd android && gradlew.bat clean"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.1.4",

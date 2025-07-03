@@ -62,8 +62,10 @@ import SearchEventOrganizer from './app/screens/organizer/SearchEventOrganizer';
 import { useDispatch } from 'react-redux';
 import { fetchPendingCount } from './app/redux/slices/friendRequestSlice';
 import AuthLoadingScreen from './app/screens/auth/AuthLoadingScreen';
-
-
+import GroupScreen from './app/screens/connect/GroupScreen';
+import InviteScreen from './app/screens/connect/InviteScreen';
+import ConnectScreen from './app/screens/connect/ConnectScreen';
+import InviteToGroupScreen from './app/screens/connect/InviteToGroupScreen'
 
 const Stack = createNativeStackNavigator();
 
@@ -222,6 +224,9 @@ const AppWithSocket = () => {
           <Stack.Screen name="ResetPasswordOrganizer" component={ResetPasswordOrganizerScreen} />
           <Stack.Screen name="SearchEventOrganizer" component={SearchEventOrganizer} />
           <Stack.Screen name="Support" component={SupportScreen} />
+          <Stack.Screen name="GroupScreen" component={GroupScreen} />
+          <Stack.Screen name="InviteScreen" component={InviteScreen} />
+          <Stack.Screen name="InviteToGroupScreen" component={InviteToGroupScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
