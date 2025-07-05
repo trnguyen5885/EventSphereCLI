@@ -1,10 +1,12 @@
 import React from 'react';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
-import { View, Dimensions, Alert, Linking, Text, StyleSheet } from 'react-native';
+import MapView, { Marker, Callout, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import { View, Dimensions, Text, StyleSheet } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
-const GroupMap = ({ members, myLocation }) => {
+const GroupMap = ({ members, myLocation, targetMember }) => {
+  console.log('myLocation:', myLocation);
+  console.log('targetMember:', targetMember);
   // Lấy vị trí đầu tiên hợp lệ để set initialRegion
   const firstLocation = members.find(m => m.location && typeof m.location.latitude === 'number' && typeof m.location.longitude === 'number');
 
@@ -15,15 +17,6 @@ const GroupMap = ({ members, myLocation }) => {
       </View>
     );
   }
-
-  const handleMarkerPress = (member) => {
-    if (!myLocation) {
-      Alert.alert('Chỉ đường', 'Bạn cần chia sẻ vị trí của mình trước!');
-      return;
-    }
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${myLocation.latitude},${myLocation.longitude}&destination=${member.location.latitude},${member.location.longitude}`;
-    Linking.openURL(url);
-  };
 
   return (
     <View style={styles.mapContainer}>
@@ -42,7 +35,6 @@ const GroupMap = ({ members, myLocation }) => {
           <Marker
             key={member.id || member._id}
             coordinate={member.location}
-            onPress={() => handleMarkerPress(member)}
           >
             <Callout tooltip>
               <View style={styles.calloutBox}>
@@ -63,6 +55,23 @@ const GroupMap = ({ members, myLocation }) => {
             </Callout>
           </Marker>
         )}
+        {/* Vẽ đường thẳng từ myLocation đến targetMember nếu có */}
+        {myLocation && targetMember?.location?.coordinates &&
+          typeof myLocation.latitude === 'number' &&
+          typeof myLocation.longitude === 'number' &&
+          Array.isArray(targetMember.location.coordinates) &&
+          targetMember.location.coordinates.length === 2 &&
+          typeof targetMember.location.coordinates[0] === 'number' &&
+          typeof targetMember.location.coordinates[1] === 'number' && (
+            <Polyline
+              coordinates={[
+                { latitude: myLocation.latitude, longitude: myLocation.longitude },
+                { latitude: targetMember.location.coordinates[1], longitude: targetMember.location.coordinates[0] }
+              ]}
+              strokeColor="#007AFF"
+              strokeWidth={4}
+            />
+          )}
       </MapView>
     </View>
   );
