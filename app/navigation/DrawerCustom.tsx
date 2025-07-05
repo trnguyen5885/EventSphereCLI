@@ -144,10 +144,15 @@ const DrawerCustom = ({ navigation }: any) => {
             onPress={
               item.key === "SignOut"
                 ? showLogoutConfirmation
-                : () => {
-                  console.log(item.key);
-                  navigation.closeDrawer();
-                }
+                : item.key === "Message"
+                  ? () => {
+                      navigation.navigate('Notification');
+                      navigation.closeDrawer();
+                    }
+                  : () => {
+                      console.log(item.key);
+                      navigation.closeDrawer();
+                    }
             }>
             {item.icon}
             <TextComponent

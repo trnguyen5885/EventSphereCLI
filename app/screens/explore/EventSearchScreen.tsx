@@ -73,6 +73,9 @@ const EventSearch = ({ navigation }: any) => {
 
       <FlatList
         data={eventsSearch}
+        numColumns={2}
+        columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 10 }}
+        keyExtractor={(item) => item._id}
         renderItem={({ item }: ListRenderItemInfo<EventModel>) => (
           <EventItem
             onPress={() => {
@@ -81,11 +84,16 @@ const EventSearch = ({ navigation }: any) => {
               });
             }}
             type="card"
-            styles={{ width: '95%', padding: 10, margin: 10 }}
+            styles={{
+              flex: 1,
+              padding: 10,
+              marginVertical: 10,
+            }}
             item={item}
           />
         )}
       />
+
     </View>
   );
 };

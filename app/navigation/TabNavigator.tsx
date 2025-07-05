@@ -13,6 +13,8 @@ import {
 import {CircleComponent, TextComponent} from '../components';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {globalStyles} from '../constants/globalStyles';
+import GroupScreen from '../screens/connect/GroupScreen';
+import ConnectScreen from '../screens/connect/ConnectScreen';
 
 const TabNavigator = () => {
   const Tab = createBottomTabNavigator();
@@ -62,7 +64,7 @@ const TabNavigator = () => {
       })}>
       <Tab.Screen name="Khám phá" component={ExploreScreen} />
       <Tab.Screen name="Vé của tôi" component={EventScreen} />
-      <Tab.Screen name="Địa điểm" component={MapScreen} />
+      <Tab.Screen name="Địa điểm" component={ConnectScreen} />
       <Tab.Screen name="Thông tin" component={ProfileScreen} />
     </Tab.Navigator>
   );

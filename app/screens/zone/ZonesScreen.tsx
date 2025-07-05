@@ -79,8 +79,6 @@ const ZonesScreen = ({ navigation, route }: any) => {
 
       console.log('API Response:', response);
 
-      // Kiểm tra response có đúng format không
-      if (response && response.reservations) {
         const reservations = response.reservations;
 
         navigation.navigate('Ticket', {
@@ -88,22 +86,9 @@ const ZonesScreen = ({ navigation, route }: any) => {
           typeBase: typeBase,
           totalPrice: totalPrice,
           quantity: totalQuantity,
-          reservations: reservations,
-          bookingId: reservations.length > 0 ? reservations[0].bookingId : null,
+          bookingIds: reservations.map((r: any) => r.bookingId),
+          showtimeId: showtimeId,
         });
-      } else {
-        // Nếu response không có reservations, vẫn navigate nhưng với dữ liệu khác
-        console.warn('No reservations in response, navigating anyway');
-        navigation.navigate('Ticket', {
-          id: id,
-          typeBase: typeBase || 'zone', // Đảm bảo có typeBase
-          totalPrice: totalPrice,
-          quantity: totalQuantity,
-          reservations: [],
-          bookingId: null,
-        });
-      }
-
     } catch (error) {
       console.error('Error in handleContinue:', error);
 

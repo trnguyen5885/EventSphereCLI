@@ -19,6 +19,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
+import { getSocket } from '../../socket/socket';
 import RowComponent from '../../../app/components/RowComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -26,6 +27,7 @@ enum SeatStatus {
   NORMAL = 0, // vé thường chưa đặt
   VIP = 1, // vé V.I.P chưa đặt
   BOOKED = 2, // đã đặt
+  RESERVED = 3
 }
 
 interface Seat {
@@ -53,12 +55,47 @@ const SeatsScreen = ({navigation, route}: any) => {
   const offsetY = useSharedValue(0);
 
   useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    console.log('join room', `event_${id}_showtime_${showtimeId}`);
+    socket.emit('joinRoom', `event_${id}_showtime_${showtimeId}`);
+
+    // Khi có sự kiện cập nhật ghế hoặc zone, gọi lại fetchSeatsFromApi
+    const handleSeatUpdated = (data: any) => {
+      console.log('[SOCKET] seat_updated:', data);
+      fetchSeatsFromApi();
+    };
+    const handleZoneChanged = (data: any) => {
+      console.log('[SOCKET] zone_data_changed:', data);
+      fetchSeatsFromApi();
+    };
+    const handlePeriodicMessage = (data: any) => {
+      console.log('[SOCKET] periodicMessage:', data);
+    };
+
+    // Log mọi event nhận được từ server
+    const handleAnyEvent = (event: string, ...args: any[]) => {
+      console.log(`[SOCKET][ANY] Event: ${event}`, ...args);
+    };
+
+    socket.on('seat_updated', handleSeatUpdated);
+    socket.on('zone_data_changed', handleZoneChanged);
+    socket.on('periodicMessage', handlePeriodicMessage);
+    socket.onAny(handleAnyEvent);
+
     fetchSeatsFromApi();
 
+    // Cleanup khi rời màn
     return () => {
+      socket.off('seat_updated', handleSeatUpdated);
+      socket.off('zone_data_changed', handleZoneChanged);
+      socket.off('periodicMessage', handlePeriodicMessage);
+      socket.offAny(handleAnyEvent);
+      socket.emit('leave', { room: `event_${id}_showtime_${showtimeId}` });
       setSelectedSeats([]);
     };
-  }, []);
+  }, [id, showtimeId]);
 
   const fetchSeatsFromApi = async () => {
     try {
@@ -74,7 +111,10 @@ const SeatsScreen = ({navigation, route}: any) => {
           status = SeatStatus.BOOKED;
         } else if (item.area === 'vip') {
           status = SeatStatus.VIP;
-        } else {
+        } else if (item.status === 'reserved') {
+          status = SeatStatus.RESERVED;
+        }
+        else {
           status = SeatStatus.NORMAL;
         }
         return {
@@ -105,9 +145,12 @@ const SeatsScreen = ({navigation, route}: any) => {
 
   const handleSeatPress = async (rowIndex: number, colIndex: number) => {
     const seat = seats[rowIndex][colIndex];
-    if (seat.status === SeatStatus.BOOKED) return;
 
-    const existingIndex = selectedSeats.findIndex(s => s.id === seat.id);
+    const existingIndex = selectedSeats.findIndex(s => {
+      console.log('So sánh s.id:', s.id, 'với seat.id:', seat.id, '==', s.id === seat.id);
+      return String(s.id) === String(seat.id);
+    });
+    console.log('existingIndex', existingIndex);
     if (existingIndex !== -1) {
       Alert.alert(
         'Xác nhận',
@@ -150,7 +193,14 @@ const SeatsScreen = ({navigation, route}: any) => {
         ],
         {cancelable: true},
       );
-    } else {
+    }
+    else if (seat.status === SeatStatus.BOOKED) return;
+
+    else if (seat.status === SeatStatus.RESERVED) {
+      Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
+      return;
+    }
+    else {
       try {
         setIsLoading(true);
         // Thêm vào danh sách chọn
@@ -183,6 +233,7 @@ const SeatsScreen = ({navigation, route}: any) => {
         }
         setIsLoading(false);
       } catch (error) {
+        console.log(error);
         if (error.response?.status === 409) {
           Alert.alert(
             'Ghế đã được đặt',
@@ -199,6 +250,7 @@ const SeatsScreen = ({navigation, route}: any) => {
           );
         } else {
           Alert.alert('Lỗi', 'Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.');
+          
         }
       }
     }
@@ -282,6 +334,8 @@ const SeatsScreen = ({navigation, route}: any) => {
                   bgColor = appColors.primary;
                 } else if (seat.status === SeatStatus.VIP) {
                   bgColor = '#7C89FF';
+                } else if (seat.status === SeatStatus.RESERVED) {
+                  bgColor = '#000'
                 } else {
                   bgColor = '#c9b6f3';
                 }

@@ -210,16 +210,17 @@ const ProfileEdit = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <RowComponent onPress={handleNavigation} styles={styles.headerRow}>
+        <View style={[styles.headerRow, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleNavigation}
           >
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Thông tin tài khoản</Text>
-          <View style={{ width: 26 }} /> {/* Placeholder for alignment */}
-        </RowComponent>
+          <View style={{ width: 26 }} />
+        </View>
+
       </View>
 
       <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
