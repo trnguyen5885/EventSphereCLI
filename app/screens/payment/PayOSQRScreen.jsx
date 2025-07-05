@@ -11,7 +11,9 @@ import {
   Dimensions,
   PermissionsAndroid,
   Linking,
-  Share
+  Share,
+  ImageBackground,
+  LinearGradient
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
@@ -76,14 +78,10 @@ const PayOSQRScreen = ({ route, navigation }) => {
         const apiLevel = Platform.Version;
         console.log('Android API Level:', apiLevel);
 
-        // Android 11+ (API 30+) sử dụng Scoped Storage
         if (apiLevel >= 30) {
-          // Với Android 11+, không cần WRITE_EXTERNAL_STORAGE cho việc lưu vào Pictures/Downloads
-          // Scoped Storage tự động cho phép truy cập
           console.log('Sử dụng Scoped Storage cho Android 11+');
           return true;
         } else {
-          // Android 10 và thấp hơn vẫn cần quyền cũ
           const granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
             {
@@ -116,6 +114,22 @@ const PayOSQRScreen = ({ route, navigation }) => {
     return true;
   };
 
+  // Hàm chia sẻ QR Code
+  const shareQRCode = async () => {
+    try {
+      const uri = await qrRef.current.capture();
+      const shareOptions = {
+        title: 'Mã QR Thanh toán',
+        message: `Mã QR thanh toán cho ${eventName} - ${amount?.toLocaleString('vi-VN')} VNĐ`,
+        url: uri,
+      };
+      await Share.share(shareOptions);
+    } catch (error) {
+      console.error('Lỗi khi chia sẻ:', error);
+      Alert.alert('Lỗi', 'Không thể chia sẻ mã QR');
+    }
+  };
+
   // Hàm tải mã QR với nhiều phương pháp fallback
   const downloadQRCode = async () => {
     if (!qrData) {
@@ -140,7 +154,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
 
       if (Platform.OS === 'android') {
         if (apiLevel >= 30) {
-          // Android 11+ - Sử dụng nhiều phương pháp
           console.log('Lưu file cho Android 11+');
 
           // Phương pháp 1: Lưu vào Pictures directory (public)
@@ -148,7 +161,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
             const picturesPath = RNFS.PicturesDirectoryPath || `${RNFS.ExternalStorageDirectoryPath}/Pictures`;
             const qrCodesPath = `${picturesPath}/QRCodes`;
 
-            // Tạo thư mục QRCodes nếu chưa tồn tại
             const folderExists = await RNFS.exists(qrCodesPath);
             if (!folderExists) {
               await RNFS.mkdir(qrCodesPath);
@@ -195,7 +207,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
             }
           }
         } else {
-          // Android 10 và thấp hơn - sử dụng phương pháp cũ
           const hasPermission = await requestStoragePermission();
           if (!hasPermission) {
             setIsDownloading(false);
@@ -233,12 +244,11 @@ const PayOSQRScreen = ({ route, navigation }) => {
           savedPath.includes('Download') ? 'Downloads' : 'Documents';
 
         Alert.alert(
-          'Thành công',
-          `Mã QR đã được lưu vào thư mục ${folderName}\n\nTên file: ${fileName}`,
+          'Thành công!',
+          `Mã QR đã được lưu thành công!\n\n📁 Vị trí: ${folderName}\n📄 Tên file: ${fileName}`,
           [
-            { text: 'OK' },
-            { text: 'Mở Thư mục', onPress: () => FileViewer.open(savedPath) }
-
+            { text: 'Đóng', style: 'cancel' },
+            { text: 'Mở thư mục', onPress: () => FileViewer.open(savedPath) }
           ]
         );
       } else {
@@ -268,8 +278,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
       setIsDownloading(false);
     }
   };
-
-
 
   // Hàm tạo QR Code
   const handleGenerateQR = async () => {
@@ -420,7 +428,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header với gradient */}
       <View style={styles.header}>
         <RowComponent onPress={() => navigation.goBack()} styles={{ columnGap: 15 }}>
           <TouchableOpacity
@@ -437,7 +445,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Payment Info Card */}
+        {/* Payment Info Card với gradient */}
         <View style={styles.paymentCard}>
           <View style={styles.paymentHeader}>
             <View style={styles.logoContainer}>
@@ -454,13 +462,21 @@ const PayOSQRScreen = ({ route, navigation }) => {
           </View>
 
           <View style={styles.orderInfoContainer}>
-            <Text style={styles.orderInfoText}>Mã đơn hàng: {orderCode || 'Đang tạo...'}</Text>
+            <View style={styles.orderCodeBadge}>
+              <Ionicons name="receipt-outline" size={16} color="#666" />
+              <Text style={styles.orderInfoText}>Mã đơn hàng: {orderCode || 'Đang tạo...'}</Text>
+            </View>
           </View>
         </View>
 
-        {/* QR Code Section */}
+        {/* QR Code Section với design mới */}
         <View style={styles.qrSection}>
-          <Text style={styles.qrTitle}>Quét mã để thanh toán</Text>
+          <View style={styles.qrTitleContainer}>
+            <View style={styles.qrIconContainer}>
+              <MaterialIcons name="qr-code-2" size={24} color={appColors.primary} />
+            </View>
+            <Text style={styles.qrTitle}>Quét mã để thanh toán</Text>
+          </View>
 
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -471,44 +487,81 @@ const PayOSQRScreen = ({ route, navigation }) => {
             <ViewShot ref={qrRef} options={{ format: "png", quality: 1.0 }}>
               <View style={styles.qrContainer}>
                 <View style={styles.qrWrapper}>
-                  {qrData && <QRCode value={qrData} size={220} />}
+                  <View style={styles.qrFrame}>
+                    {qrData && <QRCode value={qrData} size={200} />}
+                  </View>
+                  <View style={styles.qrBrandContainer}>
+                    <Text style={styles.qrBrandText}>PayOS</Text>
+                  </View>
                 </View>
-                <Text style={styles.qrSubtitle}>
-                  Mở app ngân hàng và quét mã QR này để thanh toán
-                </Text>
+                <View style={styles.qrSubtitleContainer}>
+                  <Ionicons name="phone-portrait-outline" size={16} color="#666" />
+                  <Text style={styles.qrSubtitle}>
+                    Mở app ngân hàng và quét mã QR để thanh toán
+                  </Text>
+                </View>
               </View>
             </ViewShot>
           )}
 
-          {/* Status Indicator */}
+          {/* Status Indicator với design mới */}
           <View style={[styles.statusContainer, { backgroundColor: getStatusColor() + '15' }]}>
-            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-            <Text style={[styles.statusText, { color: getStatusColor() }]}>
-              {getStatusText()}
-            </Text>
+            <View style={styles.statusLeft}>
+              <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+              <Text style={[styles.statusText, { color: getStatusColor() }]}>
+                {getStatusText()}
+              </Text>
+            </View>
             {paymentStatus === 'CHECKING' && (
-              <ActivityIndicator size="small" color={getStatusColor()} style={{ marginLeft: 8 }} />
+              <ActivityIndicator size="small" color={getStatusColor()} />
             )}
           </View>
 
-          {/* Action Buttons */}
+          {/* Enhanced Action Buttons */}
           {qrData && !loading && (
             <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={styles.downloadButton}
+                style={[styles.actionButton, styles.downloadButton]}
                 onPress={downloadQRCode}
                 disabled={isDownloading}
               >
-                {isDownloading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <MaterialIcons name="file-download" size={20} color="white" />
-                )}
-                <Text style={styles.downloadButtonText}>
-                  {isDownloading ? 'Đang tải...' : 'Tải mã QR'}
-                </Text>
+                <View style={styles.buttonContent}>
+                  <View style={styles.buttonIcon}>
+                    {isDownloading ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <MaterialIcons name="file-download" size={20} color="white" />
+                    )}
+                  </View>
+                  <View style={styles.buttonTextContainer}>
+                    <Text style={styles.buttonTitle}>
+                      {isDownloading ? 'Đang tải xuống...' : 'Tải xuống'}
+                    </Text>
+                    <Text style={styles.buttonSubtitle}>
+                      Lưu mã QR vào thư viện
+                    </Text>
+                  </View>
+                </View>
               </TouchableOpacity>
 
+              <TouchableOpacity
+                style={[styles.actionButton, styles.shareButton]}
+                onPress={shareQRCode}
+              >
+                <View style={styles.buttonContent}>
+                  <View style={styles.buttonIcon}>
+                    <Ionicons name="share-outline" size={20} color={appColors.primary} />
+                  </View>
+                  <View style={styles.buttonTextContainer}>
+                    <Text style={[styles.buttonTitle, { color: appColors.primary }]}>
+                      Chia sẻ
+                    </Text>
+                    <Text style={[styles.buttonSubtitle, { color: '#666' }]}>
+                      Gửi cho người khác
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -525,42 +578,72 @@ const PayOSQRScreen = ({ route, navigation }) => {
           )}
         </View>
 
-        {/* Instructions */}
+        {/* Enhanced Instructions */}
         <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsTitle}>Hướng dẫn thanh toán</Text>
+          <View style={styles.instructionsHeader}>
+            <Ionicons name="information-circle-outline" size={20} color={appColors.primary} />
+            <Text style={styles.instructionsTitle}>Hướng dẫn thanh toán</Text>
+          </View>
+          
           <View style={styles.instructionItem}>
             <View style={styles.stepNumber}>
               <Text style={styles.stepText}>1</Text>
             </View>
-            <Text style={styles.instructionText}>Mở ứng dụng ngân hàng trên điện thoại</Text>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionText}>Mở ứng dụng ngân hàng trên điện thoại</Text>
+              <Text style={styles.instructionSubtext}>Hỗ trợ tất cả ngân hàng tại Việt Nam</Text>
+            </View>
           </View>
+
           <View style={styles.instructionItem}>
             <View style={styles.stepNumber}>
               <Text style={styles.stepText}>2</Text>
             </View>
-            <Text style={styles.instructionText}>Chọn tính năng "Quét mã QR" hoặc "Chuyển khoản QR"</Text>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionText}>Chọn tính năng "Quét mã QR" hoặc "Chuyển khoản QR"</Text>
+              <Text style={styles.instructionSubtext}>Thường ở trang chủ hoặc menu chuyển khoản</Text>
+            </View>
           </View>
+
           <View style={styles.instructionItem}>
             <View style={styles.stepNumber}>
               <Text style={styles.stepText}>3</Text>
             </View>
-            <Text style={styles.instructionText}>Quét mã QR trên màn hình này</Text>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionText}>Quét mã QR trên màn hình này</Text>
+              <Text style={styles.instructionSubtext}>Đảm bảo camera có thể nhìn rõ toàn bộ mã QR</Text>
+            </View>
           </View>
+
           <View style={styles.instructionItem}>
             <View style={styles.stepNumber}>
               <Text style={styles.stepText}>4</Text>
             </View>
-            <Text style={styles.instructionText}>Xác nhận thông tin và hoàn tất thanh toán</Text>
+            <View style={styles.instructionContent}>
+              <Text style={styles.instructionText}>Xác nhận thông tin và hoàn tất thanh toán</Text>
+              <Text style={styles.instructionSubtext}>Kiểm tra số tiền và thông tin trước khi xác nhận</Text>
+            </View>
           </View>
         </View>
 
-        {/* Support Section */}
+        {/* Enhanced Support Section */}
         <View style={styles.supportContainer}>
-          <Text style={styles.supportTitle}>Cần hỗ trợ?</Text>
+          <View style={styles.supportHeader}>
+            <View style={styles.supportIcon}>
+              <Ionicons name="headset-outline" size={20} color={appColors.primary} />
+            </View>
+            <Text style={styles.supportTitle}>Cần hỗ trợ?</Text>
+          </View>
           <Text style={styles.supportText}>
-            Nếu gặp vấn đề trong quá trình thanh toán, vui lòng liên hệ bộ phận hỗ trợ khách hàng:
-            <Text style={styles.phoneNumber} onPress={() => Linking.openURL('tel:0349535063')}>0349535063</Text>
+            Nếu gặp vấn đề trong quá trình thanh toán, vui lòng liên hệ bộ phận hỗ trợ khách hàng 24/7:
           </Text>
+          <TouchableOpacity 
+            style={styles.phoneContainer}
+            onPress={() => Linking.openURL('tel:0349535063')}
+          >
+            <Ionicons name="call" size={16} color={appColors.primary} />
+            <Text style={styles.phoneNumber}>0349535063</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -615,157 +698,296 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  
+  // Enhanced Payment Card Styles
   paymentCard: {
     backgroundColor: 'white',
     margin: 16,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 3,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   paymentHeader: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   logoContainer: {
     backgroundColor: appColors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
     marginBottom: 12,
+    elevation: 4,
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   logoText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   merchantName: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: 18,
+    color: '#2c3e50',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 24,
   },
   amountContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingVertical: 16,
+    backgroundColor: '#f8f9ff',
+    borderRadius: 16,
   },
   amountLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    color: '#7f8c8d',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   amountValue: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: appColors.primary,
+    letterSpacing: 0.5,
   },
   orderInfoContainer: {
     backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
-  orderInfoText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  qrSection: {
+  orderCodeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'white',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  qrTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 20,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#666',
-  },
-  qrContainer: {
-    alignItems: 'center',
-  },
-  qrWrapper: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  orderInfoText: {
+    fontSize: 14,
+    color: '#5a6c7d',
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+
+  // Enhanced QR Section Styles
+  qrSection: {
+    backgroundColor: 'white',
+    marginHorizontal: 16,
     marginBottom: 16,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  qrTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  qrIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: appColors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  qrTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  qrContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  qrWrapper: {
+    padding: 24,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#f0f0f0',
+  },
+  qrFrame: {
+    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: appColors.primary,
+    borderStyle: 'dashed',
+  },
+  qrBrandContainer: {
+    position: 'absolute',
+    bottom: 8,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  qrBrandText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: appColors.primary,
+    backgroundColor: 'white',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  qrSubtitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 16,
   },
   qrSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#7f8c8d',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 20,
+    marginLeft: 8,
+    flex: 1,
   },
+
+  // Enhanced Status Container
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 25,
-    marginBottom: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    width: '100%',
+  },
+  statusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 12,
   },
   statusText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    flex: 1,
+  },
+
+  // Enhanced Button Styles
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   downloadButton: {
+    backgroundColor: appColors.primary,
+  },
+  shareButton: {
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: appColors.primary,
+  },
+  buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: appColors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginBottom: 12,
-    minWidth: 140,
-    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  downloadButtonText: {
-    color: 'white',
+  buttonIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  buttonTextContainer: {
+    flex: 1,
+  },
+  buttonTitle: {
     fontSize: 14,
     fontWeight: '600',
-    marginLeft: 8,
+    color: 'white',
+    marginBottom: 2,
+  },
+  buttonSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
   },
   regenerateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: appColors.primary,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 25,
-    minWidth: 140,
+    minWidth: 160,
     justifyContent: 'center',
+    elevation: 2,
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   regenerateButtonText: {
     color: appColors.primary,
@@ -773,79 +995,237 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
+
+  // Enhanced Instructions Styles
   instructionsContainer: {
     backgroundColor: 'white',
     marginHorizontal: 16,
     marginBottom: 16,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 3,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  instructionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   instructionsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
+    color: '#2c3e50',
+    marginLeft: 12,
   },
   instructionItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   stepNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: appColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
     marginTop: 2,
+    elevation: 2,
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   stepText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
-  instructionText: {
+  instructionContent: {
     flex: 1,
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    paddingTop: 2,
   },
+  instructionText: {
+    fontSize: 15,
+    color: '#2c3e50',
+    lineHeight: 22,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  instructionSubtext: {
+    fontSize: 13,
+    color: '#7f8c8d',
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
+
+  // Enhanced Support Section
   supportContainer: {
     backgroundColor: 'white',
     marginHorizontal: 16,
     marginBottom: 32,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 3,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  supportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  supportIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: appColors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   supportTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: '#2c3e50',
   },
   supportText: {
     fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    color: '#5a6c7d',
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: appColors.primary + '10',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: appColors.primary + '30',
   },
   phoneNumber: {
     color: appColors.primary,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+    letterSpacing: 0.5,
   },
 
+  // Additional Enhancement Styles
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 20,
+    opacity: 0.05,
+  },
+  pulseAnimation: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: appColors.primary,
+    opacity: 0.1,
+  },
+  scanLine: {
+    position: 'absolute',
+    width: '100%',
+    height: 2,
+    backgroundColor: appColors.primary,
+    opacity: 0.6,
+  },
+  cornerDecoration: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderColor: appColors.primary,
+    borderWidth: 3,
+  },
+  cornerTopLeft: {
+    top: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 8,
+  },
+  cornerTopRight: {
+    top: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderTopRightRadius: 8,
+  },
+  cornerBottomLeft: {
+    bottom: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+  },
+  cornerBottomRight: {
+    bottom: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderBottomRightRadius: 8,
+  },
+  shimmerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 16,
+  },
+  floatingActionButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: appColors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  breathingDot: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: appColors.primary,
+    opacity: 0.6,
+  },
+  rippleEffect: {
+    position: 'absolute',
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: appColors.primary,
+    opacity: 0.3,
+  },
 });
 
 export default PayOSQRScreen;

@@ -171,15 +171,6 @@ const ProfileScreen = ({ navigation }) => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('SetupPIN')}
-          >
-            <View style={styles.menuItemContent}>
-              <TextComponent text="Thiết lập mã PIN" styles={styles.menuText} />
-              <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
-            </View>
-          </TouchableOpacity>
         </View>
 
         {/* Phần Cài đặt ứng dụng */}

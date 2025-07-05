@@ -66,6 +66,11 @@ import GroupScreen from './app/screens/connect/GroupScreen';
 import InviteScreen from './app/screens/connect/InviteScreen';
 import ConnectScreen from './app/screens/connect/ConnectScreen';
 import InviteToGroupScreen from './app/screens/connect/InviteToGroupScreen'
+import PolicyViewerScreen from './app/screens/profile/PolicyViewerScreen';
+import FAQScreen from './app/screens/profile/FAQScreen';
+import ContactScreen from './app/screens/profile/ContactScreen';
+import QRScanner from './app/screens/organizer/QRScanner';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -227,6 +232,11 @@ const AppWithSocket = () => {
           <Stack.Screen name="GroupScreen" component={GroupScreen} />
           <Stack.Screen name="InviteScreen" component={InviteScreen} />
           <Stack.Screen name="InviteToGroupScreen" component={InviteToGroupScreen} />
+          <Stack.Screen name="PolicyViewer" component={PolicyViewerScreen} />
+          <Stack.Screen name="FAQScreen" component={FAQScreen} />
+          <Stack.Screen name="ContactScreen" component={ContactScreen} />
+          <Stack.Screen name="QRScanner" component={QRScanner} />
+
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
