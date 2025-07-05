@@ -8,6 +8,7 @@ import {
   View,
   SafeAreaView,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Alert} from 'react-native';
@@ -19,6 +20,8 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 import { getSocket } from '../../socket/socket';
+import RowComponent from '../../../app/components/RowComponent';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 enum SeatStatus {
   NORMAL = 0, // vé thường chưa đặt
@@ -274,6 +277,10 @@ const SeatsScreen = ({navigation, route}: any) => {
     } catch (error) {}
   };
 
+  const handleGoback = () => {
+    navigation.goBack();
+  };
+
   const panGesture = Gesture.Pan()
     .onStart(() => {
       // Không cần làm gì ở đây nếu offset đã có
@@ -294,6 +301,21 @@ const SeatsScreen = ({navigation, route}: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <StatusBar animated backgroundColor={appColors.primary} />
+        <RowComponent onPress={handleGoback} styles={{columnGap: 25}}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Chọn khu vực ghế</Text>
+        </RowComponent>
+
+        <TouchableOpacity>
+          <Ionicons name="print-outline" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.screenContainer}>
         <View style={styles.screen} />
         <Text style={styles.screenLabel}>SÂN KHẤU</Text>
@@ -338,7 +360,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       </GestureDetector>
 
       {/* LEGEND */}
-      <View style={styles.legend}>
+      {/* <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendIcon, styles.seatNormal]} />
           <Text style={styles.legendText}>Vé thường</Text>
@@ -366,9 +388,67 @@ const SeatsScreen = ({navigation, route}: any) => {
             Tổng tiền: {totalPrice.toLocaleString('vi-VN')} VND
           </Text>
         </View>
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookTicket}>
+        <TouchableOpacity
+          style={[
+            styles.bookButton,
+            selectedSeats.length === 0 && styles.bookButtonDisabled,
+          ]}
+          disabled={selectedSeats.length === 0}
+          onPress={handleBookTicket}>
           <Text style={styles.bookButtonText}>ĐẶT VÉ</Text>
         </TouchableOpacity>
+      </View> */}
+
+      <View style={styles.bottomContainer}>
+        {/* Legend section - sắp xếp theo 2 hàng */}
+        <View style={styles.legend}>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendIcon, styles.seatNormal]} />
+              <Text style={styles.legendText}>Vé thường</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendIcon, styles.seatVip]} />
+              <Text style={styles.legendText}>Vé V.I.P</Text>
+            </View>
+          </View>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendIcon, styles.seatChoosing]} />
+              <Text style={styles.legendText}>Đang chọn</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendIcon, {marginRight: 8}, styles.bookedSeat]}
+              />
+              <Text style={styles.legendText}>Đã đặt </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Summary và Book button - layout ngang */}
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryInfo}>
+            <Text style={styles.summaryText}>
+              Đã chọn: {selectedSeats.length} ghế
+            </Text>
+            <Text style={styles.summaryPrice}>
+              Tổng tiền:{' '}
+              <Text style={{color: appColors.primary}}>
+                {totalPrice.toLocaleString('vi-VN')} VND
+              </Text>
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.bookButton,
+              selectedSeats.length === 0 && styles.bookButtonDisabled,
+            ]}
+            disabled={selectedSeats.length === 0}
+            onPress={handleBookTicket}>
+            <Text style={styles.bookButtonText}>ĐẶT VÉ</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -380,11 +460,25 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.white,
   },
   header: {
-    padding: 16,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    backgroundColor: appColors.primary,
+    zIndex: 2,
+  },
+  headerTitle: {
+    color: appColors.white2,
+    fontSize: 22,
+    fontWeight: '500',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 22,
@@ -469,48 +563,64 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  legend: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 16,
+  bottomContainer: {
     backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+  },
+  legend: {
+    // flexDirection: 'row',
+    // justifyContent: 'space-around',
+    // padding: 16,
+    // backgroundColor: '#fff',
+    // borderTopWidth: 1,
+    // borderTopColor: '#e0e0e0',
+    marginBottom: 16,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    // justifyContent: 'space-around',
+    marginBottom: 8,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
   },
   legendIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 3,
-    marginRight: 8,
-    borderWidth: 1,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 6,
   },
   seatNormal: {
     backgroundColor: '#c9b6f3',
     borderColor: '#bbb',
   },
   legendText: {
-    color: '#555',
     fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
   },
   summaryContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 16,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    elevation: 2,
+    borderTopColor: '#f0f0f0',
   },
   summaryInfo: {
     flex: 1,
-    justifyContent: 'center',
+    // justifyContent: 'center',
   },
   summaryText: {
-    color: '#555',
     fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
   },
   summaryPrice: {
     color: '#333',
@@ -531,6 +641,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  bookButtonDisabled: {
+    backgroundColor: '#aaa',
+    elevation: 0,
   },
 });
 
