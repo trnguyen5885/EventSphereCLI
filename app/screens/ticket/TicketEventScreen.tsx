@@ -46,13 +46,15 @@ const TicketEventScreen = ({navigation, route}: any) => {
   const ticketTypes = {
     normal: {
       name: 'Vé Thường',
-      price: eventInfo ? eventInfo.ticketPrice : 0,
+      price: eventInfo ? eventInfo?.showtimes[0].ticketPrice : 0,
     },
     vip: {
       name: 'Vé VIP',
-      price: eventInfo ? eventInfo.ticketPrice : 0,
+      price: eventInfo ? eventInfo?.showtimes[0].ticketPrice : 0,
     },
   };
+
+  // console.log(eventInfo?.showtimes[0].ticketPrice);
 
   useEffect(() => {
     if (!userId || !id) return;
@@ -184,7 +186,6 @@ const TicketEventScreen = ({navigation, route}: any) => {
         }
       }
 
-
       if (formData.paymentMethod === 'banking') {
         const totalAmount = calculateTotal();
         setIsLoading(false);
@@ -269,78 +270,76 @@ const TicketEventScreen = ({navigation, route}: any) => {
         </View>
 
         {/* Ticket Selection */}
-        {typeBase === 'none' ||
-          typeBase === null ||
-          (typeBase === undefined && (
+        {typeBase === 'none' && (
+          <View
+            style={{
+              marginHorizontal: 16,
+              marginTop: 16,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 20,
+              elevation: 3,
+              borderColor: '#E2E8F0',
+              borderWidth: 1,
+            }}>
+            <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
+
+            {/* Vé Thường */}
             <View
               style={{
-                marginHorizontal: 16,
-                marginTop: 16,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 16,
-                padding: 20,
-                elevation: 3,
-                borderColor: '#E2E8F0',
-                borderWidth: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 12,
               }}>
-              <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
-
-              {/* Vé Thường */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 12,
-                }}>
-                <Text style={{fontSize: 16, color: '#2D3748'}}>
-                  {ticketTypes.normal.name}
+              <Text style={{fontSize: 16, color: '#2D3748'}}>
+                {ticketTypes.normal.name}
+              </Text>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <TouchableOpacity
+                  onPress={() => updateTicketQuantity('normal', -1)}
+                  style={styles.quantityButton}>
+                  <Text style={styles.quantityButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                  {formData.tickets.normal}
                 </Text>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <TouchableOpacity
-                    onPress={() => updateTicketQuantity('normal', -1)}
-                    style={styles.quantityButton}>
-                    <Text style={styles.quantityButtonText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
-                    {formData.tickets.normal}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => updateTicketQuantity('normal', 1)}
-                    style={styles.quantityButton}>
-                    <Text style={styles.quantityButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Vé VIP */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}>
-                <Text style={{fontSize: 16, color: '#2D3748'}}>
-                  {ticketTypes.vip.name}
-                </Text>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <TouchableOpacity
-                    onPress={() => updateTicketQuantity('vip', -1)}
-                    style={styles.quantityButton}>
-                    <Text style={styles.quantityButtonText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={{marginHorizontal: 12, fontSize: 16}}>
-                    {formData.tickets.vip}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => updateTicketQuantity('vip', 1)}
-                    style={styles.quantityButton}>
-                    <Text style={styles.quantityButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  onPress={() => updateTicketQuantity('normal', 1)}
+                  style={styles.quantityButton}>
+                  <Text style={styles.quantityButtonText}>+</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          ))}
+
+            {/* Vé VIP */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              <Text style={{fontSize: 16, color: '#2D3748'}}>
+                {ticketTypes.vip.name}
+              </Text>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <TouchableOpacity
+                  onPress={() => updateTicketQuantity('vip', -1)}
+                  style={styles.quantityButton}>
+                  <Text style={styles.quantityButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                  {formData.tickets.vip}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => updateTicketQuantity('vip', 1)}
+                  style={styles.quantityButton}>
+                  <Text style={styles.quantityButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Payment Methods */}
         <View style={styles.paymentMethodsContainer}>
