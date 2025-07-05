@@ -56,7 +56,7 @@ export const getGroupInvites = async (groupId) => {
 
 export const getGroupInvited = async (userId) => {
   try {
-    const res = await AxiosInstance().get(`/connects/invited${userId}`);
+    const res = await AxiosInstance().get(`/connects/invited/${userId}`);
     return res;
   } catch (error) {
     console.log(error);

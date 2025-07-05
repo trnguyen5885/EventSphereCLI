@@ -53,8 +53,10 @@ const SeatsScreen = ({navigation, route}: any) => {
 
   useEffect(() => {
     const socket = getSocket();
-    // Tham gia room nếu server có phân room
-    socket.emit('join', { room: `event_${id}_showtime_${showtimeId}` });
+    if (!socket) return;
+
+    console.log('join room', `event_${id}_showtime_${showtimeId}`);
+    socket.emit('joinRoom', `event_${id}_showtime_${showtimeId}`);
 
     // Khi có sự kiện cập nhật ghế hoặc zone, gọi lại fetchSeatsFromApi
     const handleSeatUpdated = (data: any) => {
@@ -140,14 +142,12 @@ const SeatsScreen = ({navigation, route}: any) => {
 
   const handleSeatPress = async (rowIndex: number, colIndex: number) => {
     const seat = seats[rowIndex][colIndex];
-    if (seat.status === SeatStatus.BOOKED) return;
 
-    if (seat.status === SeatStatus.RESERVED) {
-      Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
-      return;
-    }
-
-    const existingIndex = selectedSeats.findIndex(s => s.id === seat.id);
+    const existingIndex = selectedSeats.findIndex(s => {
+      console.log('So sánh s.id:', s.id, 'với seat.id:', seat.id, '==', s.id === seat.id);
+      return String(s.id) === String(seat.id);
+    });
+    console.log('existingIndex', existingIndex);
     if (existingIndex !== -1) {
       Alert.alert(
         'Xác nhận',
@@ -190,7 +190,14 @@ const SeatsScreen = ({navigation, route}: any) => {
         ],
         {cancelable: true},
       );
-    } else {
+    }
+    else if (seat.status === SeatStatus.BOOKED) return;
+
+    else if (seat.status === SeatStatus.RESERVED) {
+      Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
+      return;
+    }
+    else {
       try {
         setIsLoading(true);
         // Thêm vào danh sách chọn
@@ -223,6 +230,7 @@ const SeatsScreen = ({navigation, route}: any) => {
         }
         setIsLoading(false);
       } catch (error) {
+        console.log(error);
         if (error.response?.status === 409) {
           Alert.alert(
             'Ghế đã được đặt',
@@ -239,6 +247,7 @@ const SeatsScreen = ({navigation, route}: any) => {
           );
         } else {
           Alert.alert('Lỗi', 'Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.');
+          
         }
       }
     }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { getGroupsByUser, getGroupInvites, acceptInvite, declineInvite } from './services/connectApi';
+import { getGroupInvited, acceptInvite, declineInvite } from './services/connectApi';
 import { useSelector } from 'react-redux';
 
 const InviteScreen = () => {
@@ -12,21 +12,19 @@ const InviteScreen = () => {
   useEffect(() => {
     const fetchInvites = async () => {
       setLoading(true);
-      const groups = await getGroupsByUser(userId);
+      const invitesRes = await getGroupInvited(userId);
+      console.log('invitesRes:', invitesRes);
       let allInvites = [];
-      for (const group of groups) {
-        const groupInvites = await getGroupInvites(group._id);
-        groupInvites.forEach(invite => {
-          if (invite.email === userEmail) {
-            allInvites.push({
-              ...invite,
-              groupName: group.groupName,
-              groupId: group._id,
-              eventId: group.eventId,
-              status: invite.status || 'pending'
-            });
-          }
-        });
+      if (invitesRes && invitesRes.invites) {
+        allInvites = invitesRes.invites.map(invite => ({
+          ...invite,
+          groupName: invite.groupName,
+          groupId: invite.groupId,
+          eventId: invite.eventId,
+          status: invite.status || 'pending',
+          owner: invite.owner,
+          invitedAt: invite.invitedAt
+        }));
       }
       setInvites(allInvites);
       setLoading(false);

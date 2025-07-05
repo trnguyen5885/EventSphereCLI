@@ -28,6 +28,7 @@ const GroupScreen = ({ route }) => {
   const [searchResult, setSearchResult] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [invitedMembers, setInvitedMembers] = useState([]);
+  const [targetMember, setTargetMember] = useState(null);
 
   const fetchMembers = useCallback(async () => {
     try {
@@ -108,14 +109,14 @@ const GroupScreen = ({ route }) => {
   };
 
   const handleNavigateToMember = (member) => setSelectedMember(member);
-  const closeMemberModal = () => setSelectedMember(null);
+  const closeMemberModal = () => {
+    setSelectedMember(null);
+    setTargetMember(null); // Tắt đường đi khi đóng modal
+  };
 
   const handleOpenMaps = () => {
-    if (!selectedMember?.location) return;
-    const { latitude, longitude } = selectedMember.location;
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-    Linking.openURL(url);
-    setSelectedMember(null);
+    setTargetMember(selectedMember); // Khi nhấn, set targetMember để GroupMap vẽ đường
+    // Có thể đóng modal hoặc giữ modal mở để xem đường đi
   };
 
   const handleShareLocation = () => setIsSharing(prev => !prev);
@@ -260,7 +261,7 @@ const GroupScreen = ({ route }) => {
       <GroupMap
         members={members.filter(m => m.location && typeof m.location.latitude === 'number' && typeof m.location.longitude === 'number')}
         myLocation={myLocation}
-        targetMember={selectedMember}
+        targetMember={targetMember}
       />
     </View>
   );
