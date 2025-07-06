@@ -6,6 +6,7 @@ import { AxiosInstance } from '../../services';
 import { TextComponent } from '../../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
+import { appColors } from '../../constants/appColors';
 
 const UserTicketsScreen = ({navigation, route}) => {
     const [userData, setUserData] = useState(null);
@@ -213,10 +214,10 @@ const styles = StyleSheet.create({
     detailButton: {
         marginTop: 14,
         paddingVertical: 10,
-        backgroundColor: '#007BFF',
+        backgroundColor: appColors.primary,
         borderRadius: 6,
         alignItems: 'center',
-        shadowColor: '#007BFF',
+        shadowColor: appColors.primary,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.12,
         shadowRadius: 2,

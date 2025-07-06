@@ -4,6 +4,7 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {appColors} from '../constants/appColors';
 import {
   AddEventScreen,
+  CameraScreen,
   EventScreen,
   ExploreScreen,
   MapScreen,
@@ -66,6 +67,7 @@ const TabNavigator = () => {
       <Tab.Screen name="Vé của tôi" component={EventScreen} />
       <Tab.Screen name="Địa điểm" component={ConnectScreen} />
       <Tab.Screen name="Thông tin" component={ProfileScreen} />
+      <Tab.Screen name="Camera" component={CameraScreen} />
     </Tab.Navigator>
   );
 };

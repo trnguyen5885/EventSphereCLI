@@ -19,7 +19,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
-import { getSocket } from '../../socket/socket';
+import {getSocket} from '../../socket/socket';
 import RowComponent from '../../../app/components/RowComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -27,7 +27,7 @@ enum SeatStatus {
   NORMAL = 0, // vé thường chưa đặt
   VIP = 1, // vé V.I.P chưa đặt
   BOOKED = 2, // đã đặt
-  RESERVED = 3
+  RESERVED = 3,
 }
 
 interface Seat {
@@ -92,7 +92,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       socket.off('zone_data_changed', handleZoneChanged);
       socket.off('periodicMessage', handlePeriodicMessage);
       socket.offAny(handleAnyEvent);
-      socket.emit('leave', { room: `event_${id}_showtime_${showtimeId}` });
+      socket.emit('leave', {room: `event_${id}_showtime_${showtimeId}`});
       setSelectedSeats([]);
     };
   }, [id, showtimeId]);
@@ -103,7 +103,7 @@ const SeatsScreen = ({navigation, route}: any) => {
         `/events/getZone/${id}?showtimeId=${showtimeId}`,
       );
 
-      console.log(response.zones[0].layout.seats);
+      console.log(response);
 
       const seatObjects = response.zones[0].layout.seats.map((item: any) => {
         let status: SeatStatus;
@@ -113,8 +113,7 @@ const SeatsScreen = ({navigation, route}: any) => {
           status = SeatStatus.VIP;
         } else if (item.status === 'reserved') {
           status = SeatStatus.RESERVED;
-        }
-        else {
+        } else {
           status = SeatStatus.NORMAL;
         }
         return {
@@ -147,7 +146,14 @@ const SeatsScreen = ({navigation, route}: any) => {
     const seat = seats[rowIndex][colIndex];
 
     const existingIndex = selectedSeats.findIndex(s => {
-      console.log('So sánh s.id:', s.id, 'với seat.id:', seat.id, '==', s.id === seat.id);
+      console.log(
+        'So sánh s.id:',
+        s.id,
+        'với seat.id:',
+        seat.id,
+        '==',
+        s.id === seat.id,
+      );
       return String(s.id) === String(seat.id);
     });
     console.log('existingIndex', existingIndex);
@@ -193,14 +199,11 @@ const SeatsScreen = ({navigation, route}: any) => {
         ],
         {cancelable: true},
       );
-    }
-    else if (seat.status === SeatStatus.BOOKED) return;
-
+    } else if (seat.status === SeatStatus.BOOKED) return;
     else if (seat.status === SeatStatus.RESERVED) {
       Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
       return;
-    }
-    else {
+    } else {
       try {
         setIsLoading(true);
         // Thêm vào danh sách chọn
@@ -250,7 +253,6 @@ const SeatsScreen = ({navigation, route}: any) => {
           );
         } else {
           Alert.alert('Lỗi', 'Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.');
-          
         }
       }
     }
@@ -332,10 +334,10 @@ const SeatsScreen = ({navigation, route}: any) => {
                   bgColor = '#ccc';
                 } else if (isSelected) {
                   bgColor = appColors.primary;
-                } else if (seat.status === SeatStatus.VIP) {
+                } else if (seat.area === 'VIP') {
                   bgColor = '#7C89FF';
                 } else if (seat.status === SeatStatus.RESERVED) {
-                  bgColor = '#000'
+                  bgColor = '#000';
                 } else {
                   bgColor = '#c9b6f3';
                 }
