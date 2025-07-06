@@ -13,10 +13,12 @@ import { TextComponent } from '../../components';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { appColors } from '../../constants/appColors';
-import { ToastAndroid, Alert } from 'react-native'
+import { ToastAndroid, Alert } from 'react-native';
+import { policies } from '../../constants/policies';
+
 
 const SupportScreen = ({ navigation }) => {
-  
+
   // Danh sách các mục hỗ trợ
   const supportItems = [
     { id: 1, title: 'Câu hỏi thường gặp', icon: 'help-outline' },
@@ -34,34 +36,52 @@ const SupportScreen = ({ navigation }) => {
 
   // Xử lý nhấn vào mục hỗ trợ
   const handleSupportItemPress = (item) => {
-    if (Platform.OS === 'android') {
-        ToastAndroid.show(`Tính năng ${item.title} đang được phát triển`, ToastAndroid.SHORT);
-      } else {
-        Alert.alert('Thông báo', `Tính năng ${item.title} đang được phát triển`);
-      }
+    if (item.title === 'Câu hỏi thường gặp') {
+      navigation.navigate('FAQScreen');
+      return;
+    }
+
+    if (item.title === 'Liên hệ') {
+      navigation.navigate('ContactScreen');
+      return;
+    }
+
+    const content = policies[item.title];
+    if (content) {
+      navigation.navigate('PolicyViewer', {
+        title: item.title,
+        content,
+      });
+    } else {
+      Platform.OS === 'android'
+        ? ToastAndroid.show(`Tính năng ${item.title} đang được phát triển`, ToastAndroid.SHORT)
+        : Alert.alert('Thông báo', `Tính năng ${item.title} đang được phát triển`);
+    }
   };
+
+
 
   // Xử lý gọi hotline
   const handleCallHotline = () => {
-    Linking.openURL('tel:19006408');
+    Linking.openURL('tel:19001234');
   };
 
   // Xử lý gửi email
   const handleSendEmail = () => {
-    Linking.openURL('mailto:support@ticketbox.vn');
+    Linking.openURL('mailto:support@eventsphere.vn');
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
-        
+
         <Text style={styles.headerTitle}>Trung tâm trợ giúp</Text>
       </View>
 
@@ -70,19 +90,19 @@ const SupportScreen = ({ navigation }) => {
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
           <View style={styles.welcomeCard}>
-            <TextComponent 
+            <TextComponent
               text="EventSphere giúp bạn mua và bán vé một cách dễ dàng và an toàn. Dưới đây là những thông tin hữu ích về nền tảng của chúng tôi"
               styles={styles.welcomeText}
             />
           </View>
-          
+
           {/* Mascot placeholder - bạn có thể thêm hình ảnh mascot ở đây */}
           <View style={styles.mascotContainer}>
             <View style={styles.mascotPlaceholder}>
-              <Image 
+              <Image
                 source={require('../../../assets/images/icon.png')}
                 style={{ width: "75%", height: "75%" }}
-                />
+              />
             </View>
           </View>
         </View>
@@ -99,20 +119,20 @@ const SupportScreen = ({ navigation }) => {
               onPress={() => handleSupportItemPress(item)}
             >
               <View style={styles.supportItemContent}>
-                <MaterialIcons 
-                  name={item.icon} 
-                  size={20} 
-                  color="#666" 
+                <MaterialIcons
+                  name={item.icon}
+                  size={20}
+                  color="#666"
                   style={styles.supportIcon}
                 />
-                <TextComponent 
-                  text={item.title} 
-                  styles={styles.supportItemText} 
+                <TextComponent
+                  text={item.title}
+                  styles={styles.supportItemText}
                 />
-                <MaterialIcons 
-                  name="chevron-right" 
-                  size={20} 
-                  color="#999" 
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color="#999"
                 />
               </View>
             </TouchableOpacity>
@@ -121,15 +141,15 @@ const SupportScreen = ({ navigation }) => {
 
         {/* Contact Buttons */}
         <View style={styles.contactSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.hotlineButton}
             onPress={handleCallHotline}
           >
             <MaterialIcons name="phone" size={20} color="white" />
-            <Text style={styles.hotlineText}>Gọi hotline 1900.6408</Text>
+            <Text style={styles.hotlineText}>Gọi hotline 1900.1234</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.emailButton}
             onPress={handleSendEmail}
           >
@@ -157,7 +177,7 @@ const styles = StyleSheet.create({
     height: 80,
     flexDirection: 'row',
     alignItems: 'center',
-    
+
     paddingHorizontal: 16,
   },
 

@@ -1,20 +1,33 @@
 import { RowComponent } from '../../components';
 import React from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, StatusBar, Platform } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import { appColors } from '../../constants/appColors';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const ListTicket = ({ navigation, route }) => {
     const { event, user } = route.params;
     const tickets = event?.tickets || [];
 
+    const handleNavigation = () => {
+        navigation.goBack();
+    };
+
     return (
         <ScrollView>
             <View style={styles.container}>
+                {/* Header */}
                 <View style={styles.header}>
-                    <StatusBar animated backgroundColor={appColors.primary} />
-                    <RowComponent styles={{ columnGap: 25 }}>
-                        <Text style={styles.headerTitle}>Thông tin vé sự kiện</Text>
-                    </RowComponent>
+                    <View style={[styles.headerRow, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={handleNavigation}
+                        >
+                            <Ionicons name="chevron-back" size={24} color="white" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Thông tin vé của tôi</Text>
+                        <View style={{ width: 26 }} />
+                    </View>
+
                 </View>
                 <View style={styles.recipientInfo}>
                     <Text style={styles.recipientHeader}>Thông tin người nhận</Text>
@@ -112,17 +125,28 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 12,
         backgroundColor: appColors.primary,
-        paddingTop: Platform.OS === 'ios' ? 66 : 22
+        paddingTop: Platform.OS === 'ios' ? 30 : 10,
+        paddingBottom: 15,
+        paddingHorizontal: 16,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerRow: {
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        columnGap: 20,
     },
     headerTitle: {
-        color: appColors.white2,
-        fontSize: 22,
-        fontWeight: '500'
+        color: 'white',
+        fontSize: 20,
+        fontWeight: '600',
     },
     ticket: {
         backgroundColor: '#fff',
@@ -189,7 +213,7 @@ const styles = StyleSheet.create({
     recipientInfo: {
         marginVertical: 20,
         padding: 16,
-        backgroundColor: '#fff', 
+        backgroundColor: '#fff',
         borderRadius: 8,
     },
     recipientHeader: {

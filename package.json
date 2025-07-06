@@ -43,7 +43,6 @@
     "react-native-3d-swiper": "^2.0.7",
     "react-native-android-location-services-dialog-box": "^2.8.2",
     "react-native-asset": "^2.1.1",
-    "react-native-camera": "^4.2.1",
     "react-native-confirmation-code-field": "^7.4.0",
     "react-native-date-picker": "^5.0.12",
     "react-native-element-dropdown": "^2.12.4",
@@ -71,7 +70,11 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-view-shot": "^4.0.3",
     "react-native-vision-camera": "^4.7.0",
+<<<<<<< HEAD
     "react-native-webview": "^13.14.0",
+=======
+    "react-native-webview": "^13.15.0",
+>>>>>>> 3af61ddd0c77b5d3ec629b24f62b35459efb3c00
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
     "socket.io-client": "^4.8.1"

@@ -24,9 +24,14 @@ import {useSelector} from 'react-redux';
 
 const {ZaloPayModule} = NativeModules;
 
+<<<<<<< HEAD
 const TicketEventScreen = ({navigation, route}: any) => {
   const {id, typeBase, totalPrice, quantity, bookingIds, showtimeId} =
     route.params;
+=======
+const TicketEventScreen = ({ navigation, route }: any) => {
+  const { id, typeBase, totalPrice, quantity, bookingIds, showtimeId } = route.params;
+>>>>>>> 3af61ddd0c77b5d3ec629b24f62b35459efb3c00
   const [userInfo, setUserInfo] = useState<UserModel | null>();
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState({minutes: 11, seconds: 31});
@@ -296,6 +301,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
                 justifyContent: 'space-between',
                 marginBottom: 12,
               }}>
+<<<<<<< HEAD
               <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
 
               {/* Vé Thường */}
@@ -324,6 +330,25 @@ const TicketEventScreen = ({navigation, route}: any) => {
                     <Text style={styles.quantityButtonText}>+</Text>
                   </TouchableOpacity>
                 </View>
+=======
+              <Text style={{ fontSize: 16, color: '#2D3748' }}>
+                {ticketTypes.normal.name}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => updateTicketQuantity('normal', -1)}
+                  style={styles.quantityButton}>
+                  <Text style={styles.quantityButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={{ marginHorizontal: 12, fontSize: 16 }}>
+                  {formData.tickets.normal}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => updateTicketQuantity('normal', 1)}
+                  style={styles.quantityButton}>
+                  <Text style={styles.quantityButtonText}>+</Text>
+                </TouchableOpacity>
+>>>>>>> 3af61ddd0c77b5d3ec629b24f62b35459efb3c00
               </View>
             </View>
 
@@ -334,16 +359,27 @@ const TicketEventScreen = ({navigation, route}: any) => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
               }}>
+<<<<<<< HEAD
               <Text style={{fontSize: 16, color: '#2D3748'}}>
                 {ticketTypes.vip.name}
               </Text>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
+=======
+              <Text style={{ fontSize: 16, color: '#2D3748' }}>
+                {ticketTypes.vip.name}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+>>>>>>> 3af61ddd0c77b5d3ec629b24f62b35459efb3c00
                 <TouchableOpacity
                   onPress={() => updateTicketQuantity('vip', -1)}
                   style={styles.quantityButton}>
                   <Text style={styles.quantityButtonText}>-</Text>
                 </TouchableOpacity>
+<<<<<<< HEAD
                 <Text style={{marginHorizontal: 12, fontSize: 16}}>
+=======
+                <Text style={{ marginHorizontal: 12, fontSize: 16 }}>
+>>>>>>> 3af61ddd0c77b5d3ec629b24f62b35459efb3c00
                   {formData.tickets.vip}
                 </Text>
                 <TouchableOpacity
@@ -354,6 +390,8 @@ const TicketEventScreen = ({navigation, route}: any) => {
               </View>
             </View>
           </View>
+
+
         )}
 
         {/* Payment Methods */}

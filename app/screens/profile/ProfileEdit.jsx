@@ -24,8 +24,11 @@ const ProfileEdit = ({ navigation }) => {
   const [name, setName] = useState(userData?.username || '');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
-  const [birthDate, setBirthDate] = useState('01/01/2013');
-  const [gender, setGender] = useState('Nam');
+  const [birthDate, setBirthDate] = useState(userData?.dateOfBirth || '01/01/2013');
+  const [gender, setGender] = useState(
+    typeof userData?.gender === 'number' ? userData.gender : 0
+  );
+
 
   const [image, setImage] = useState(userData?.picUrl || '');
 
@@ -43,6 +46,10 @@ const ProfileEdit = ({ navigation }) => {
         setImage(user.picUrl);
         setEmail(user.email);
         setPhoneNumber(user.phoneNumber || '');
+        setBirthDate(user.date || '01/01/2013');
+        setGender(parseInt(user.gender));
+        console.log('Thông tin người dùng:', user);
+        
       } catch (error) {
         console.log('Lỗi khi lấy thông tin người dùng:', error);
       }
@@ -135,15 +142,16 @@ const ProfileEdit = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      // Cập nhật thông tin cơ bản
       await AxiosInstance().put('users/edit', {
         id: userId,
         username: name,
         picUrl: image,
         phoneNumber: phoneNumber,
+        date: birthDate.toString(),
+        gender: gender.toString(),
+
       });
 
-      // Nếu người dùng đổi mật khẩu
       if (oldPassword && newPassword && reNewPassword) {
         if (newPassword !== reNewPassword) {
           Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
@@ -158,16 +166,14 @@ const ProfileEdit = ({ navigation }) => {
         });
       }
 
-      // Cập nhật Redux
+      // 🔄 Fetch latest user data
+      const res = await AxiosInstance().get(`users/getUser/${userId}`);
+      const updatedUser = res.data;
+
       dispatch(loginSuccess({
         userId,
-        userData: {
-          ...userData,
-          username: name,
-          picUrl: image,
-          phoneNumber: phoneNumber,
-        },
-        role: 2,
+        userData: updatedUser,
+        role: 3,
       }));
 
       Alert.alert('Thành công', 'Thông tin đã được cập nhật', [
@@ -181,28 +187,30 @@ const ProfileEdit = ({ navigation }) => {
     }
   };
 
+
   const GenderSelector = () => (
     <View style={styles.genderContainer}>
       <Text style={styles.genderLabel}>Giới tính</Text>
       <View style={styles.genderOptions}>
-        {['Nam', 'Nữ', 'Khác'].map((option) => (
+        {[{ label: 'Nam', value: 0 }, { label: 'Nữ', value: 1 }, { label: 'Khác', value: 2 }].map((option) => (
           <TouchableOpacity
-            key={option}
+            key={option.value}
             style={styles.genderOption}
-            onPress={() => setGender(option)}
+            onPress={() => setGender(option.value)}
           >
             <View style={[
               styles.radioButton,
-              gender === option && styles.radioButtonSelected
+              gender === option.value && styles.radioButtonSelected
             ]}>
-              {gender === option && <View style={styles.radioButtonInner} />}
+              {gender === option.value && <View style={styles.radioButtonInner} />}
             </View>
-            <Text style={styles.genderText}>{option}</Text>
+            <Text style={styles.genderText}>{option.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
     </View>
   );
+
 
   return (
     <View style={styles.container}>

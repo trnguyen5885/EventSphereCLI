@@ -48,7 +48,10 @@ const EventCard = ({ name, timeStart, timeEnd, ticketPrice, soldTickets, image, 
 
       <TouchableOpacity
         style={styles.scanButton}
-        onPress={() => navigation.navigate('QRScanner', { eventId })}
+        onPress={() => navigation.navigate('QRScanner', { 
+          eventId: eventId,
+          eventName: name,
+        })}
       >
         <MaterialIcons name="qr-code-scanner" color="#fff" size={20} />
         <Text style={styles.scanButtonText}>Quét vé</Text>
