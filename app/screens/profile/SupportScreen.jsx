@@ -68,7 +68,7 @@ const SupportScreen = ({ navigation }) => {
 
   // Xử lý gửi email
   const handleSendEmail = () => {
-    Linking.openURL('mailto:support@ticketbox.vn');
+    Linking.openURL('mailto:support@eventsphere.vn');
   };
 
   return (

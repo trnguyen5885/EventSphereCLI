@@ -114,21 +114,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
     return true;
   };
 
-  // Hàm chia sẻ QR Code
-  const shareQRCode = async () => {
-    try {
-      const uri = await qrRef.current.capture();
-      const shareOptions = {
-        title: 'Mã QR Thanh toán',
-        message: `Mã QR thanh toán cho ${eventName} - ${amount?.toLocaleString('vi-VN')} VNĐ`,
-        url: uri,
-      };
-      await Share.share(shareOptions);
-    } catch (error) {
-      console.error('Lỗi khi chia sẻ:', error);
-      Alert.alert('Lỗi', 'Không thể chia sẻ mã QR');
-    }
-  };
 
   // Hàm tải mã QR với nhiều phương pháp fallback
   const downloadQRCode = async () => {
@@ -311,86 +296,146 @@ const PayOSQRScreen = ({ route, navigation }) => {
   }, []);
 
   // Kiểm tra thanh toán định kỳ mỗi 5 giây
+  // useEffect(() => {
+  //   let interval;
+  //   if (orderCode && paymentStatus === 'PENDING') {
+  //     console.log("🔄 Bắt đầu kiểm tra trạng thái đơn hàng:", orderCode);
+
+  //     interval = setInterval(async () => {
+  //       try {
+  //         console.log("🔍 Đang kiểm tra trạng thái...");
+  //         setPaymentStatus('CHECKING');
+
+  //         const { status, fullResponse } = await checkPaymentStatus(orderCode);
+  //         console.log("📡 Trạng thái đơn hàng:", status);
+
+  //         if (status === 'PAID') {
+  //           console.log("✅ Phát hiện đơn hàng đã thanh toán!");
+  //           setPaymentStatus('PAID');
+  //           clearInterval(interval);
+  //           setIntervalRef(null);
+
+  //           // Tạo đơn hàng và vé sau khi thanh toán thành công
+  //           try {
+  //             const bodyOrder = {
+  //               eventId: eventId,
+  //               userId: userId,
+  //               amount: amount,
+  //               bookingType: bookingType ?? 'none',
+  //               ...(bookingType === 'zone' && bookingIds && { bookingIds: bookingIds }),
+  //               totalPrice: totalPrice,
+  //               showtimeId: showtimeId,
+  //             };
+
+  //             const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
+  //             console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
+
+  //             const bodyOrderTicket = {
+  //               orderId: responseOrder.data,
+  //               paymentId: "67bbc5a3ac06033b9e2ab3e9",
+  //             };
+
+  //             const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
+  //             console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
+
+  //             setTimeout(() => {
+  //               Alert.alert(
+  //                 '🎉 Thanh toán thành công',
+  //                 'Đơn hàng của bạn đã được xử lý thành công!',
+  //                 [
+  //                   {
+  //                     text: 'Xem đơn hàng',
+  //                     onPress: () => navigation.navigate('Drawer'),
+  //                   },
+  //                 ],
+  //                 { cancelable: false }
+  //               );
+  //             }, 500);
+
+  //           } catch (orderError) {
+  //             console.log('❌ Lỗi khi tạo đơn hàng/vé:', orderError);
+  //             setPaymentStatus('ERROR');
+  //             Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng liên hệ hỗ trợ.');
+  //           }
+  //         } else {
+  //           setPaymentStatus('PENDING');
+  //         }
+  //       } catch (err) {
+  //         console.log('❌ Lỗi khi kiểm tra đơn hàng:', err);
+  //         setPaymentStatus('ERROR');
+  //       }
+  //     }, 5000);
+
+  //     setIntervalRef(interval);
+  //   }
+
+  //   return () => {
+  //     if (interval) {
+  //       clearInterval(interval);
+  //       setIntervalRef(null);
+  //     }
+  //   };
+  // }, [orderCode, paymentStatus]);
+
+  // Tự động tạo đơn hàng sau 5 giây
   useEffect(() => {
-    let interval;
-    if (orderCode && paymentStatus === 'PENDING') {
-      console.log("🔄 Bắt đầu kiểm tra trạng thái đơn hàng:", orderCode);
+    let timeout;
 
-      interval = setInterval(async () => {
-        try {
-          console.log("🔍 Đang kiểm tra trạng thái...");
-          setPaymentStatus('CHECKING');
+    console.log("⏰ Bắt đầu đếm ngược 5 giây để tạo đơn hàng...");
 
-          const { status, fullResponse } = await checkPaymentStatus(orderCode);
-          console.log("📡 Trạng thái đơn hàng:", status);
+    timeout = setTimeout(async () => {
+      try {
+        console.log("🚀 Bắt đầu tạo đơn hàng sau 5 giây...");
 
-          if (status === 'PAID') {
-            console.log("✅ Phát hiện đơn hàng đã thanh toán!");
-            setPaymentStatus('PAID');
-            clearInterval(interval);
-            setIntervalRef(null);
+        // Tạo đơn hàng
+        const bodyOrder = {
+          eventId: eventId,
+          userId: userId,
+          amount: amount,
+          bookingType: bookingType ?? 'none',
+          ...(bookingType === 'zone' && bookingIds && { bookingIds: bookingIds }),
+          totalPrice: totalPrice,
+          showtimeId: showtimeId,
+        };
 
-            // Tạo đơn hàng và vé sau khi thanh toán thành công
-            try {
-              const bodyOrder = {
-                eventId: eventId,
-                userId: userId,
-                amount: amount,
-                bookingType: bookingType ?? 'none',
-                ...(bookingType === 'zone' && bookingIds && { bookingIds: bookingIds }),
-                totalPrice: totalPrice,
-                showtimeId: showtimeId,
-              };
+        const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
+        console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
 
-              const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
-              console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
+        // Tạo vé
+        const bodyOrderTicket = {
+          orderId: responseOrder.data,
+          paymentId: "67bbc5a3ac06033b9e2ab3e9",
+        };
 
-              const bodyOrderTicket = {
-                orderId: responseOrder.data,
-                paymentId: "67bbc5a3ac06033b9e2ab3e9",
-              };
+        const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
+        console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
 
-              const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
-              console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
+        // Hiển thị thông báo thành công
+        Alert.alert(
+          '🎉 Tạo đơn hàng thành công',
+          'Đơn hàng của bạn đã được tạo thành công!',
+          [
+            {
+              text: 'Xem đơn hàng',
+              onPress: () => navigation.navigate('Drawer'),
+            },
+          ],
+          { cancelable: false }
+        );
 
-              setTimeout(() => {
-                Alert.alert(
-                  '🎉 Thanh toán thành công',
-                  'Đơn hàng của bạn đã được xử lý thành công!',
-                  [
-                    {
-                      text: 'Xem đơn hàng',
-                      onPress: () => navigation.navigate('Drawer'),
-                    },
-                  ],
-                  { cancelable: false }
-                );
-              }, 500);
+      } catch (error) {
+        console.log('❌ Lỗi khi tạo đơn hàng/vé:', error);
+        Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
+      }
+    }, 5000); // 5 giây
 
-            } catch (orderError) {
-              console.log('❌ Lỗi khi tạo đơn hàng/vé:', orderError);
-              setPaymentStatus('ERROR');
-              Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng liên hệ hỗ trợ.');
-            }
-          } else {
-            setPaymentStatus('PENDING');
-          }
-        } catch (err) {
-          console.log('❌ Lỗi khi kiểm tra đơn hàng:', err);
-          setPaymentStatus('ERROR');
-        }
-      }, 5000);
-
-      setIntervalRef(interval);
-    }
-
+    // Cleanup function
     return () => {
-      if (interval) {
-        clearInterval(interval);
-        setIntervalRef(null);
+      if (timeout) {
+        clearTimeout(timeout);
       }
     };
-  }, [orderCode, paymentStatus]);
+  }, []); // Chỉ chạy 1 lần khi component mount
 
   // Cleanup khi component unmount
   useEffect(() => {
@@ -544,24 +589,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.actionButton, styles.shareButton]}
-                onPress={shareQRCode}
-              >
-                <View style={styles.buttonContent}>
-                  <View style={styles.buttonIcon}>
-                    <Ionicons name="share-outline" size={20} color={appColors.primary} />
-                  </View>
-                  <View style={styles.buttonTextContainer}>
-                    <Text style={[styles.buttonTitle, { color: appColors.primary }]}>
-                      Chia sẻ
-                    </Text>
-                    <Text style={[styles.buttonSubtitle, { color: '#666' }]}>
-                      Gửi cho người khác
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
             </View>
           )}
 
@@ -584,7 +611,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
             <Ionicons name="information-circle-outline" size={20} color={appColors.primary} />
             <Text style={styles.instructionsTitle}>Hướng dẫn thanh toán</Text>
           </View>
-          
+
           <View style={styles.instructionItem}>
             <View style={styles.stepNumber}>
               <Text style={styles.stepText}>1</Text>
@@ -637,7 +664,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
           <Text style={styles.supportText}>
             Nếu gặp vấn đề trong quá trình thanh toán, vui lòng liên hệ bộ phận hỗ trợ khách hàng 24/7:
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.phoneContainer}
             onPress={() => Linking.openURL('tel:0349535063')}
           >
@@ -698,7 +725,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  
+
   // Enhanced Payment Card Styles
   paymentCard: {
     backgroundColor: 'white',
