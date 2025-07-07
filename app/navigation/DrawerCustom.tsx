@@ -52,16 +52,6 @@ const DrawerCustom = ({ navigation }: any) => {
       icon: <Message2 size={size} color={color} />,
     },
     {
-      key: "Calendar",
-      title: "Lịch sự kiện",
-      icon: <Calendar size={size} color={color} />,
-    },
-    {
-      key: "Bookmark",
-      title: "Đánh dấu",
-      icon: <Bookmark2 size={size} color={color} />,
-    },
-    {
       key: "ContactUs",
       title: "Liên hệ chúng tôi",
       icon: <Sms size={size} color={color} />,
@@ -146,13 +136,33 @@ const DrawerCustom = ({ navigation }: any) => {
                 ? showLogoutConfirmation
                 : item.key === "Message"
                   ? () => {
-                      navigation.navigate('Notification');
+                    navigation.navigate('Notification');
+                    navigation.closeDrawer();
+                  }
+                  : item.key === "MyProfile"
+                    ? () => {
+                      navigation.navigate('ProfileScreen');
                       navigation.closeDrawer();
                     }
-                  : () => {
-                      console.log(item.key);
-                      navigation.closeDrawer();
-                    }
+                    : item.key === "Settings"
+                      ? () => {
+                        navigation.navigate('ProfileEdit');
+                        navigation.closeDrawer();
+                      }
+                      : item.key === "ContactUs"
+                        ? () => {
+                          navigation.navigate('ContactScreen');
+                          navigation.closeDrawer();
+                        }
+                        : item.key === "HelpAndFAQs"
+                          ? () => {
+                            navigation.navigate('FAQScreen');
+                            navigation.closeDrawer();
+                          }
+                          : () => {
+                            console.log(item.key);
+                            navigation.closeDrawer();
+                          }
             }>
             {item.icon}
             <TextComponent

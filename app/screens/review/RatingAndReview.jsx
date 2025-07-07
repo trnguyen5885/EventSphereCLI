@@ -132,10 +132,12 @@ const RatingAndReview = ({detailEventId}) => {
                                         </View>
                                     </View>
 
-                                    {/* Nội dung bình luận */}
-                                    <Text style={styles.commentContent}>
-                                        {item.comment}
-                                    </Text>
+                                    {/* Nội dung bình luận - Chỉ hiển thị nếu có comment */}
+                                    {item.comment && item.comment.trim() !== '' && (
+                                        <Text style={styles.commentContent}>
+                                            {item.comment}
+                                        </Text>
+                                    )}
 
                                     {/* Các hành động */}
                                     <View style={styles.actionButtonContainer}>

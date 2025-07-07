@@ -14,7 +14,7 @@ const UserTicketsScreen = ({navigation, route}) => {
     const [loading, setLoading] = useState(true);
     const userId = useSelector(state => state.auth.userId);
     const [statusTab, setStatusTab] = useState('all'); // all, success, processing, canceled
-    const [timeTab, setTimeTab] = useState('upcoming'); // upcoming, ended
+    const [timeTab, setTimeTab] = useState('upcoming'); // upcoming, ongoing, ended
     const suggestedEvents = [
         {
             _id: 'suggest1',
@@ -33,10 +33,31 @@ const UserTicketsScreen = ({navigation, route}) => {
             try{
                 const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
                 setUserData(tickets.data.user);
-                setEvents(tickets.data.events);
+                const eventsData = tickets.data.events;
+                
+                // Gọi API detail cho từng event để lấy timeStart và timeEnd
+                const eventsWithDetails = await Promise.all(
+                    eventsData.map(async (event) => {
+                        try {
+                            const eventDetail = await AxiosInstance().get(`/events/detail/${event._id}`);
+                            return {
+                                ...event,
+                                timeStart: eventDetail.data.data.timeStart,
+                                timeEnd: eventDetail.data.data.timeEnd,
+                                showtimes: eventDetail.data.data.showtimes || []
+                            };
+                        } catch (error) {
+                            console.log(`Lỗi khi lấy chi tiết sự kiện ${event._id}:`, error);
+                            return event; // Trả về event gốc nếu có lỗi
+                        }
+                    })
+                );
+                
+                setEvents(eventsWithDetails);
                 setLoading(false);
             }catch(e){
                 console.log("Lấy vé thất bại: ", e);
+                setLoading(false);
             }
         };
         getTickets();
@@ -47,9 +68,60 @@ const UserTicketsScreen = ({navigation, route}) => {
     const filteredEvents = events.filter(event => {
         let statusMatch = statusTab === 'all' || event.status === statusTab;
         let timeMatch = true;
-        if (event.timeEnd) {
-            timeMatch = timeTab === 'upcoming' ? event.timeEnd > now : event.timeEnd <= now;
+        
+        if (event.timeStart && event.timeEnd) {
+            const startTime = typeof event.timeStart === 'number' ? event.timeStart : new Date(event.timeStart).getTime();
+            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
+            
+            switch (timeTab) {
+                case 'upcoming':
+                    timeMatch = startTime > now;
+                    break;
+                case 'ongoing':
+                    timeMatch = startTime <= now && endTime > now;
+                    break;
+                case 'ended':
+                    timeMatch = endTime <= now;
+                    break;
+                default:
+                    timeMatch = true;
+            }
+        } else if (event.timeEnd) {
+            // Fallback cho trường hợp chỉ có timeEnd
+            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
+            switch (timeTab) {
+                case 'upcoming':
+                    timeMatch = endTime > now;
+                    break;
+                case 'ongoing':
+                    timeMatch = endTime > now;
+                    break;
+                case 'ended':
+                    timeMatch = endTime <= now;
+                    break;
+                default:
+                    timeMatch = true;
+            }
+        } else if (event.showtimes && event.showtimes.length > 0) {
+            // Sử dụng showtimes nếu có
+            const showtimesInRange = event.showtimes.filter(showtime => {
+                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
+                const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
+                
+                switch (timeTab) {
+                    case 'upcoming':
+                        return startTime > now;
+                    case 'ongoing':
+                        return startTime <= now && endTime > now;
+                    case 'ended':
+                        return endTime <= now;
+                    default:
+                        return true;
+                }
+            });
+            timeMatch = showtimesInRange.length > 0;
         }
+        
         return statusMatch && timeMatch;
     });
 
@@ -80,56 +152,89 @@ const UserTicketsScreen = ({navigation, route}) => {
         </View>
     );
 
+    // Hàm để lấy trạng thái event
+    const getEventStatus = (event) => {
+        const now = Date.now();
+        
+        if (event.timeStart && event.timeEnd) {
+            const startTime = typeof event.timeStart === 'number' ? event.timeStart : new Date(event.timeStart).getTime();
+            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
+            
+            if (startTime > now) return 'upcoming';
+            if (startTime <= now && endTime > now) return 'ongoing';
+            if (endTime <= now) return 'ended';
+        } else if (event.showtimes && event.showtimes.length > 0) {
+            // Sử dụng showtimes để xác định status
+            const hasUpcoming = event.showtimes.some(showtime => {
+                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
+                return startTime > now;
+            });
+            
+            const hasOngoing = event.showtimes.some(showtime => {
+                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
+                const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
+                return startTime <= now && endTime > now;
+            });
+            
+            if (hasOngoing) return 'ongoing';
+            if (hasUpcoming) return 'upcoming';
+            return 'ended';
+        }
+        
+        return 'unknown';
+    };
+
+    // Hàm để lấy badge status
+    const getStatusBadge = (event) => {
+        const status = getEventStatus(event);
+        switch (status) {
+            case 'upcoming':
+                return { text: 'Sắp diễn ra', color: '#FFA500', backgroundColor: '#FFF3E0' };
+            case 'ongoing':
+                return { text: 'Đang diễn ra', color: '#4CAF50', backgroundColor: '#E8F5E8' };
+            case 'ended':
+                return { text: 'Đã kết thúc', color: '#9E9E9E', backgroundColor: '#F5F5F5' };
+            default:
+                return { text: 'Chưa xác định', color: '#757575', backgroundColor: '#EEEEEE' };
+        }
+    };
+
     return (
         <View style={{ flex: 1, padding: 0, backgroundColor: "#f5f5f5" }}>
             {/* Header */}
             <View style={{ backgroundColor: '#5669FF', paddingTop: 20, paddingBottom: 16, alignItems: 'center' }}>
                 <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>Vé của tôi</Text>
-                {/* Tab trạng thái */}
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 18 }}>
-                    {['Tất cả', 'Thành công', 'Đang xử lý', 'Đã hủy'].map((label, idx) => {
-                        const value = ['all', 'success', 'processing', 'canceled'][idx];
-                        return (
-                            <TouchableOpacity
-                                key={value}
-                                style={{
-                                    paddingVertical: 8,
-                                    paddingHorizontal: 18,
-                                    borderRadius: 20,
-                                    backgroundColor: statusTab === value ? '#fff' : '#5669FF',
-                                    marginHorizontal: 4,
-                                    borderWidth: 1,
-                                    borderColor: statusTab === value ? '#fff' : '#5669FF',
-                                }}
-                                onPress={() => setStatusTab(value)}
-                            >
-                                <Text style={{ color: statusTab === value ? '#5669FF' : '#fff', fontWeight: 'bold' }}>{label}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
             </View>
+            
             {/* Tab con */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', backgroundColor: '#fff', paddingVertical: 12 }}>
-                {['Sắp diễn ra', 'Đã kết thúc'].map((label, idx) => {
-                    const value = ['upcoming', 'ended'][idx];
-                    return (
-                        <TouchableOpacity
-                            key={value}
-                            style={{
-                                paddingVertical: 6,
-                                paddingHorizontal: 18,
-                                borderBottomWidth: 2,
-                                borderBottomColor: timeTab === value ? '#5669FF' : 'transparent',
-                                marginHorizontal: 8,
-                            }}
-                            onPress={() => setTimeTab(value)}
-                        >
-                            <Text style={{ color: timeTab === value ? '#5669FF' : '#000', fontWeight: 'bold', fontSize: 16 }}>{label}</Text>
-                        </TouchableOpacity>
-                    );
-                })}
+                {[
+                    { label: 'Sắp diễn ra', value: 'upcoming' },
+                    { label: 'Đang diễn ra', value: 'ongoing' },
+                    { label: 'Đã kết thúc', value: 'ended' }
+                ].map((tab) => (
+                    <TouchableOpacity
+                        key={tab.value}
+                        style={{
+                            paddingVertical: 6,
+                            paddingHorizontal: 12,
+                            borderBottomWidth: 2,
+                            borderBottomColor: timeTab === tab.value ? '#5669FF' : 'transparent',
+                            marginHorizontal: 4,
+                        }}
+                        onPress={() => setTimeTab(tab.value)}
+                    >
+                        <Text style={{ 
+                            color: timeTab === tab.value ? '#5669FF' : '#000', 
+                            fontWeight: timeTab === tab.value ? 'bold' : 'normal', 
+                            fontSize: 14 
+                        }}>
+                            {tab.label}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
             </View>
+            
             {/* Danh sách vé hoặc gợi ý */}
             {filteredEvents.length === 0 ? (
                 <EmptyState />
@@ -140,10 +245,24 @@ const UserTicketsScreen = ({navigation, route}) => {
                     contentContainerStyle={{ padding: 16 }}
                     renderItem={({ item }) => {
                         let eventDate = item.eventDate;
+                        
+                        // Ưu tiên lấy từ timeStart
                         if (!eventDate && item.timeStart) {
-                            const date = new Date(item.timeStart);
+                            const startTime = typeof item.timeStart === 'number' ? item.timeStart : new Date(item.timeStart).getTime();
+                            const date = new Date(startTime);
                             eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         }
+                        
+                        // Nếu không có timeStart, lấy từ showtime đầu tiên
+                        if (!eventDate && item.showtimes && item.showtimes.length > 0) {
+                            const firstShowtime = item.showtimes[0];
+                            const startTime = typeof firstShowtime.startTime === 'number' ? firstShowtime.startTime : new Date(firstShowtime.startTime).getTime();
+                            const date = new Date(startTime);
+                            eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        }
+                        
+                        const statusBadge = getStatusBadge(item);
+                        
                         return (
                             <View style={styles.card}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -155,8 +274,21 @@ const UserTicketsScreen = ({navigation, route}) => {
                                         />
                                     )}
                                     <View style={{ flex: 1, marginLeft: item.avatar ? 12 : 0 }}>
-                                        <Text style={styles.eventName}>{item.name}</Text>
-                                        <Text style={styles.ticketCount}>🎟 Số vé: {item.tickets.length}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                                            <Text style={styles.eventName} numberOfLines={2}>{item.name}</Text>
+                                        </View>
+                                        <View style={[styles.statusBadge, { backgroundColor: statusBadge.backgroundColor }]}>
+                                            <Text style={[styles.statusText, { color: statusBadge.color }]}>
+                                                {statusBadge.text}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.ticketCount}>🎟 Số vé: {item.tickets ? item.tickets.length : 0}</Text>
+                                        {eventDate && (
+                                            <Text style={styles.eventDate}>📅 {eventDate}</Text>
+                                        )}
+                                        {item.showtimes && item.showtimes.length > 0 && (
+                                            <Text style={styles.showtimeCount}>⏰ Có {item.showtimes.length} suất chiếu</Text>
+                                        )}
                                     </View>
                                 </View>
                                 <TouchableOpacity
@@ -196,10 +328,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#eee',
     },
     eventName: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#222',
         marginBottom: 2,
+        flex: 1,
     },
     eventDate: {
         fontSize: 14,
@@ -209,6 +342,23 @@ const styles = StyleSheet.create({
     ticketCount: {
         fontSize: 14,
         color: '#888',
+        marginBottom: 4,
+    },
+    showtimeCount: {
+        fontSize: 14,
+        color: '#888',
+        marginBottom: 2,
+    },
+    statusBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        marginBottom: 4,
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '600',
     },
     detailButton: {
         marginTop: 14,

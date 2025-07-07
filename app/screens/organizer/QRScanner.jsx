@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -21,26 +21,26 @@ import AxiosInstance from '../../services/api/AxiosInstance';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { appColors } from '../../../app/constants/appColors';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-export default function QRScanner({route, navigation}) {
-  const {hasPermission, requestPermission} = useCameraPermission();
+export default function QRScanner({ route, navigation }) {
+  const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
   const scanned = useRef(false);
-  
+
   // States
   const [isFlashOn, setIsFlashOn] = useState(false);
   const [isScanning, setIsScanning] = useState(true);
   const [scanCount, setScanCount] = useState(0);
   const [lastScannedCode, setLastScannedCode] = useState('');
-  
+
   // Animation values
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const cornerAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
+
   // Lấy eventId từ route params
-  const {eventId, eventName} = route.params || {};
+  const { eventId, eventName } = route.params || {};
   console.log('Event ID:', eventId, 'Event Name:', eventName);
 
   // Animation cho đường scan
@@ -106,8 +106,8 @@ export default function QRScanner({route, navigation}) {
         '🔙 Thoát quét QR',
         'Bạn có chắc chắn muốn thoát?',
         [
-          {text: 'Không', style: 'cancel'},
-          {text: 'Có', onPress: () => navigation.goBack()},
+          { text: 'Không', style: 'cancel' },
+          { text: 'Có', onPress: () => navigation.goBack() },
         ]
       );
       return true;
@@ -125,9 +125,11 @@ export default function QRScanner({route, navigation}) {
         ticketId: ticketId,
         // eventId: eventId
       });
+      Alert.alert('Xác thực vé', `Thông tin: ${response}'}`);
       console.log('Xác thực vé:', response.data);
 
-      if (response.data.success === true) {
+
+      if (response.data.success) {
         // Hiệu ứng thành công
         Vibration.vibrate([100, 100, 100]);
         startPulseAnimation();
@@ -157,7 +159,7 @@ export default function QRScanner({route, navigation}) {
       } else {
         // Hiệu ứng thất bại
         Vibration.vibrate([200, 100, 200]);
-        
+
         Alert.alert(
           '❌ Xác thực thất bại',
           `${response.data.message || 'Vé không hợp lệ'}\n\nMã vé: ${ticketId}`,
@@ -177,7 +179,7 @@ export default function QRScanner({route, navigation}) {
     } catch (error) {
       console.error('Lỗi khi xác thực vé:', error);
       Vibration.vibrate([200, 100, 200, 100, 200]);
-      
+
       Alert.alert(
         '⚠️ Lỗi kết nối',
         'Không thể xác thực vé. Vui lòng kiểm tra kết nối mạng và thử lại.',
@@ -223,10 +225,16 @@ export default function QRScanner({route, navigation}) {
             );
             return;
           }
-          
+
           // Hiệu ứng âm thanh/rung khi quét
           Vibration.vibrate(100);
-          verifyTicket(code.value);
+          Alert.alert("📷 Mã QR đã quét", `Mã: ${code.value}`)
+          setTimeout(() => {
+            scanned.current = false;
+            setIsScanning(true);
+          }, 3000);
+
+          // verifyTicket(code.value);
         } else {
           Alert.alert('❌ Lỗi', 'Không đọc được mã QR', [
             {
@@ -280,7 +288,7 @@ export default function QRScanner({route, navigation}) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
-      
+
       <Camera
         style={StyleSheet.absoluteFill}
         device={device}
@@ -302,7 +310,7 @@ export default function QRScanner({route, navigation}) {
 
       {/* Overlay khung QR */}
       <View style={styles.overlay}>
-        <Animated.View style={[styles.frame, {transform: [{scale: pulseAnim}]}]}>
+        <Animated.View style={[styles.frame, { transform: [{ scale: pulseAnim }] }]}>
           {/* Đường scan */}
           <Animated.View
             style={[
@@ -319,34 +327,34 @@ export default function QRScanner({route, navigation}) {
               },
             ]}
           />
-          
+
           {/* Các góc khung */}
           <Animated.View
             style={[
               styles.corner,
               styles.topLeft,
-              {transform: [{scale: cornerAnim}]},
+              { transform: [{ scale: cornerAnim }] },
             ]}
           />
           <Animated.View
             style={[
               styles.corner,
               styles.topRight,
-              {transform: [{scale: cornerAnim}]},
+              { transform: [{ scale: cornerAnim }] },
             ]}
           />
           <Animated.View
             style={[
               styles.corner,
               styles.bottomLeft,
-              {transform: [{scale: cornerAnim}]},
+              { transform: [{ scale: cornerAnim }] },
             ]}
           />
           <Animated.View
             style={[
               styles.corner,
               styles.bottomRight,
-              {transform: [{scale: cornerAnim}]},
+              { transform: [{ scale: cornerAnim }] },
             ]}
           />
         </Animated.View>
@@ -379,7 +387,7 @@ export default function QRScanner({route, navigation}) {
             {isScanning ? 'Tạm dừng' : 'Tiếp tục'}
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.controlButton, styles.flashButton]}
           onPress={toggleFlash}>
@@ -476,7 +484,7 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: appColors.primary,
     shadowColor: appColors.primary,
-    shadowOffset: {width: 0, height: 0},
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
   },
@@ -486,7 +494,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderColor: appColors.primary,
     shadowColor: appColors.primary,
-    shadowOffset: {width: 0, height: 0},
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
   },
@@ -530,7 +538,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     textShadowColor: '#000',
-    textShadowOffset: {width: 0, height: 1},
+    textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   eventInfo: {
@@ -540,7 +548,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginBottom: 5,
     textShadowColor: '#000',
-    textShadowOffset: {width: 0, height: 1},
+    textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   scanCount: {
@@ -549,7 +557,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     textShadowColor: '#000',
-    textShadowOffset: {width: 0, height: 1},
+    textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   controls: {

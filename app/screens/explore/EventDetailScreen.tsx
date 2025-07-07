@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,29 +14,29 @@ import {
   Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {AxiosInstance} from '../../services';
-import {globalStyles} from '../../constants/globalStyles';
+import { AxiosInstance } from '../../services';
+import { globalStyles } from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
   RowComponent,
   TextComponent,
 } from '../../components';
-import {appColors} from '../../constants/appColors';
-import {formatDate} from '../../services/index';
+import { appColors } from '../../constants/appColors';
+import { formatDate } from '../../services/index';
 import RatingAndReview from '../review/RatingAndReview';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
 import MapPreview from '../map/MapPreview';
-import {TypeBase} from '@/app/models/explore/ExploreModels';
+import { TypeBase } from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
-import {formatTimeRange} from '../../services/utils/time';
+import { formatTimeRange } from '../../services/utils/time';
 import LoadingModal from '../../modals/LoadingModal';
 
-const EventDetailScreen = ({navigation, route}: any) => {
-  const {id} = route.params;
+const EventDetailScreen = ({ navigation, route }: any) => {
+  const { id } = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   console.log(detailEvent);
-  
+
   const [organizer, setOrganizer] = useState<any>(null);
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
   // Thay đổi: Đặt tất cả các section ở trạng thái mở rộng mặc định
@@ -134,7 +134,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
     navigation.goBack();
   };
 
-  const {width} = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   // Thêm state để quản lý việc mở rộng nội dung description
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -191,7 +191,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
     <View style={[globalStyles.container, styles.mainContainer]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
+        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
@@ -212,10 +212,10 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{uri: detailEvent?.avatar}}>
+          source={{ uri: detailEvent?.avatar }}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{uri: detailEvent?.avatar}}
+              source={{ uri: detailEvent?.avatar }}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -230,14 +230,16 @@ const EventDetailScreen = ({navigation, route}: any) => {
               />
               <View style={styles.detailRow}>
                 <Ionicons name="calendar" size={22} color={appColors.primary} />
-                <Text style={styles.detailSubtitle}>{`${formatDate(
-                  detailEvent?.timeStart,
-                )} - ${formatDate(detailEvent?.timeEnd)} `}</Text>
+                <View style={styles.detailTextContainer}>
+                  <Text style={styles.detailSubtitle}>
+                    {`${formatDate(detailEvent?.timeStart)} - ${formatDate(detailEvent?.timeEnd)}`}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.detailRow}>
                 <Ionicons name="location" size={22} color={appColors.primary} />
-                <View>
+                <View style={styles.detailTextContainer}>
                   <Text style={styles.detailSubtitle}>
                     {detailEvent?.location ?? ''}
                   </Text>
@@ -251,13 +253,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <View style={styles.sectionContainer}>
           <View
             style={styles.sectionHeader}
-            >
+          >
             <TextComponent
               text="Giới thiệu"
               size={18}
-              styles={{fontWeight: 'bold', color: '#2D3748'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
-            
+
           </View>
 
           {/* Thay đổi: Luôn hiển thị content, không cần kiểm tra isEventInfoExpanded */}
@@ -272,13 +274,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
                     }}
                     enableCSSInlineProcessing={true}
                     tagsStyles={{
-                      strong: {fontWeight: 'bold', color: '#2D3748'},
-                      b: {fontWeight: 'bold', color: '#2D3748'},
-                      div: {marginBottom: 8},
-                      p: {color: '#4A5568', lineHeight: 20},
+                      strong: { fontWeight: 'bold', color: '#2D3748' },
+                      b: { fontWeight: 'bold', color: '#2D3748' },
+                      div: { marginBottom: 8 },
+                      p: { color: '#4A5568', lineHeight: 20 },
                     }}
                   />
-                  
+
                   {/* Thêm nút "Xem thêm/Thu gọn" nếu nội dung dài */}
                   {isDescriptionLong(detailEvent.description, 300) && (
                     <TouchableOpacity
@@ -310,13 +312,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
             }>
             <View
               style={styles.sectionHeader}
-              >
+            >
               <TextComponent
                 text="Thông tin vé"
                 size={18}
-                styles={{fontWeight: 'bold', color: '#2D3748'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
-              
+
             </View>
 
             {/* Thay đổi: Luôn hiển thị content */}
@@ -358,25 +360,21 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <View style={styles.sectionContainer}>
           <View
             style={styles.sectionHeader}
-            >
+          >
             <TextComponent
               text="Vị trí sự kiện"
               size={18}
-              styles={{fontWeight: 'bold', color: '#2D3748'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
-            
+
           </View>
 
           {/* Thay đổi: Luôn hiển thị content khi isLocationExpanded = true */}
           <View style={styles.sectionContent}>
             <View style={styles.contentWrapper}>
               <View style={styles.detailRowLocation}>
-                <Ionicons
-                  name="location"
-                  size={22}
-                  color={appColors.primary}
-                />
-                <View>
+                <Ionicons name="location" size={22} color={appColors.primary} />
+                <View style={styles.locationTextContainer}>
                   <Text style={styles.titleLocation}>
                     {detailEvent?.location ?? ''}
                   </Text>
@@ -398,7 +396,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
               <TextComponent
                 text="Ban tổ chức"
                 size={18}
-                styles={{fontWeight: 'bold', color: '#2D3748'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
             </View>
 
@@ -518,13 +516,18 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 16,
+    width: '100%',
+    flexShrink: 1,
   },
   detailRow: {
     columnGap: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from 'center' to 'flex-start'
     marginTop: 8,
     marginBottom: 16,
+    // Add flex properties for better wrapping
+    flex: 1,
+    flexWrap: 'wrap',
   },
   detailRowLocation: {
     columnGap: 12,
@@ -540,15 +543,25 @@ const styles = StyleSheet.create({
   },
   detailSubtitle: {
     color: appColors.white2,
-    maxWidth: 320,
-    lineHeight: 26,
+    flex: 1,
+    flexWrap: 'wrap',
+    lineHeight: 22,
     marginTop: 2,
+    fontSize: 14,
+  },
+  detailTextContainer: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  locationTextContainer: {
+    flex: 1,
+    flexShrink: 1,
   },
   titleLocation: {
     color: '#2D3748',
     maxWidth: 320,
     marginTop: 2,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   sectionContainer: {

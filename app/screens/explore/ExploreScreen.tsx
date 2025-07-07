@@ -10,7 +10,8 @@ import {
   View,
   PermissionsAndroid,
   Linking,
-  BackHandler, // Thêm BackHandler
+  BackHandler,
+  RefreshControl, // Thêm RefreshControl
 } from 'react-native';
 import React, { useEffect, useState, useCallback } from 'react';
 import { globalStyles } from '../../constants/globalStyles';
@@ -50,6 +51,7 @@ import { setLocation as setLocationRedux } from '../../redux/slices/authSlice';
 const ExploreScreen = ({ navigation }: any) => {
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // Thêm state cho refreshing
   const tabs = [
     { id: 0, name: 'Đề xuất' },
     { id: 1, name: 'Nổi bật' },
@@ -203,24 +205,33 @@ const ExploreScreen = ({ navigation }: any) => {
     }, []),
   );
 
+  // Hàm fetch events - tách riêng để sử dụng lại
+  const fetchEvents = async () => {
+    try {
+      const response = await AxiosInstance().get<EventModel[], any>(
+        'events/home',
+      );
+      const res = await AxiosInstance().get<EventModel[], any>(
+        'interactions/topViewed',
+      );
+      setPopulateEvents(response);
+      const now = Date.now();
+      const ongoingEvents = response.filter(
+        (eventItem: EventModel) =>
+          now >= eventItem.timeStart && now <= eventItem.timeEnd,
+      );
+      const upcomingEvents = response.filter(
+        (eventItem: EventModel) => eventItem.timeStart > now,
+      );
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   useEffect(() => {
     const getEvents = async () => {
       try {
-        const response = await AxiosInstance().get<EventModel[], any>(
-          'events/home',
-        );
-        const res = await AxiosInstance().get<EventModel[], any>(
-          'interactions/topViewed',
-        );
-        setPopulateEvents(response);
-        const now = Date.now();
-        const ongoingEvents = response.filter(
-          (eventItem: EventModel) =>
-            now >= eventItem.timeStart && now <= eventItem.timeEnd,
-        );
-        const upcomingEvents = response.filter(
-          (eventItem: EventModel) => eventItem.timeStart > now,
-        );
+        await fetchEvents();
         setIsLoading(false);
       } catch (e) {
         console.log(e);
@@ -232,6 +243,20 @@ const ExploreScreen = ({ navigation }: any) => {
     return () => {
       setPopulateEvents([]);
     };
+  }, []);
+
+  // Hàm xử lý pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchEvents();
+      // Có thể thêm refresh location nếu cần
+      // requestLocationPermission();
+    } catch (error) {
+      console.log('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
   const handleInteraction = async (id: string) => {
@@ -251,7 +276,19 @@ const ExploreScreen = ({ navigation }: any) => {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' }}>
+    <ScrollView 
+      style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[appColors.primary]} // Android
+          tintColor={appColors.primary} // iOS
+          title="Đang cập nhật..." // iOS
+          titleColor={appColors.primary} // iOS
+        />
+      }
+    >
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
