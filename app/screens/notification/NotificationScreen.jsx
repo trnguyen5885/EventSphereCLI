@@ -18,19 +18,7 @@ import { appColors } from '../../constants/appColors';
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
-  const [userInfo, setUserInfo] = useState(null);
   const userId = useSelector((state) => state.auth?.userId);
-
-  const fetchUserInfo = useCallback(async () => {
-    if (!userId) return;
-
-    try {
-      const res = await AxiosInstance().get(`/users/getUser/${userId}`);
-      setUserInfo(res.data);
-    } catch (error) {
-      console.error('Lỗi khi tải thông tin user:', error);
-    }
-  }, [userId]);
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
@@ -44,23 +32,14 @@ const NotificationScreen = ({ navigation }) => {
   }, [userId]);
 
   useEffect(() => {
-    fetchUserInfo();
     fetchNotifications();
-  }, [fetchUserInfo, fetchNotifications]);
-
-  // Hàm để lấy avatar URL
-  const getAvatarUri = () => {
-    if (userInfo?.picUrl) {
-      return userInfo.picUrl;
-    }
-    return 'https://avatar.iran.liara.run/public';
-  };
+  }, [fetchNotifications]);
 
   const renderItem = ({ item }) => (
     <View>
       {item.type === 'invite' &&
         <InviteNotiComponent
-          avatar={getAvatarUri()}
+          avatar={'https://avatar.iran.liara.run/public'}
           body={item.body}
           createdAt={item.createdAt}
           title={item.title}
@@ -75,7 +54,7 @@ const NotificationScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('InviteScreen')}
         >
           <Image
-            source={{ uri: getAvatarUri() }}
+            source={{ uri: 'https://avatar.iran.liara.run/public' }}
             style={styles.avatar}
           />
           <View style={{ marginLeft: 10, flex: 1 }}>

@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { getGroupInvited, acceptInvite, declineInvite } from './services/connectApi';
 import { useSelector } from 'react-redux';
 
-const InviteScreen = () => {
+const InviteScreen = ({ navigation }) => {
   const userEmail = useSelector(state => state.auth.userData?.email);
   const userId = useSelector(state => state.auth.userId);
   const [invites, setInvites] = useState([]);
@@ -35,6 +35,8 @@ const InviteScreen = () => {
   const handleAccept = async (groupId) => {
     await acceptInvite(groupId, userId);
     setInvites(invites.map(inv => inv.groupId === groupId ? { ...inv, status: 'accepted' } : inv));
+    navigation.navigate('GroupScreen', { groupId });
+
   };
 
   const handleDecline = async (groupId) => {
