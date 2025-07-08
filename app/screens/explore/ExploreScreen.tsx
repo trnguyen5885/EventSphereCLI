@@ -288,6 +288,7 @@ const ExploreScreen = ({ navigation }: any) => {
           titleColor={appColors.primary} // iOS
         />
       }
+      showsVerticalScrollIndicator={false}
     >
       <StatusBar
         barStyle={'light-content'}

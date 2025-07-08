@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   FlatList,
-  Alert, // Thêm Alert import
 } from "react-native";
 import React, { useState } from "react";
 import {
@@ -31,6 +30,7 @@ import {
 } from "iconsax-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingModal from "../modals/LoadingModal";
+import CustomLogoutDialog from "../components/CustomLogoutDialog"; // Import CustomLogoutDialog
 import { CommonActions } from "@react-navigation/native";
 import { useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
@@ -38,6 +38,8 @@ import { logout } from '../redux/slices/authSlice';
 const DrawerCustom = ({ navigation }: any) => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false) // State cho dialog
+  
   const size = 20;
   const color = appColors.gray;
   const profileMenu = [
@@ -73,24 +75,14 @@ const DrawerCustom = ({ navigation }: any) => {
     },
   ];
 
-  // Hàm hiển thị thông báo xác nhận đăng xuất
+  // Hàm hiển thị dialog đăng xuất
   const showLogoutConfirmation = () => {
-    Alert.alert(
-      "Đăng xuất", // Tiêu đề
-      "Bạn có muốn đăng xuất không?", // Nội dung
-      [
-        {
-          text: "Hủy",
-          style: "cancel", // Style cho nút hủy
-        },
-        {
-          text: "Đăng xuất",
-          style: "destructive", // Style cho nút đăng xuất (màu đỏ)
-          onPress: handleSignout, // Gọi hàm đăng xuất khi nhấn OK
-        },
-      ],
-      { cancelable: false } // Cho phép hủy bằng cách nhấn ra ngoài
-    );
+    setShowLogoutDialog(true);
+  };
+
+  // Hàm đóng dialog
+  const hideLogoutDialog = () => {
+    setShowLogoutDialog(false);
   };
 
   const handleSignout = async () => {
@@ -104,15 +96,19 @@ const DrawerCustom = ({ navigation }: any) => {
       // Xoá trong Redux
       dispatch(logout());
 
+      // Đóng dialog
+      setShowLogoutDialog(false);
+
       // Reset về màn Login
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: "Login" }],
+          routes: [{ name: "Welcome" }],
         })
       );
     } catch (error) {
       console.log("Sign out failed:", error);
+      // Có thể hiện thị thông báo lỗi ở đây
     } finally {
       setIsLoading(false);
     }
@@ -172,6 +168,7 @@ const DrawerCustom = ({ navigation }: any) => {
           </RowComponent>
         )}
       />
+      
       <TouchableOpacity
         style={[
           globalStyles.button,
@@ -181,6 +178,14 @@ const DrawerCustom = ({ navigation }: any) => {
         <SpaceComponent width={8} />
         <TextComponent color="#00F8FF" text="Upgrade Pro" />
       </TouchableOpacity>
+
+      {/* Custom Logout Dialog */}
+      <CustomLogoutDialog
+        visible={showLogoutDialog}
+        onClose={hideLogoutDialog}
+        onConfirm={handleSignout}
+        isLoading={isLoading}
+      />
     </View>
   );
 };

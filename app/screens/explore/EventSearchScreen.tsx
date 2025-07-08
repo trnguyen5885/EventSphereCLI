@@ -76,6 +76,7 @@ const EventSearch = ({ navigation }: any) => {
         numColumns={2}
         columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 10 }}
         keyExtractor={(item) => item._id}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }: ListRenderItemInfo<EventModel>) => (
           <EventItem
             onPress={() => {

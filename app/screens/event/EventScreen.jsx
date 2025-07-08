@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native'
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image, RefreshControl } from 'react-native'
 import React from 'react'
 import { useState } from 'react'
 import { useEffect } from 'react';
@@ -12,6 +12,7 @@ const UserTicketsScreen = ({navigation, route}) => {
     const [tickets, setTickets] = useState([]);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false); // Thêm state cho pull-to-refresh
     const userId = useSelector(state => state.auth.userId);
     const [statusTab, setStatusTab] = useState('all'); // all, success, processing, canceled
     const [timeTab, setTimeTab] = useState('upcoming'); // upcoming, ongoing, ended
@@ -28,40 +29,57 @@ const UserTicketsScreen = ({navigation, route}) => {
         },
     ];
 
-    useEffect(()=>{
-        const getTickets = async() =>{
-            try{
-                const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
-                setUserData(tickets.data.user);
-                const eventsData = tickets.data.events;
-                
-                // Gọi API detail cho từng event để lấy timeStart và timeEnd
-                const eventsWithDetails = await Promise.all(
-                    eventsData.map(async (event) => {
-                        try {
-                            const eventDetail = await AxiosInstance().get(`/events/detail/${event._id}`);
-                            return {
-                                ...event,
-                                timeStart: eventDetail.data.data.timeStart,
-                                timeEnd: eventDetail.data.data.timeEnd,
-                                showtimes: eventDetail.data.data.showtimes || []
-                            };
-                        } catch (error) {
-                            console.log(`Lỗi khi lấy chi tiết sự kiện ${event._id}:`, error);
-                            return event; // Trả về event gốc nếu có lỗi
-                        }
-                    })
-                );
-                
-                setEvents(eventsWithDetails);
-                setLoading(false);
-            }catch(e){
-                console.log("Lấy vé thất bại: ", e);
+    // Tách logic gọi API thành function riêng để dùng chung
+    const fetchTickets = async (isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
+        }
+        
+        try {
+            const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
+            setUserData(tickets.data.user);
+            const eventsData = tickets.data.events;
+            
+            // Gọi API detail cho từng event để lấy timeStart và timeEnd
+            const eventsWithDetails = await Promise.all(
+                eventsData.map(async (event) => {
+                    try {
+                        const eventDetail = await AxiosInstance().get(`/events/detail/${event._id}`);
+                        return {
+                            ...event,
+                            timeStart: eventDetail.data.data.timeStart,
+                            timeEnd: eventDetail.data.data.timeEnd,
+                            showtimes: eventDetail.data.data.showtimes || []
+                        };
+                    } catch (error) {
+                        console.log(`Lỗi khi lấy chi tiết sự kiện ${event._id}:`, error);
+                        return event; // Trả về event gốc nếu có lỗi
+                    }
+                })
+            );
+            
+            setEvents(eventsWithDetails);
+        } catch (e) {
+            console.log("Lấy vé thất bại: ", e);
+        } finally {
+            if (isRefresh) {
+                setRefreshing(false);
+            } else {
                 setLoading(false);
             }
-        };
-        getTickets();
+        }
+    };
+
+    useEffect(() => {
+        fetchTickets();
     }, []);
+
+    // Hàm xử lý pull-to-refresh
+    const onRefresh = () => {
+        fetchTickets(true);
+    };
 
     // Lọc vé theo tab
     const now = Date.now();
@@ -243,6 +261,17 @@ const UserTicketsScreen = ({navigation, route}) => {
                     data={filteredEvents}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={{ padding: 16 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={['#5669FF']} // Android
+                            tintColor={'#5669FF'} // iOS
+                            title="Đang tải lại..." // iOS
+                            titleColor={'#5669FF'} // iOS
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                         let eventDate = item.eventDate;
                         

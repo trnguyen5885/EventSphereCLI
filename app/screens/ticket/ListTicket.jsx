@@ -13,7 +13,9 @@ const ListTicket = ({ navigation, route }) => {
     };
 
     return (
-        <ScrollView>
+        <ScrollView
+        showsVerticalScrollIndicator={false}
+        >
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>

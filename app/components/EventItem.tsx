@@ -109,13 +109,22 @@ const EventItem = (props: Props) => {
           styles={{fontSize: 17, fontWeight: 'bold', color: appColors.primary}}
         />
 
-        <View style={[globalStyles.row, {columnGap: 5}]}>
+        <View style={[globalStyles.row, {columnGap: 5, alignItems: 'center'}]}>
           <View>
             <Ionicons name="calendar" size={18} color={appColors.primary} />
           </View>
-          <View style={globalStyles.row}>
-            <Text>{`${formatDate(item.timeStart)} - `}</Text>
-            <Text>{formatDate(item.timeEnd)}</Text>
+          <View style={[globalStyles.row, {flex: 1}]}>
+            <Text 
+              numberOfLines={1} 
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 14,
+                color: '#666',
+                flex: 1,
+              }}
+            >
+              {`${formatDate(item.timeStart)} - ${formatDate(item.timeEnd)}`}
+            </Text>
           </View>
         </View>
       </View>

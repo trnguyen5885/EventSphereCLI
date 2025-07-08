@@ -228,7 +228,6 @@ const ProfileEdit = ({ navigation }) => {
           <Text style={styles.headerTitle}>Thông tin tài khoản</Text>
           <View style={{ width: 26 }} />
         </View>
-
       </View>
 
       <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
