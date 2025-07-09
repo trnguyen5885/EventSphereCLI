@@ -183,7 +183,7 @@ const TicketEventScreen = ({ navigation, route }: any) => {
             ]);
           }, 8000);
         } else {
-          console.log('Thanh toán không thánh công');
+          console.log('Thanh toán không thành công');
           setIsLoading(false);
         }
       }
