@@ -41,15 +41,6 @@ const PayOSQRScreen = ({ route, navigation }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const qrRef = useRef();
 
-  console.log("Amount", amount);
-  console.log("EventName", eventName);
-  console.log("UserId", userId);
-  console.log("EventId", eventId);
-  console.log("BookingType", bookingType);
-  console.log("BookingId", bookingIds);
-  console.log("TotalPrice", totalPrice);
-  console.log("ShowtimeId", showtimeId);
-
   // Format thời gian countdown
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -391,12 +382,17 @@ const PayOSQRScreen = ({ route, navigation }) => {
         const bodyOrder = {
           eventId: eventId,
           userId: userId,
-          amount: amount,
+          totalAmount: amount,
           bookingType: bookingType ?? 'none',
-          ...(bookingType === 'zone' && bookingIds && { bookingIds: bookingIds }),
+          ...(bookingType === 'zone' || bookingType === 'seat'
+              ? { bookingIds: bookingIds }
+              : {}),
           totalPrice: totalPrice,
           showtimeId: showtimeId,
         };
+
+        console.log("BookingIds: "+bookingIds);
+        console.log("Body: "+JSON.stringify(bodyOrder));
 
         const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
         console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);

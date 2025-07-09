@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
-import { View, Dimensions, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Dimensions, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,21 +22,24 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
   const mapRef = useRef(null);
 
   const firstLocation = members.find(m => m.location?.coordinates?.length === 2);
+  const firstLocationLat = firstLocation?.location?.coordinates[1] || 0;
+  const firstLocationLng = firstLocation?.location?.coordinates[0] || 0;
 
   const [region, setRegion] = useState(() => ({
-    latitude: myLocation?.latitude || firstLocation?.location?.coordinates[1] || 0,
-    longitude: myLocation?.longitude || firstLocation?.location?.coordinates[0] || 0,
+    latitude: myLocation?.latitude || firstLocationLat,
+    longitude: myLocation?.longitude || firstLocationLng,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   }));
 
   useEffect(() => {
-    setRegion(r => ({
-      ...r,
-      latitude: myLocation?.latitude || firstLocation?.location?.coordinates[1] || 0,
-      longitude: myLocation?.longitude || firstLocation?.location?.coordinates[0] || 0,
-    }));
-  }, [myLocation, firstLocation]);
+    const lat = myLocation?.latitude || firstLocationLat;
+    const lng = myLocation?.longitude || firstLocationLng;
+    setRegion(r => {
+      if (r.latitude === lat && r.longitude === lng) return r;
+      return { ...r, latitude: lat, longitude: lng };
+    });
+  }, [myLocation, firstLocationLat, firstLocationLng]);
 
   useEffect(() => {
     const getWalkingRoute = async (start, end) => {
@@ -96,6 +99,18 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
     }
   }, [myLocation, targetMember]);
 
+  const handleRegionChangeComplete = (newRegion) => {
+    setRegion(r => {
+      if (
+        r.latitude === newRegion.latitude &&
+        r.longitude === newRegion.longitude &&
+        r.latitudeDelta === newRegion.latitudeDelta &&
+        r.longitudeDelta === newRegion.longitudeDelta
+      ) return r;
+      return newRegion;
+    });
+  };
+
   if (!myLocation && !firstLocation) {
     return (
       <View style={styles.mapContainer}>
@@ -129,12 +144,29 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
         </TouchableOpacity>
       </View>
 
+      {/* Avatar nổi phía trên bản đồ khi chọn targetMember */}
+      {targetMember && targetMember.picUrl && (
+        <View style={{
+          position: 'absolute',
+          top: 10,
+          left: width / 2 - 30,
+          zIndex: 100,
+          alignItems: 'center',
+        }}>
+          <Image
+            source={{ uri: targetMember.picUrl }}
+            style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 3, borderColor: '#fff' }}
+          />
+          <Text style={{ color: '#333', fontWeight: 'bold', marginTop: 4 }}>{targetMember.name}</Text>
+        </View>
+      )}
+
       <MapView
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
         region={region}
-        onRegionChangeComplete={setRegion}
+        onRegionChangeComplete={handleRegionChangeComplete}
         showsUserLocation={!!myLocation}
       >
         {members.map(member => (
@@ -145,19 +177,45 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
                 latitude: member.location.coordinates[1],
                 longitude: member.location.coordinates[0]
               }}
-              pinColor={
-                targetMember?.id === member.id || targetMember?._id === member._id
-                  ? 'orange'
-                  : 'red'
-              }
               onPress={() => {
                 setTargetMember({
                   latitude: member.location.coordinates[1],
                   longitude: member.location.coordinates[0],
-                  id: member._id || member.id
+                  id: member._id || member.id,
+                  picUrl: member.picUrl,
+                  name: member.name,
+                  email: member.email
                 });
               }}
             >
+              {/* Nếu là targetMember và có picUrl thì hiển thị avatar, ngược lại là chấm cam */}
+              {(targetMember && ((targetMember.id && targetMember.id === (member._id || member.id)) || (targetMember._id && targetMember._id === (member._id || member.id))) && member.picUrl) ? (
+                <View style={{
+                  borderWidth: 2,
+                  borderColor: '#fff',
+                  borderRadius: 20,
+                  overflow: 'hidden',
+                  width: 40,
+                  height: 40,
+                  backgroundColor: '#eee',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Image
+                    source={{ uri: member.picUrl }}
+                    style={{ width: 36, height: 36, borderRadius: 18 }}
+                  />
+                </View>
+              ) : (
+                <View style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  backgroundColor: 'orange',
+                  borderWidth: 2,
+                  borderColor: '#fff'
+                }} />
+              )}
               <Callout tooltip>
                 <View style={styles.calloutBox}>
                   <Text style={styles.calloutName}>{member.name}</Text>

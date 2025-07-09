@@ -134,14 +134,19 @@ const GroupScreen = ({ route, navigation }) => {
     return R * c;
   };
 
+  const formatDistance = (dist) => {
+    return dist < 1
+      ? `Khoảng cách: ${(dist * 1000).toFixed(0)} m`
+      : `Khoảng cách: ${dist.toFixed(2)} km`;
+  };
+
   const handleTargetMember = (member) => {
     setTargetMember(null);
     setTimeout(() => {
       setTargetMember(member);
       if (myLocation && hasLocation(member)) {
         const dist = getDistanceInKm(myLocation.latitude, myLocation.longitude, member.latitude, member.longitude);
-        const text = dist < 1 ? `Khoảng cách: ${(dist * 1000).toFixed(0)} m` : `Khoảng cách: ${dist.toFixed(2)} km`;
-        setDistanceText(text);
+        setDistanceText(formatDistance(dist));
       } else {
         setDistanceText('');
       }
@@ -269,6 +274,11 @@ const GroupScreen = ({ route, navigation }) => {
                           <Text style={styles.memberName}>{item.name}</Text>
                           <Text style={styles.memberEmail}>{item.email}</Text>
                           <Text style={styles.memberStatus}>🌍 Đang chia sẻ vị trí</Text>
+                          {myLocation && hasLocation(item) && (
+                            <Text style={{color: '#6C5CE7', fontSize: 12, fontWeight: 'bold'}}>
+                              {formatDistance(getDistanceInKm(myLocation.latitude, myLocation.longitude, item.latitude, item.longitude))}
+                            </Text>
+                          )}
                         </View>
                       </View>
                       <TouchableOpacity 

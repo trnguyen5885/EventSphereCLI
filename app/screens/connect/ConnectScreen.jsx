@@ -190,7 +190,7 @@ const ConnectScreen = ({ navigation }) => {
                   <View style={styles.groupMeta}>
                     <Icon name="people" size={14} color="#666" />
                     <Text style={styles.groupMembers}>
-                      {item.members?.length || 0} thành viên
+                      {item.memberIds?.length || 0} thành viên
                     </Text>
                   </View>
                 </View>

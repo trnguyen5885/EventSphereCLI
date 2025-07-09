@@ -141,13 +141,14 @@ const TicketEventScreen = ({ navigation, route }: any) => {
           eventId: id,
           userId: userInfo?._id,
           bookingType: typeBase ?? 'none',
-          amount:
+          totalAmount:
             typeBase === undefined || typeBase === null || typeBase === 'none'
               ? formData.tickets.normal
               : quantity,
-          ...((typeBase !== undefined ||
-            typeBase !== null ||
-            typeBase !== 'none') && { bookingIds: bookingIds }),
+          bookingIds:
+            typeBase === undefined || typeBase === null || typeBase === 'none'
+              ? []
+              : bookingIds,
           totalPrice:
             typeBase === undefined || typeBase === null || typeBase === 'none'
               ? calculateTotal()
@@ -197,12 +198,12 @@ const TicketEventScreen = ({ navigation, route }: any) => {
           userId: userInfo?._id,
           amount:
             typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? totalAmount
+              ? formData.tickets.normal
               : totalPrice,
           bookingType: typeBase,
           bookingIds:
             typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? null
+              ? []
               : bookingIds,
           totalPrice:
             typeBase === undefined || typeBase === null || typeBase === 'none'
@@ -288,7 +289,7 @@ const TicketEventScreen = ({ navigation, route }: any) => {
             }}>
             <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
 
-            {/* Vé Thường */}
+            {/* Vé Phổ thông */}
             <View
               style={{
                 flexDirection: 'row',
@@ -315,36 +316,7 @@ const TicketEventScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Vé VIP */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-              <Text style={{ fontSize: 16, color: '#2D3748' }}>
-                {ticketTypes.vip.name}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity
-                  onPress={() => updateTicketQuantity('vip', -1)}
-                  style={styles.quantityButton}>
-                  <Text style={styles.quantityButtonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={{ marginHorizontal: 12, fontSize: 16 }}>
-                  {formData.tickets.vip}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => updateTicketQuantity('vip', 1)}
-                  style={styles.quantityButton}>
-                  <Text style={styles.quantityButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           </View>
-
-
         )}
 
         {/* Payment Methods */}
