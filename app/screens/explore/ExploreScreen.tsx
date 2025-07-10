@@ -346,6 +346,7 @@ const ExploreScreen = ({ navigation }: any) => {
         populateEvents={populateEvents}
         handleInteraction={handleInteraction}
         navigation={navigation}
+        isLoading={isLoading}
       />
     </ScrollView>
   );
