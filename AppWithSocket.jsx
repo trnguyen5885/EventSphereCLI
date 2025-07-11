@@ -68,6 +68,7 @@ import PolicyViewerScreen from './app/screens/profile/PolicyViewerScreen';
 import FAQScreen from './app/screens/profile/FAQScreen';
 import ContactScreen from './app/screens/profile/ContactScreen';
 import QRScanner from './app/screens/organizer/QRScanner';
+import ScanShowTime from './app/screens/organizer/ScanShowTime';
 
 
 const Stack = createNativeStackNavigator();
@@ -233,6 +234,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="FAQScreen" component={FAQScreen} />
           <Stack.Screen name="ContactScreen" component={ContactScreen} />
           <Stack.Screen name="QRScanner" component={QRScanner} />
+          <Stack.Screen name="ScanShowTime" component={ScanShowTime} />
 
         </Stack.Navigator>
       </NavigationContainer>

@@ -306,7 +306,7 @@ const SuggestedEventsScreen = ({
       />
 
       <EventSection
-        title="Sự kiện đang diễn ra 🎉"
+        title="Sự kiện đang mở bán vé 🎉"
         data={eventsOngoing}
         onPressItem={onPressEvent}
         loading={isLoadingData}

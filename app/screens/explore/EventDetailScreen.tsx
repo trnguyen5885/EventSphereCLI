@@ -32,6 +32,17 @@ import RenderHtml from 'react-native-render-html';
 import { formatTimeRange } from '../../services/utils/time';
 import LoadingModal from '../../modals/LoadingModal';
 
+
+const getValidShowtime = (showtimes: any[]) => {
+  const now = new Date();
+
+  // Tìm xuất chiếu có endTime sau thời gian hiện tại
+  const upcoming = showtimes.find(st => new Date(st.endTime) > now);
+
+  // Nếu có thì trả về, nếu không thì trả về xuất chiếu cuối cùng
+  return upcoming || showtimes[showtimes.length - 1];
+};
+
 const EventDetailScreen = ({ navigation, route }: any) => {
   const { id } = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
@@ -44,6 +55,9 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(true);
   const [isLocationExpanded, setIsLocationExpanded] = useState(true);
   const [ticketInfoPositionY, setTicketInfoPositionY] = useState(0);
+  const validShowtime =
+    detailEvent?.showtimes ? getValidShowtime(detailEvent.showtimes) : null;
+
 
   const sheetRef = useRef<any>(null);
 
@@ -54,6 +68,15 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
   console.log('Id Event: ', detailEvent?._id);
   console.log('Detail Event', detailEvent);
+
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
 
   useEffect(() => {
     const getDetailEvent = async () => {
@@ -231,9 +254,40 @@ const EventDetailScreen = ({ navigation, route }: any) => {
               <View style={styles.detailRow}>
                 <Ionicons name="calendar" size={22} color={appColors.primary} />
                 <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailSubtitle}>
-                    {`${formatDate(detailEvent?.timeStart)} - ${formatDate(detailEvent?.timeEnd)}`}
-                  </Text>
+                  {detailEvent?.showtimes?.length > 0 && (
+                    <>
+                      {validShowtime && (
+                        <Text style={styles.detailSubtitle}>
+                          {`${formatTime(validShowtime.startTime)} - ${formatTime(validShowtime.endTime)}, ${formatDate(validShowtime.startTime)}`}
+                        </Text>
+                      )}
+
+                      {/* 👇 Thêm nút nếu có nhiều hơn 1 showtime */}
+                      {detailEvent.showtimes.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            scrollRef.current?.scrollTo({
+                              y: ticketInfoPositionY - 15,
+                              animated: true,
+                            });
+                          }}
+                          style={{
+                            marginTop: 6,
+                            alignSelf: 'flex-start',
+                            backgroundColor: '#FFFFFF',
+                            borderWidth: 1,
+                            borderColor: '#CBD5E0',
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                          }}>
+                          <Text style={{ color: '#1A202C', fontSize: 13, fontWeight: '600' }}>
+                            + {detailEvent.showtimes.length - 1} ngày khác
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
                 </View>
               </View>
 
@@ -329,14 +383,10 @@ const EventDetailScreen = ({ navigation, route }: any) => {
                     <View key={showTime._id} style={[styles.showtimeButton]}>
                       <View>
                         <Text style={[styles.showtimeText]}>
-                          {formatTimeRange(
-                            showTime.startTime,
-                            showTime.endTime,
-                          )}
+                          {formatTime(showTime.startTime)} - {formatTime(showTime.endTime)}
                         </Text>
                         <Text style={[styles.showtimeDateText]}>
-                          {formatDate(showTime.startTime)} -{' '}
-                          {formatDate(showTime.endTime)}
+                          {formatDate(showTime.startTime)}
                         </Text>
                       </View>
                       <TouchableOpacity

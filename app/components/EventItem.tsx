@@ -65,38 +65,6 @@ const EventItem = (props: Props) => {
           width: '100%',
           rowGap: 5,
         }}>
-        {/* <RowComponent styles={{marginTop: 10}}  justify='flex-start'>
-        <View
-          style={{
-            backgroundColor: appColors.danger,
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Giải trí" color='white' size={12}/>
-        </View>
-        <View
-          style={{
-            backgroundColor: appColors.link,
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Concert" color='white' size={12}/>
-        </View>
-        <View
-          style={{
-            backgroundColor: 'green',
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Âm nhạc" color='white' size={12}/>
-        </View>
-      </RowComponent> */}
         <TextComponent
           numberOfLine={2}
           title
@@ -123,7 +91,7 @@ const EventItem = (props: Props) => {
                 flex: 1,
               }}
             >
-              {`${formatDate(item.timeStart)} - ${formatDate(item.timeEnd)}`}
+              {`${formatDate(item.timeStart)}`}
             </Text>
           </View>
         </View>

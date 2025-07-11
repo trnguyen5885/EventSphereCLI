@@ -48,7 +48,7 @@ const EventCard = ({ name, timeStart, timeEnd, ticketPrice, soldTickets, image, 
 
       <TouchableOpacity
         style={styles.scanButton}
-        onPress={() => navigation.navigate('QRScanner', { 
+        onPress={() => navigation.navigate('ScanShowTime', { 
           eventId: eventId,
           eventName: name,
         })}
