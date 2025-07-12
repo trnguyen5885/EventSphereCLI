@@ -11,7 +11,8 @@ import {
   PermissionsAndroid,
   Linking,
   BackHandler,
-  RefreshControl, // Thêm RefreshControl
+  RefreshControl,
+  Image, // Thêm RefreshControl
 } from 'react-native';
 import React, { useEffect, useState, useCallback } from 'react';
 import { globalStyles } from '../../constants/globalStyles';
@@ -302,9 +303,10 @@ const ExploreScreen = ({ navigation }: any) => {
         }}>
         <View style={{ paddingHorizontal: 16 }}>
           <RowComponent>
-            <TouchableOpacity onPress={() => navigation.openDrawer()}>
-              <HambergerMenu size={24} color={appColors.white} />
-            </TouchableOpacity>
+            <Image
+              source={require('../../../assets/images/logo2.png')}
+              style={{ width: 35, height: 35, borderRadius: 20 }}
+            />
             <View style={{ flex: 1, alignItems: 'center' }}>
               <TouchableOpacity onPress={requestLocationPermission}>
                 <RowComponent>

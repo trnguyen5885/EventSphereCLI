@@ -131,63 +131,49 @@ const SkeletonList = () => {
 const EventSearch = ({ navigation }: any) => {
   const [values, setValues] = useState('');
   const [eventsSearch, setEventsSearch] = useState<EventModel[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // Bắt đầu với loading = true
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Loại bỏ isInitialLoad state vì không cần thiết
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   const handleNavigation = () => {
     navigation.goBack();
   };
 
-  // Gọi API để lấy tất cả events khi component mount
+  // Hợp nhất logic search vào 1 function
+  const searchEvents = async (query: string) => {
+    try {
+      setIsLoading(true);
+      const response = await AxiosInstance().get<EventModel[]>(
+        `events/search?query=${query}`,
+      );
+      setEventsSearch(response.data);
+    } catch (e) {
+      console.log(e);
+      setEventsSearch([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Chỉ có 1 useEffect để xử lý cả initial load và search
   useEffect(() => {
-    const getInitialEvents = async () => {
-      try {
-        setIsLoading(true);
-        const response = await AxiosInstance().get<EventModel[]>(
-          `events/search?query=`,
-        );
-        setEventsSearch(response.data);
-      } catch (e) {
-        console.log(e);
-        setEventsSearch([]);
-      } finally {
-        setIsLoading(false);
-        setIsInitialLoad(false);
-      }
-    };
-
-    getInitialEvents();
-  }, []);
-
-  // Tìm kiếm khi user nhập text
-  useEffect(() => {
-    // Bỏ qua lần đầu tiên khi component mount
-    if (isInitialLoad) return;
-
-    const getEventSearch = async () => {
-      try {
-        setIsLoading(true);
-        const response = await AxiosInstance().get<EventModel[]>(
-          `events/search?query=${values}`,
-        );
-        setEventsSearch(response.data);
-      } catch (e) {
-        console.log(e);
-        setEventsSearch([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // Clear timeout cũ nếu có
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
     // Debounce search để tránh gọi API quá nhiều
-    const delayedSearch = setTimeout(() => {
-      getEventSearch();
-    }, 300);
+    searchTimeoutRef.current = setTimeout(() => {
+      searchEvents(values);
+    }, values.length === 0 ? 0 : 300); // Không delay cho initial load
 
     return () => {
-      clearTimeout(delayedSearch);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     };
-  }, [values, isInitialLoad]);
+  }, [values]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -240,7 +226,7 @@ const EventSearch = ({ navigation }: any) => {
           />
         )}
         contentContainerStyle={{
-          paddingBottom: 40, // 👈 Thêm padding để tránh bị che
+          paddingBottom: 40,
         }}
       />
     );

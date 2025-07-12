@@ -111,8 +111,6 @@ const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
   );
 };
 
-
-
 const EventSection = ({
   title,
   data,
@@ -169,7 +167,6 @@ const EventSection = ({
   );
 };
 
-// 4. Sửa đổi EventTopSection
 const EventTopSection = ({
   title,
   data,
@@ -227,6 +224,33 @@ const EventTopSection = ({
   );
 };
 
+// Utility function to check if event has ongoing showtimes
+const hasOngoingShowtimes = (event: EventModel, now: number) => {
+  if (!event.showtimes || event.showtimes.length === 0) {
+    return false;
+  }
+  
+  // Check if any showtime is happening today or in the future
+  return event.showtimes.some(showtime => {
+    const showDate = new Date(showtime.startTime);
+    const nowDate = new Date(now);
+    
+    // Check if the showtime is today or in the future
+    return showDate.toDateString() === nowDate.toDateString() || 
+           showtime.startTime > now;
+  });
+};
+
+// Utility function to check if event has upcoming showtimes
+const hasUpcomingShowtimes = (event: EventModel, now: number) => {
+  if (!event.showtimes || event.showtimes.length === 0) {
+    return false;
+  }
+  
+  // Check if any showtime is in the future
+  return event.showtimes.some(showtime => showtime.startTime > now);
+};
+
 const SuggestedEventsScreen = ({
   handleInteraction,
   navigation,
@@ -246,10 +270,15 @@ const SuggestedEventsScreen = ({
 
       const allEvents = response.data || [];
 
-      const ongoing = allEvents.filter(
-        e => now >= e.timeStart && now <= e.timeEnd,
-      );
-      const upcoming = allEvents.filter(e => e.timeStart > now);
+      // Filter ongoing events based on showtimes
+      const ongoing = allEvents.filter(event => {
+        return hasOngoingShowtimes(event, now);
+      });
+
+      // Filter upcoming events based on showtimes
+      const upcoming = allEvents.filter(event => {
+        return hasUpcomingShowtimes(event, now);
+      });
 
       setEventsOngoing(ongoing);
       setEventsUpcoming(upcoming);
@@ -279,7 +308,6 @@ const SuggestedEventsScreen = ({
     },
     [handleInteraction, navigation],
   );
-
 
   return (
     <ScrollView

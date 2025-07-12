@@ -69,6 +69,7 @@ import FAQScreen from './app/screens/profile/FAQScreen';
 import ContactScreen from './app/screens/profile/ContactScreen';
 import QRScanner from './app/screens/organizer/QRScanner';
 import ScanShowTime from './app/screens/organizer/ScanShowTime';
+import FavoriteTag from './app/screens/FavoriteTag';
 
 
 const Stack = createNativeStackNavigator();
@@ -235,6 +236,9 @@ const AppWithSocket = () => {
           <Stack.Screen name="ContactScreen" component={ContactScreen} />
           <Stack.Screen name="QRScanner" component={QRScanner} />
           <Stack.Screen name="ScanShowTime" component={ScanShowTime} />
+          <Stack.Screen name="FavoriteTag" component={FavoriteTag} />
+          
+
 
         </Stack.Navigator>
       </NavigationContainer>

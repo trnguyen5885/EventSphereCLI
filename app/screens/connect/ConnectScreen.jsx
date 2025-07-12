@@ -291,7 +291,7 @@ const ConnectScreen = ({ navigation }) => {
                       </TouchableOpacity>
                     )}
                     style={styles.eventsList}
-                    scrollEnabled={false}
+                    showsVerticalScrollIndicator={false}
                   />
                 ) : (
                   <View style={styles.noEventsContainer}>

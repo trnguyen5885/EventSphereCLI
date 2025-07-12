@@ -97,19 +97,6 @@ const UserTicketsScreen = ({navigation, route}) => {
     const userId = useSelector(state => state.auth.userId);
     const [statusTab, setStatusTab] = useState('all');
     const [timeTab, setTimeTab] = useState('upcoming');
-    
-    const suggestedEvents = [
-        {
-            _id: 'suggest1',
-            name: 'YÊN ẤM MERCHANDISE',
-            image: 'https://res.cloudinary.com/deoqppiun/image/upload/v1750255690/ol5cbr0aoexpj06vvqwd.jpg',
-        },
-        {
-            _id: 'suggest2',
-            name: 'PHẬT BẢO NGHIÊM TRẬN - TRIỂN LÃM',
-            image: 'https://res.cloudinary.com/deoqppiun/image/upload/v1750846407/p5uul3jpk2ob6koenkm7.png',
-        },
-    ];
 
     const fetchTickets = async (isRefresh = false) => {
         if (isRefresh) {
@@ -122,6 +109,8 @@ const UserTicketsScreen = ({navigation, route}) => {
             const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
             setUserData(tickets.data.user);
             const eventsData = tickets.data.events;
+            console.log("Tickets data:", tickets.data);
+            
             
             const eventsWithDetails = await Promise.all(
                 eventsData.map(async (event) => {
@@ -129,9 +118,9 @@ const UserTicketsScreen = ({navigation, route}) => {
                         const eventDetail = await AxiosInstance().get(`/events/detail/${event._id}`);
                         return {
                             ...event,
-                            timeStart: eventDetail.data.data.timeStart,
-                            timeEnd: eventDetail.data.data.timeEnd,
-                            showtimes: eventDetail.data.data.showtimes || []
+                            timeStart: eventDetail.data.timeStart,
+                            timeEnd: eventDetail.data.timeEnd,
+                            showtimes: eventDetail.data.showtimes || []
                         };
                     } catch (error) {
                         console.log(`Lỗi khi lấy chi tiết sự kiện ${event._id}:`, error);
