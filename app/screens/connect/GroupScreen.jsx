@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Dimensions, Modal, TextInput, ActivityIndicator, Pressable, Image, ScrollView,
-  Animated, StatusBar
+  Dimensions, TextInput, ActivityIndicator, Image, ScrollView,
+  Animated, StatusBar, Button, Alert, Modal
 } from 'react-native';
 import GroupMap from './components/GroupMap';
 import {
@@ -10,20 +10,28 @@ import {
   updateLocation,
   inviteToGroup,
   searchUserByEmail,
-  getGroupLocations
+  getGroupLocations,
+  leaveGroupApi,
+  deleteGroupApi,
+  leaveGroup,
+  deleteGroup
 } from './services/connectApi';
 import Geolocation from '@react-native-community/geolocation';
 import { useSelector } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { appColors } from '../../constants/appColors';
 import LinearGradient from 'react-native-linear-gradient';
+import ListInviteComponent from '../explore/components/ListInviteComponent';
+import CustomLogoutDialog from '../../components/CustomLogoutDialog';
 
 const { width, height } = Dimensions.get('window');
 
 const GroupScreen = ({ route, navigation }) => {
-  const { groupId, userLocation, groupName } = route?.params || {};
+  const { groupId, userLocation, groupName, ownerId } = route?.params || {};
   const userId = useSelector(state => state.auth.userId);
   const userEmail = useSelector(state => state.auth.userData?.email);
+
+  const isOwner = String(userId) === String(ownerId._id);
 
   const [members, setMembers] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -39,6 +47,11 @@ const GroupScreen = ({ route, navigation }) => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [distanceText, setDistanceText] = useState('');
   const [animatedValue] = useState(new Animated.Value(0));
+  const [showOptions, setShowOptions] = useState(false);
+  const [showConfirmLeaveSheet, setShowConfirmLeaveSheet] = useState(false);
+  const [showConfirmDeleteSheet, setShowConfirmDeleteSheet] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirmType, setConfirmType] = useState(null); // 'leave' | 'delete'
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -55,7 +68,7 @@ const GroupScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   }, [groupId]);
-
+  
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
@@ -121,6 +134,27 @@ const GroupScreen = ({ route, navigation }) => {
     setSearchResult(null);
   };
 
+  const handleLeaveGroup = async () => {
+  try {
+    await leaveGroup(groupId, userId);
+    Alert.alert('Thành công', 'Bạn đã rời nhóm.');
+    navigation.goBack();
+  } catch (e) {
+    Alert.alert('Lỗi', 'Không thể rời nhóm.');
+  }
+};
+
+const handleDeleteGroup = async () => {
+  try {
+    await deleteGroup(groupId);
+    Alert.alert('Đã xóa nhóm');
+    navigation.goBack();
+  } catch (e) {
+    Alert.alert('Lỗi', 'Không thể xóa nhóm.');
+  }
+};
+
+
   const getDistanceInKm = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -175,9 +209,27 @@ const GroupScreen = ({ route, navigation }) => {
             <MaterialIcons name="event" size={24} color="#fff" />
             <Text style={styles.headerTitle}>{groupName || 'Nhóm sự kiện'}</Text>
           </View>
-          <TouchableOpacity onPress={fetchData} style={styles.refreshButton}>
-            <MaterialIcons name="refresh" size={24} color="#fff" />
-          </TouchableOpacity>
+          {isOwner ? (
+            <TouchableOpacity
+              onPress={() => {
+                setConfirmType('delete');
+                setConfirmModalVisible(true);
+              }}
+              style={styles.optionsButton}
+            >
+              <MaterialIcons name="delete" size={24} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                setConfirmType('leave');
+                setConfirmModalVisible(true);
+              }}
+              style={styles.optionsButton}
+            >
+              <MaterialIcons name="logout" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
         
         {/* Stats Cards */}
@@ -338,7 +390,12 @@ const GroupScreen = ({ route, navigation }) => {
       </ScrollView>
 
       {/* Enhanced Invite Modal */}
-      <Modal visible={inviteModal} transparent animationType="slide">
+      <Modal
+        visible={inviteModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setInviteModal(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
@@ -347,11 +404,9 @@ const GroupScreen = ({ route, navigation }) => {
                 <MaterialIcons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            
             <Text style={styles.modalDescription}>
               Nhập email để mời thành viên tham gia sự kiện
             </Text>
-            
             <View style={styles.inputContainer}>
               <MaterialIcons name="email" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
@@ -367,14 +422,12 @@ const GroupScreen = ({ route, navigation }) => {
                 <MaterialIcons name="search" size={20} color="#6C5CE7" />
               </TouchableOpacity>
             </View>
-            
             {searchLoading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator color="#6C5CE7" size="small" />
                 <Text style={styles.loadingText}>Đang tìm kiếm...</Text>
               </View>
             )}
-            
             {searchResult && (
               <View style={styles.searchResultContainer}>
                 <View style={styles.searchResultContent}>
@@ -398,6 +451,86 @@ const GroupScreen = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Enhanced Options Modal */}
+      <Modal
+        visible={showOptions}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowOptions(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.dragIndicator} />
+            {isOwner ? (
+              <TouchableOpacity style={styles.optionItem} onPress={() => {
+                setShowOptions(false);
+                Alert.alert(
+                  'Xác nhận xóa nhóm',
+                  'Nhóm sẽ bị xóa vĩnh viễn và không thể khôi phục.',
+                  [
+                    { text: 'Hủy', style: 'cancel' },
+                    { text: 'Xác nhận', style: 'destructive', onPress: handleDeleteGroup },
+                  ]
+                );
+              }}>
+                <MaterialIcons name="delete" size={24} color="#E53935" />
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Xóa nhóm</Text>
+                  <Text style={styles.optionSubtitle}>Nhóm sẽ bị xóa vĩnh viễn</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.optionItem} onPress={() => {
+                setShowOptions(false);
+                Alert.alert(
+                  'Xác nhận rời nhóm',
+                  'Bạn sẽ không còn là thành viên nhóm này.',
+                  [
+                    { text: 'Hủy', style: 'cancel' },
+                    { text: 'Xác nhận', style: 'destructive', onPress: handleLeaveGroup },
+                  ]
+                );
+              }}>
+                <MaterialIcons name="logout" size={24} color="#E53935" />
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Rời nhóm</Text>
+                  <Text style={styles.optionSubtitle}>Bạn sẽ không còn là thành viên nhóm</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.optionItem} onPress={() => setShowOptions(false)}>
+              <MaterialIcons name="close" size={24} color="#666" />
+              <View style={styles.optionTextContainer}>
+                <Text style={styles.optionTitle}>Đóng</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal xác nhận rời nhóm hoặc xóa nhóm */}
+      <CustomLogoutDialog
+        visible={confirmModalVisible}
+        onClose={() => setConfirmModalVisible(false)}
+        onConfirm={async () => {
+          setConfirmModalVisible(false);
+          if (confirmType === 'delete') {
+            await handleDeleteGroup();
+          } else {
+            await handleLeaveGroup();
+          }
+        }}
+        title={confirmType === 'delete' ? 'Xác nhận xóa nhóm' : 'Xác nhận rời nhóm'}
+        message={confirmType === 'delete'
+          ? 'Nhóm sẽ bị xóa vĩnh viễn và không thể khôi phục.'
+          : 'Bạn sẽ không còn là thành viên nhóm này.'}
+        confirmText={confirmType === 'delete' ? 'Xác nhận' : 'Xác nhận'}
+        cancelText="Hủy"
+      />
+
+      {/* Xóa các modal xác nhận rời nhóm và xóa nhóm */}
+
     </View>
   );
 };
@@ -406,6 +539,48 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomSheet: {
+    backgroundColor: '#1C1C1E',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    width: '100%',
+    // Không marginTop/marginBottom
+  },
+  dragIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#555',
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  optionTextContainer: {
+    marginLeft: 12,
+  },
+  optionTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  optionSubtitle: {
+    color: '#aaa',
+    fontSize: 13,
   },
   headerGradient: {
     paddingTop: 20,
@@ -737,6 +912,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     marginLeft: 5,
+  },
+  leaveModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    padding: 0,
+    margin: 0,
   },
 });
 

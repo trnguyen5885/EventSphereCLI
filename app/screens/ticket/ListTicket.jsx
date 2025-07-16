@@ -99,7 +99,7 @@ const ListTicket = ({ navigation, route }) => {
                         <View style={styles.details}>
                             <Text>Số vé: {ticket.ticketNumber || 'N/A'}</Text>
                             {event.typeBase === 'seat' ? (
-                                <Text>Số ghế: {ticket.seat?.seatName || ticket.seat?._id || 'N/A'}</Text>
+                                <Text>Số ghế: {ticket.seat?.seatId || ticket.seat?._id || 'N/A'}</Text>
                             ) : (
                                 <Text>Khu vực: {ticket.zone?.zoneName || 'N/A'}</Text>
                             )}
