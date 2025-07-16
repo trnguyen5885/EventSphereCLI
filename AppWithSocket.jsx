@@ -21,6 +21,7 @@ import {
   ProfileScreen,
   SeatsScreen,
   ZonesScreen,
+  EventScreen,
 } from './app/screens';
 import SplashScreen from './app/screens/SplashScreen';
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
@@ -186,6 +187,7 @@ const AppWithSocket = () => {
             component={OtpOrganizerVerificationScreen}
           />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
+          
           <Stack.Screen name="Category" component={EventCategoryScreen} />
           <Stack.Screen name="Search" component={EventSearchScreen} />
           <Stack.Screen name="Detail" component={EventDetailScreen} />
