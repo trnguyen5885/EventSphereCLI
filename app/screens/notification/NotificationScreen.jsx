@@ -6,6 +6,7 @@ import {
   View,
   Image,
   FlatList,
+  Platform,
 } from 'react-native';
 import React, { useEffect, useState, useCallback } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -13,6 +14,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import { AxiosInstance } from '../../../app/services';
 import { useSelector } from 'react-redux';
 import InviteNotiComponent from './components/InviteNotiComponent';
+import { appColors } from '../../constants/appColors';
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
@@ -35,8 +37,8 @@ const NotificationScreen = ({ navigation }) => {
 
   const renderItem = ({ item }) => (
     <View>
-      {item.type === 'invite' && 
-        <InviteNotiComponent 
+      {item.type === 'invite' &&
+        <InviteNotiComponent
           avatar={'https://avatar.iran.liara.run/public'}
           body={item.body}
           createdAt={item.createdAt}
@@ -65,14 +67,23 @@ const NotificationScreen = ({ navigation }) => {
     </View>
   );
 
+  const handleNavigation = () => {
+    navigation.goBack();
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.headerSection}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+      <View style={styles.header}>
+        <View style={[styles.headerRow, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleNavigation}
+          >
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Thông báo</Text>
-        </TouchableOpacity>
-        <Entypo name="dots-three-vertical" size={24} color="black" />
+          <View style={{ width: 26 }} />
+        </View>
       </View>
 
       {notifications.length === 0 ? (
@@ -99,20 +110,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
   },
-  headerSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  header: {
+    backgroundColor: appColors.primary,
+    paddingTop: Platform.OS === 'ios' ? 30 : 10,
+    paddingBottom: 15,
+    paddingHorizontal: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
-    height: 50,
-    marginBottom: 20,
+  },
+  headerRow: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    columnGap: 20,
   },
   headerTitle: {
-    fontSize: 24,
-    marginLeft: 10,
-    fontWeight: '500',
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '600',
   },
   mainContentSection: {
     flex: 1,
@@ -130,6 +151,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderColor: '#eee',
+    paddingHorizontal: 20,
   },
   avatar: {
     width: 45,

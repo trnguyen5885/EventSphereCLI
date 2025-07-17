@@ -8,28 +8,56 @@ import {
   ViewStyle,
   TouchableOpacity,
 } from 'react-native';
-import React, {useState} from 'react';
-import {CardComponent, TextComponent} from '.';
-import {appColors} from '../constants/appColors';
-import {formatDate} from '../services';
-import {formatPrice} from '../services/utils/price';
+import React, { useState } from 'react';
+import { CardComponent, TextComponent } from '.';
+import { appColors } from '../constants/appColors';
+import { formatDate } from '../services';
+import { formatPrice } from '../services/utils/price';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {globalStyles} from '../constants/globalStyles';
+import { globalStyles } from '../constants/globalStyles';
 
 interface Props {
   item: any;
-  type: 'list' | 'card';
+  type: 'list' | 'card' | 'grid';
   styles?: StyleProp<ViewStyle>;
   onPress?: () => void;
 }
 
-const EventItem = (props: Props) => {
-  const {item, type, styles, onPress} = props;
-  const [isFilled, setIsFilled] = useState(false);
+const getValidShowtime = (showtimes: any[]) => {
+  const now = new Date();
 
-  const handlePressHeart = () => {
-    setIsFilled(!isFilled);
-  };
+  // Tìm xuất chiếu đang diễn ra (startTime <= now <= endTime)
+  const currentShowtime = showtimes.find(st => {
+    const startTime = new Date(st.startTime);
+    const endTime = new Date(st.endTime);
+    return startTime <= now && now <= endTime;
+  });
+
+  // Nếu có xuất chiếu đang diễn ra, ưu tiên hiển thị
+  if (currentShowtime) {
+    return currentShowtime;
+  }
+
+  // Tìm xuất chiếu gần nhất với thời gian hiện tại
+  const sortedShowtimes = showtimes
+    .map(st => ({
+      ...st,
+      startTime: new Date(st.startTime),
+      endTime: new Date(st.endTime),
+      timeDiff: Math.abs(new Date(st.startTime).getTime() - now.getTime())
+    }))
+    .sort((a, b) => a.timeDiff - b.timeDiff);
+
+  return sortedShowtimes[0];
+};
+
+const EventItem = (props: Props) => {
+  const { item, type, styles, onPress } = props;
+
+  const validShowtime =
+    item?.showtimes ? getValidShowtime(item.showtimes) : null;
+
+
 
   return type === 'card' ? (
     <CardComponent
@@ -49,77 +77,104 @@ const EventItem = (props: Props) => {
           objectFit: 'cover',
           borderRadius: 15,
         }}
-        source={{uri: item.avatar}}
+        source={{ uri: item.avatar }}
       />
-      <TouchableOpacity
-        onPress={handlePressHeart}
-        style={{position: 'absolute', top: 15, right: 15, zIndex: 2}}>
-        <Ionicons
-          name={isFilled ? 'heart' : 'heart-outline'}
-          size={24}
-          color={isFilled ? appColors.danger : 'white'}
-        />
-      </TouchableOpacity>
       <View
         style={{
           width: '100%',
           rowGap: 5,
         }}>
-        {/* <RowComponent styles={{marginTop: 10}}  justify='flex-start'>
-        <View
-          style={{
-            backgroundColor: appColors.danger,
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Giải trí" color='white' size={12}/>
-        </View>
-        <View
-          style={{
-            backgroundColor: appColors.link,
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Concert" color='white' size={12}/>
-        </View>
-        <View
-          style={{
-            backgroundColor: 'green',
-            paddingVertical: 2,
-            paddingHorizontal: 12,
-            borderRadius: 20,
-            marginRight: 3
-          }}>
-          <TextComponent text="Âm nhạc" color='white' size={12}/>
-        </View>
-      </RowComponent> */}
         <TextComponent
-          numberOfLine={2}
+          numberOfLine={1}
           title
-          size={16}
+          size={14}
           text={item.name}
-          styles={{marginTop: 15, fontWeight: 'bold', height: 39}}
+          styles={{ marginTop: 12, fontWeight: 'bold', height: 20 }}
         />
         <TextComponent
           text={`Từ ${formatPrice(item.minTicketPrice)}`}
-          styles={{fontSize: 17, fontWeight: 'bold', color: appColors.primary}}
+          styles={{ fontSize: 13, fontWeight: 'bold', color: appColors.primary, marginTop: 4 }}
         />
 
-        <View style={[globalStyles.row, {columnGap: 5}]}>
+        <View style={[globalStyles.row, { columnGap: 5, alignItems: 'center' }]}>
           <View>
             <Ionicons name="calendar" size={18} color={appColors.primary} />
           </View>
-          <View style={globalStyles.row}>
-            <Text>{`${formatDate(item.timeStart)} - `}</Text>
-            <Text>{formatDate(item.timeEnd)}</Text>
+          <View style={[globalStyles.row, { flex: 1 }]}>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 12,
+                color: '#666',
+                flex: 1,
+              }}
+            >
+              {item?.showtimes?.length > 0 && (
+                <>
+                  {validShowtime && (
+
+                    `${formatDate(validShowtime.startTime)}`
+
+                  )}
+                </>
+              )}
+            </Text>
           </View>
         </View>
       </View>
     </CardComponent>
+  ) : type === 'grid' ? (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        {
+          borderRadius: 12,
+          backgroundColor: '#fff',
+          overflow: 'hidden',
+        },
+        styles,
+      ]}
+    >
+      <Image
+        source={{ uri: item.avatar }}
+        style={{
+          width: '100%',
+          height: 100,
+          borderRadius: 10,
+          resizeMode: 'cover',
+        }}
+      />
+      <View style={{ padding: 8 }}>
+        <TextComponent
+          text={item.name}
+          title
+          numberOfLine={1}
+          size={14}
+          styles={{ fontWeight: 'bold', height: 20 }}
+        />
+        <TextComponent
+          text={`Từ ${formatPrice(item.minTicketPrice)}`}
+          styles={{
+            fontSize: 13,
+            fontWeight: 'bold',
+            color: appColors.primary,
+            marginTop: 4,
+          }}
+        />
+        {validShowtime && (
+          <View style={[globalStyles.row, { marginTop: 4 }]}>
+            <Ionicons name="calendar-outline" size={14} color="#888" />
+            <Text
+              style={{ marginLeft: 4, fontSize: 12, color: '#666' }}
+              numberOfLines={1}
+            >
+              {formatDate(validShowtime.startTime)}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
   ) : (
     <></>
   );

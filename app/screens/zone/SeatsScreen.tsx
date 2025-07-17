@@ -143,6 +143,7 @@ const SeatsScreen = ({navigation, route}: any) => {
   };
 
   const handleSeatPress = async (rowIndex: number, colIndex: number) => {
+    if (isLoading) return;
     const seat = seats[rowIndex][colIndex];
 
     const existingIndex = selectedSeats.findIndex(s => {
@@ -226,7 +227,6 @@ const SeatsScreen = ({navigation, route}: any) => {
           action: 'select',
         });
         bookingId.push(response.bookingId);
-
         if (response.message === 'Ghế đã được chọn trước đó.') {
           Alert.alert(
             'Lỗi',

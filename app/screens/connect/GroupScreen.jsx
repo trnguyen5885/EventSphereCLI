@@ -1,359 +1,742 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Dimensions, Modal, TextInput, Switch, Pressable, Linking, ActivityIndicator,
-  Image
+  Dimensions, Modal, TextInput, ActivityIndicator, Pressable, Image, ScrollView,
+  Animated, StatusBar
 } from 'react-native';
 import GroupMap from './components/GroupMap';
-import { getGroupMembers, updateLocation, inviteToGroup, searchUserByEmail } from './services/connectApi';
+import {
+  getGroupMembers,
+  updateLocation,
+  inviteToGroup,
+  searchUserByEmail,
+  getGroupLocations
+} from './services/connectApi';
 import Geolocation from '@react-native-community/geolocation';
 import { useSelector } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { appColors } from '../../constants/appColors';
+import LinearGradient from 'react-native-linear-gradient';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-const GroupScreen = ({ route }) => {
-  const { groupId, userLocation } = route?.params || { groupId: 'group123', userLocation: null };
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [inviteModal, setInviteModal] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [isSharing, setIsSharing] = useState(false);
-  const [myLocation, setMyLocation] = useState(userLocation || null);
-  const [selectedMember, setSelectedMember] = useState(null);
+const GroupScreen = ({ route, navigation }) => {
+  const { groupId, userLocation, groupName } = route?.params || {};
   const userId = useSelector(state => state.auth.userId);
   const userEmail = useSelector(state => state.auth.userData?.email);
+
+  const [members, setMembers] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [inviteModal, setInviteModal] = useState(false);
   const [searchEmail, setSearchEmail] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [invitedMembers, setInvitedMembers] = useState([]);
+  const [isSharing, setIsSharing] = useState(false);
+  const [myLocation, setMyLocation] = useState(userLocation || null);
   const [targetMember, setTargetMember] = useState(null);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [distanceText, setDistanceText] = useState('');
+  const [animatedValue] = useState(new Animated.Value(0));
 
-  const fetchMembers = useCallback(async () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await getGroupMembers(groupId);
-      console.log('Group members:', data);
-      setMembers(data);
-    } catch (error) {
-      alert('Không thể tải danh sách thành viên');
+      const [membersData, locationsData] = await Promise.all([
+        getGroupMembers(groupId),
+        getGroupLocations(groupId),
+      ]);
+      setMembers(membersData);
+      setLocations(locationsData);
+    } catch (e) {
+      alert('Không thể tải dữ liệu nhóm');
     } finally {
       setLoading(false);
     }
   }, [groupId]);
 
   useEffect(() => {
-    fetchMembers();
-    const interval = setInterval(fetchMembers, 30000); // refresh mỗi 30s
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [fetchMembers]);
+  }, [fetchData]);
 
   useEffect(() => {
-    let watchId = null;
+    let watchId;
     if (isSharing) {
       watchId = Geolocation.watchPosition(
-        async (position) => {
-          const coords = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
+        async ({ coords }) => {
           setMyLocation(coords);
-          try {
-            await updateLocation(groupId, userId, coords.latitude, coords.longitude);
-          } catch (e) {
-            console.error('Update location failed:', e);
-          }
+          await updateLocation(groupId, userId, coords.latitude, coords.longitude);
         },
-        (error) => {
-          alert('Không lấy được vị trí: ' + error.message);
-          setIsSharing(false);
-        },
+        (err) => alert('Không lấy được vị trí: ' + err.message),
         { enableHighAccuracy: true, distanceFilter: 10 }
       );
     } else {
-      setMyLocation(userLocation || null);
+      setMyLocation(userLocation);
     }
-
-    return () => {
-      if (watchId !== null) Geolocation.clearWatch(watchId);
-    };
+    return () => watchId && Geolocation.clearWatch(watchId);
   }, [isSharing, groupId, userId, userLocation]);
 
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const membersWithLocation = members.map(member => {
+    const location = locations.find(loc => String(loc.userId) === String(member._id));
+    let lat, lon;
+    if (location) {
+      if (typeof location.latitude === 'number') {
+        lat = location.latitude;
+        lon = location.longitude;
+      } else if (location.location?.coordinates?.length === 2) {
+        lon = location.location.coordinates[0];
+        lat = location.location.coordinates[1];
+      }
+    }
+    return { ...member, location, latitude: lat, longitude: lon };
+  });
+
+  const hasLocation = m => typeof m?.latitude === 'number' && typeof m?.longitude === 'number';
+
   const handleSearch = async () => {
-    if (!searchEmail || invitedMembers.some(m => m.email === searchEmail)) return;
+    if (!searchEmail) return;
     setSearchLoading(true);
     const user = await searchUserByEmail(searchEmail);
-    let foundUser = null;
-    if (Array.isArray(user) && user.length > 0) {
-      foundUser = user[0];
-    } else if (user && user.data && Array.isArray(user.data) && user.data.length > 0) {
-      foundUser = user.data[0];
-    }
-    setSearchResult(foundUser);
+    const result = Array.isArray(user) ? user[0] : user?.data?.[0];
+    setSearchResult(result);
     setSearchLoading(false);
   };
 
-  const handleInviteModal = async () => {
+  const handleInvite = async () => {
     if (!groupId || !searchResult) return;
-    setSearchLoading(true);
     await inviteToGroup(groupId, searchResult.email);
-    setInvitedMembers([...invitedMembers, { email: searchResult.email, user: searchResult, invited: true }]);
-    setSearchResult(null);
+    setInvitedMembers([...invitedMembers, { email: searchResult.email }]);
     setSearchEmail('');
-    setSearchLoading(false);
+    setSearchResult(null);
   };
 
-  const handleRemoveInvited = (email) => {
-    setInvitedMembers(invitedMembers.filter(m => m.email !== email));
+  const getDistanceInKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   };
 
-  const handleNavigateToMember = (member) => setSelectedMember(member);
-  const closeMemberModal = () => {
-    setSelectedMember(null);
-    setTargetMember(null); // Tắt đường đi khi đóng modal
+  const formatDistance = (dist) => {
+    return dist < 1
+      ? `Khoảng cách: ${(dist * 1000).toFixed(0)} m`
+      : `Khoảng cách: ${dist.toFixed(2)} km`;
   };
 
-  const handleOpenMaps = () => {
-    setTargetMember(selectedMember); // Khi nhấn, set targetMember để GroupMap vẽ đường
-    // Có thể đóng modal hoặc giữ modal mở để xem đường đi
+  const handleTargetMember = (member) => {
+    setTargetMember(null);
+    setTimeout(() => {
+      setTargetMember(member);
+      if (myLocation && hasLocation(member)) {
+        const dist = getDistanceInKm(myLocation.latitude, myLocation.longitude, member.latitude, member.longitude);
+        setDistanceText(formatDistance(dist));
+      } else {
+        setDistanceText('');
+      }
+    }, 50);
   };
 
-  const handleShareLocation = () => setIsSharing(prev => !prev);
+  const onlineMembers = membersWithLocation.filter(hasLocation);
+  const offlineMembers = membersWithLocation.filter(m => !hasLocation(m));
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Nhóm sự kiện</Text>
-        <TouchableOpacity onPress={fetchMembers}>
-          <MaterialIcons name="refresh" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#6C5CE7" />
+      
+      {/* Header with gradient */}
+      <LinearGradient
+        colors={[appColors.primary, appColors.primary]}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <MaterialIcons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <MaterialIcons name="event" size={24} color="#fff" />
+            <Text style={styles.headerTitle}>{groupName || 'Nhóm sự kiện'}</Text>
+          </View>
+          <TouchableOpacity onPress={fetchData} style={styles.refreshButton}>
+            <MaterialIcons name="refresh" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <MaterialIcons name="people" size={20} color="#6C5CE7" />
+            <Text style={styles.statNumber}>{members.length}</Text>
+            <Text style={styles.statLabel}>Thành viên</Text>
+          </View>
+          <View style={styles.statCard}>
+            <MaterialIcons name="location-on" size={20} color="#00B894" />
+            <Text style={styles.statNumber}>{onlineMembers.length}</Text>
+            <Text style={styles.statLabel}>Đang online</Text>
+          </View>
+        </View>
+      </LinearGradient>
 
-      <View style={styles.memberListCard}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.subtitle}>Thành viên nhóm</Text>
-          <TouchableOpacity onPress={() => setInviteModal(true)} style={styles.fabInvite}>
-            <MaterialIcons name="person-add-alt" size={20} color="#fff" />
-            <Text style={styles.inviteBtnText}>Mời</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Map Container */}
+        <View style={styles.mapContainer}>
+          <GroupMap members={onlineMembers} myLocation={myLocation} targetMember={targetMember} />
+          {distanceText !== '' && (
+            <View style={styles.distanceContainer}>
+              <MaterialIcons name="straighten" size={16} color="#6C5CE7" />
+              <Text style={styles.distanceText}>{distanceText}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: appColors.primary, borderWidth: 0 }]}
+            onPress={() => setIsSharing(p => !p)}
+          >
+            <MaterialIcons name={isSharing ? "location-on" : "location-off"} size={20} color="#fff" />
+            <Text style={[styles.buttonText, { color: '#fff' }]}>{isSharing ? 'Đang chia sẻ' : 'Chia sẻ vị trí'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#fff', borderColor: appColors.primary, borderWidth: 2 }]}
+            onPress={() => setInviteModal(true)}
+          >
+            <MaterialIcons name="person-add" size={20} color={appColors.primary} />
+            <Text style={[styles.buttonText, { color: appColors.primary }]}>Mời thành viên</Text>
           </TouchableOpacity>
         </View>
 
-        {loading ? (
-          <ActivityIndicator size="small" color="#007AFF" style={{ marginVertical: 12 }} />
-        ) : members?.length === 0 ? (
-          <Text style={{ color: '#999', textAlign: 'center', marginVertical: 12 }}>Chưa có thành viên trong nhóm</Text>
-        ) : (
-          <FlatList
-            data={members}
-            keyExtractor={item => item.id || item._id}
-            renderItem={({ item }) => (
-              <Pressable onPress={() => handleNavigateToMember(item)}>
-                <View style={styles.memberItem}>
-                  <View style={styles.avatar}>
-                    <Image source={{ uri: item.picUrl }} style={styles.avatarImage} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.memberName}>{item.name}</Text>
-                    <Text style={styles.memberEmail}>{item.email}</Text>
-                  </View>
-                  <View style={styles.statusDot(item.location ? 'green' : 'gray')} />
-                </View>
-              </Pressable>
-            )}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
-
-      {/* Invite Modal */}
-      <Modal visible={inviteModal} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContentLarge}>
-            <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Mời thành viên vào group</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder="Nhập email thành viên"
-                value={searchEmail}
-                onChangeText={setSearchEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                onSubmitEditing={handleSearch}
-                onBlur={handleSearch}
-              />
-              <TouchableOpacity onPress={handleSearch} style={{ marginLeft: 8 }}>
-                <MaterialIcons name="search" size={22} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-            {searchLoading && <ActivityIndicator size="small" color="#007AFF" style={{ marginBottom: 8 }} />}
-            {searchResult && (
-              <View style={styles.searchResultBox}>
-                {searchResult.picUrl && (
-                  <Image source={{ uri: searchResult.picUrl }} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: 'bold', color: '#222' }}>{searchResult.username || searchResult.email}</Text>
-                  <Text style={{ color: '#666', fontSize: 13 }}>{searchResult.email}</Text>
-                </View>
-                {searchResult.email !== userEmail && (
-                  <TouchableOpacity style={styles.inviteBtnSmall} onPress={handleInviteModal}>
-                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>Mời</Text>
-                  </TouchableOpacity>
-                )}
+        {/* Members Section */}
+        <View style={styles.membersSection}>
+          <Text style={styles.sectionTitle}>Thành viên ({members.length})</Text>
+          
+          {/* Online Members */}
+          {onlineMembers.length > 0 && (
+            <View style={styles.memberGroup}>
+              <View style={styles.memberGroupHeader}>
+                <MaterialIcons name="circle" size={12} color="#00B894" />
+                <Text style={styles.memberGroupTitle}>Đang online ({onlineMembers.length})</Text>
               </View>
-            )}
-            {/* Danh sách thành viên đã mời */}
-            {invitedMembers.length > 0 && (
-              <View style={{ marginTop: 12 }}>
-                <Text style={{ fontWeight: 'bold', marginBottom: 6 }}>Thành viên đã mời:</Text>
-                {invitedMembers.map((m, idx) => (
-                  <View key={m.email} style={styles.invitedItem}>
-                    {m.user && m.user.picUrl && (
-                      <Image source={{ uri: m.user.picUrl }} style={{ width: 28, height: 28, borderRadius: 14, marginRight: 8 }} />
-                    )}
-                    <Text style={{ flex: 1 }}>{m.user?.username || m.email}</Text>
-                    <TouchableOpacity onPress={() => handleRemoveInvited(m.email)}>
-                      <MaterialIcons name="close" size={18} color="#e53935" />
+              <FlatList
+                data={onlineMembers.filter(m => m._id !== userId)}
+                keyExtractor={m => m._id}
+                renderItem={({ item }) => (
+                  <Animated.View
+                    style={[
+                      styles.memberItem,
+                      {
+                        transform: [{
+                          translateY: animatedValue.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [50, 0],
+                          }),
+                        }],
+                        opacity: animatedValue,
+                      },
+                    ]}
+                  >
+                    <TouchableOpacity 
+                      style={styles.memberContent} 
+                      onPress={() => setSelectedMember(item)}
+                    >
+                      <View style={styles.memberLeft}>
+                        <View style={styles.avatarContainer}>
+                          {item.picUrl ? (
+                            <Image source={{ uri: item.picUrl }} style={styles.avatarImg} />
+                          ) : (
+                            <View style={styles.avatarPlaceholder}>
+                              <MaterialIcons name="person" size={24} color="#6C5CE7" />
+                            </View>
+                          )}
+                          <View style={styles.onlineIndicator} />
+                        </View>
+                        <View style={styles.memberInfo}>
+                          <Text style={styles.memberName}>{item.name}</Text>
+                          <Text style={styles.memberEmail}>{item.email}</Text>
+                          <Text style={styles.memberStatus}>🌍 Đang chia sẻ vị trí</Text>
+                          {myLocation && hasLocation(item) && (
+                            <Text style={{color: '#6C5CE7', fontSize: 12, fontWeight: 'bold'}}>
+                              {formatDistance(getDistanceInKm(myLocation.latitude, myLocation.longitude, item.latitude, item.longitude))}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.navButton} 
+                        onPress={() => handleTargetMember(item)}
+                      >
+                        <MaterialIcons name="directions" size={20} color="#fff" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  </Animated.View>
+                )}
+                scrollEnabled={false}
+              />
+            </View>
+          )}
+
+          {/* Offline Members */}
+          {offlineMembers.length > 0 && (
+            <View style={styles.memberGroup}>
+              <View style={styles.memberGroupHeader}>
+                <MaterialIcons name="circle" size={12} color="#DDD" />
+                <Text style={styles.memberGroupTitle}>Offline ({offlineMembers.length})</Text>
+              </View>
+              <FlatList
+                data={offlineMembers.filter(m => m._id !== userId)}
+                keyExtractor={m => m._id}
+                renderItem={({ item }) => (
+                  <View style={[styles.memberItem, styles.memberItemOffline]}>
+                    <TouchableOpacity 
+                      style={styles.memberContent} 
+                      onPress={() => setSelectedMember(item)}
+                    >
+                      <View style={styles.memberLeft}>
+                        <View style={styles.avatarContainer}>
+                          {item.picUrl ? (
+                            <Image source={{ uri: item.picUrl }} style={[styles.avatarImg, styles.avatarOffline]} />
+                          ) : (
+                            <View style={[styles.avatarPlaceholder, styles.avatarOffline]}>
+                              <MaterialIcons name="person" size={24} color="#999" />
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.memberInfo}>
+                          <Text style={[styles.memberName, styles.memberNameOffline]}>{item.name}</Text>
+                          <Text style={styles.memberEmail}>{item.email}</Text>
+                          <Text style={styles.memberStatusOffline}>📍 Chưa chia sẻ vị trí</Text>
+                        </View>
+                      </View>
                     </TouchableOpacity>
                   </View>
-                ))}
+                )}
+                scrollEnabled={false}
+              />
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Enhanced Invite Modal */}
+      <Modal visible={inviteModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Mời thành viên mới</Text>
+              <TouchableOpacity onPress={() => setInviteModal(false)}>
+                <MaterialIcons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalDescription}>
+              Nhập email để mời thành viên tham gia sự kiện
+            </Text>
+            
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="email" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                value={searchEmail}
+                onChangeText={setSearchEmail}
+                placeholder="user@example.com"
+                style={styles.modalInput}
+                onSubmitEditing={handleSearch}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+                <MaterialIcons name="search" size={20} color="#6C5CE7" />
+              </TouchableOpacity>
+            </View>
+            
+            {searchLoading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="#6C5CE7" size="small" />
+                <Text style={styles.loadingText}>Đang tìm kiếm...</Text>
               </View>
             )}
-            <TouchableOpacity onPress={() => setInviteModal(false)} style={{ marginTop: 8 }}>
-              <Text style={{ color: '#007AFF' }}>Đóng</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Member Modal */}
-      <Modal visible={!!selectedMember} transparent animationType="fade">
-        <View style={styles.memberModalContainer}>
-          <View style={styles.memberModalContent}>
-            <Text style={styles.memberNameModal}>{selectedMember?.name}</Text>
-            <Text style={styles.memberEmail}>{selectedMember?.email}</Text>
-            {selectedMember?.location ? (
-              <TouchableOpacity style={styles.navBtn} onPress={handleOpenMaps}>
-                <Text style={{ color: "#fff", fontWeight: 'bold', marginLeft: 4 }}>Chỉ đường</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={{ color: 'gray', marginTop: 8 }}>Chưa chia sẻ vị trí</Text>
+            
+            {searchResult && (
+              <View style={styles.searchResultContainer}>
+                <View style={styles.searchResultContent}>
+                  <MaterialIcons name="person" size={24} color="#6C5CE7" />
+                  <View style={styles.searchResultInfo}>
+                    <Text style={styles.searchResultName}>{searchResult.username || searchResult.email}</Text>
+                    <Text style={styles.searchResultEmail}>{searchResult.email}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.inviteButton} onPress={handleInvite}>
+                  <LinearGradient
+                    colors={['#00B894', '#00A085']}
+                    style={styles.inviteButtonGradient}
+                  >
+                    <MaterialIcons name="send" size={16} color="#fff" />
+                    <Text style={styles.inviteButtonText}>Gửi lời mời</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             )}
-            <TouchableOpacity onPress={closeMemberModal} style={{ marginTop: 8 }}>
-              <Text style={{ color: '#007AFF' }}>Đóng</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
-      <View style={styles.shareRowCustom}>
-        <TouchableOpacity
-          style={[styles.shareBtn, isSharing && styles.shareBtnActive]}
-          onPress={handleShareLocation}
-          activeOpacity={0.7}
-        >
-          <MaterialIcons name="my-location" size={22} color={isSharing ? '#fff' : '#007AFF'} style={{ marginRight: 8 }} />
-          <Text style={[styles.shareBtnText, isSharing && { color: '#fff' }]}> {isSharing ? 'Đang chia sẻ vị trí' : 'Chia sẻ vị trí'} </Text>
-        </TouchableOpacity>
-      </View>
-
-      <GroupMap
-        members={members.filter(m => m.location && typeof m.location.latitude === 'number' && typeof m.location.longitude === 'number')}
-        myLocation={myLocation}
-        targetMember={targetMember}
-      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#f8f9fa' },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, backgroundColor: '#fff', padding: 10, borderRadius: 10, elevation: 2 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#007AFF' },
-  memberListCard: { backgroundColor: '#fff', padding: 14, borderRadius: 12, elevation: 2, marginBottom: 10 },
-  subtitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
-  memberItem: { flexDirection: 'row', alignItems: 'center', padding: 8, borderBottomWidth: 1, borderBottomColor: '#eee', borderRadius: 8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e3e3e3', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarText: { fontWeight: 'bold', color: '#007AFF', fontSize: 18 },
-  memberName: { fontWeight: 'bold', color: '#222' },
-  memberEmail: { color: '#666', fontSize: 13 },
-  statusDot: color => ({
-    width: 10, height: 10, borderRadius: 5, backgroundColor: color, marginLeft: 8
-  }),
-  fabInvite: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: appColors.primary,
-    borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, elevation: 2
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
   },
-  inviteBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15, marginLeft: 4 },
-  modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 12, width: 300, alignItems: 'center' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: '#fff',
-    marginBottom: 4,
-    width: '100%',
+  headerGradient: {
+    paddingTop: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
   },
-  modalBtn: { backgroundColor: '#007AFF', padding: 12, borderRadius: 8, alignItems: 'center', width: '100%' },
-  memberModalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
-  memberModalContent: { backgroundColor: '#fff', padding: 26, borderRadius: 14, alignItems: 'center', width: width * 0.8 },
-  memberNameModal: { fontWeight: 'bold', fontSize: 19, marginBottom: 6, color: "#007AFF" },
-  navBtn: { backgroundColor: '#007AFF', flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 8, marginTop: 16 },
-  shareRowCustom: {
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backButton: {
+    marginRight: 4,
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginLeft: 10,
+  },
+  refreshButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 8,
+    borderRadius: 20,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+  },
+  statCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 5,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  mapContainer: {
+    margin: 20,
+    borderRadius: 15,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  distanceContainer: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  distanceText: {
+    marginLeft: 5,
+    color: '#6C5CE7',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 18,
-    marginBottom: 8,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    marginHorizontal: 8,
   },
-  shareBtn: {
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  membersSection: {
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  memberGroup: {
+    marginBottom: 20,
+  },
+  memberGroupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eaf4ff',
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 22,
+    marginBottom: 10,
+  },
+  memberGroupTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 8,
+  },
+  memberItem: {
+    backgroundColor: '#fff',
+    marginBottom: 12,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
     elevation: 2,
   },
-  shareBtnActive: {
-    backgroundColor: '#007AFF',
+  memberItemOffline: {
+    backgroundColor: '#F5F5F5',
   },
-  shareBtnText: {
-    color: '#007AFF',
-    fontWeight: 'bold',
+  memberContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+  },
+  memberLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 15,
+  },
+  avatarImg: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#E8E6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarOffline: {
+    opacity: 0.6,
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    backgroundColor: '#00B894',
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
     fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
   },
-  inviteBtnSmall: { backgroundColor: '#007AFF', paddingVertical: 4, paddingHorizontal: 12, borderRadius: 8, marginLeft: 10 },
-  searchResultBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+  memberNameOffline: {
+    color: '#999',
+  },
+  memberEmail: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  memberStatus: {
+    fontSize: 12,
+    color: '#00B894',
+    fontWeight: '500',
+  },
+  memberStatusOffline: {
+    fontSize: 12,
+    color: '#999',
+  },
+  navButton: {
+    backgroundColor: '#6C5CE7',
     padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
+    borderRadius: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    margin: 20,
+    borderRadius: 20,
+    padding: 20,
+    maxWidth: width * 0.9,
     width: '100%',
   },
-  invitedItem: {
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 6,
-    elevation: 1,
-    width: '100%',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 15,
   },
-  modalContentLarge: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 16,
-    width: width * 0.96,
-    minHeight: 200,
-    alignItems: 'stretch',
-    alignSelf: 'center',
+  inputIcon: {
+    marginRight: 10,
+  },
+  modalInput: {
+    flex: 1,
+    paddingVertical: 15,
+    fontSize: 16,
+    color: '#333',
+  },
+  searchButton: {
+    padding: 5,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+  },
+  loadingText: {
+    marginLeft: 10,
+    color: '#666',
+  },
+  searchResultContainer: {
+    backgroundColor: '#F8F9FA',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  searchResultContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  searchResultInfo: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  searchResultEmail: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  inviteButton: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  inviteButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  inviteButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 5,
   },
 });
 

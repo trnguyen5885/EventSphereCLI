@@ -1,6 +1,6 @@
 // ScanQRCodeScreen.js
 import React, { useEffect, useState } from 'react';
-import { RNCamera } from 'react-native-camera';
+// import { RNCamera } from 'react-native-camera';
 import { View, Text, StyleSheet, Alert, PermissionsAndroid, Platform } from 'react-native';
 
 const CameraScreen = () => {

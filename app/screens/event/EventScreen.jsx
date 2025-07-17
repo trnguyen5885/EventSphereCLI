@@ -1,67 +1,213 @@
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native'
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image, RefreshControl, Animated } from 'react-native'
 import React from 'react'
 import { useState } from 'react'
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AxiosInstance } from '../../services';
 import { TextComponent } from '../../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
+
+// Skeleton Placeholder Component
+const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = () => {
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+      ]).start(() => animate());
+    };
+    animate();
+  }, []);
+
+  const backgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#E1E9EE', '#F2F8FC'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          backgroundColor,
+          borderRadius,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+// Skeleton Card Component
+const SkeletonTicketCard = () => (
+  <View style={styles.card}>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {/* Avatar skeleton */}
+      <SkeletonPlaceholder width={60} height={60} borderRadius={8} />
+      
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        {/* Event name skeleton */}
+        <SkeletonPlaceholder width="80%" height={16} style={{ marginBottom: 8 }} />
+        
+        {/* Status badge skeleton */}
+        <SkeletonPlaceholder width={80} height={20} borderRadius={12} style={{ marginBottom: 8 }} />
+        
+        {/* Ticket count skeleton */}
+        <SkeletonPlaceholder width="60%" height={14} style={{ marginBottom: 4 }} />
+        
+        {/* Event date skeleton */}
+        <SkeletonPlaceholder width="50%" height={14} style={{ marginBottom: 4 }} />
+        
+        {/* Showtime count skeleton */}
+        <SkeletonPlaceholder width="40%" height={14} />
+      </View>
+    </View>
+    
+    {/* Button skeleton */}
+    <SkeletonPlaceholder width="100%" height={40} borderRadius={6} style={{ marginTop: 14 }} />
+  </View>
+);
+
+// Skeleton Loading Component
+const SkeletonLoading = () => (
+  <View style={{ flex: 1, padding: 16, backgroundColor: "#f5f5f5" }}>
+    {[1, 2, 3, 4, 5].map((_, index) => (
+      <SkeletonTicketCard key={index} />
+    ))}
+  </View>
+);
 
 const UserTicketsScreen = ({navigation, route}) => {
     const [userData, setUserData] = useState(null);
     const [tickets, setTickets] = useState([]);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const userId = useSelector(state => state.auth.userId);
-    const [statusTab, setStatusTab] = useState('all'); // all, success, processing, canceled
-    const [timeTab, setTimeTab] = useState('upcoming'); // upcoming, ended
-    const suggestedEvents = [
-        {
-            _id: 'suggest1',
-            name: 'YÊN ẤM MERCHANDISE',
-            image: 'https://res.cloudinary.com/deoqppiun/image/upload/v1750255690/ol5cbr0aoexpj06vvqwd.jpg',
-        },
-        {
-            _id: 'suggest2',
-            name: 'PHẬT BẢO NGHIÊM TRẬN - TRIỂN LÃM',
-            image: 'https://res.cloudinary.com/deoqppiun/image/upload/v1750846407/p5uul3jpk2ob6koenkm7.png',
-        },
-    ];
+    const [statusTab, setStatusTab] = useState('all');
+    const [timeTab, setTimeTab] = useState('upcoming');
 
-    useEffect(()=>{
-        const getTickets = async() =>{
-            try{
-                const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
-                setUserData(tickets.data.user);
-                setEvents(tickets.data.events);
+    const fetchTickets = async (isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
+        }
+        
+        try {
+            const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
+            setUserData(tickets.data.user);
+            const eventsData = tickets.data.events;
+            console.log("Tickets data:", tickets.data);
+            
+            
+            const eventsWithDetails = await Promise.all(
+                eventsData.map(async (event) => {
+                    try {
+                        const eventDetail = await AxiosInstance().get(`/events/detail/${event._id}`);
+                        return {
+                            ...event,
+                            timeStart: eventDetail.data.timeStart,
+                            timeEnd: eventDetail.data.timeEnd,
+                            showtimes: eventDetail.data.showtimes || []
+                        };
+                    } catch (error) {
+                        console.log(`Lỗi khi lấy chi tiết sự kiện ${event._id}:`, error);
+                        return event;
+                    }
+                })
+            );
+            
+            setEvents(eventsWithDetails);
+        } catch (e) {
+            console.log("Lấy vé thất bại: ", e);
+        } finally {
+            if (isRefresh) {
+                setRefreshing(false);
+            } else {
                 setLoading(false);
-            }catch(e){
-                console.log("Lấy vé thất bại: ", e);
             }
-        };
-        getTickets();
+        }
+    };
+
+    useEffect(() => {
+        fetchTickets();
     }, []);
 
-    // Lọc vé theo tab
+    const onRefresh = () => {
+        fetchTickets(true);
+    };
+
     const now = Date.now();
     const filteredEvents = events.filter(event => {
         let statusMatch = statusTab === 'all' || event.status === statusTab;
         let timeMatch = true;
-        if (event.timeEnd) {
-            timeMatch = timeTab === 'upcoming' ? event.timeEnd > now : event.timeEnd <= now;
+        
+        if (event.timeStart && event.timeEnd) {
+            const startTime = typeof event.timeStart === 'number' ? event.timeStart : new Date(event.timeStart).getTime();
+            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
+            
+            switch (timeTab) {
+                case 'upcoming':
+                    timeMatch = startTime > now;
+                    break;
+                case 'ongoing':
+                    timeMatch = startTime <= now && endTime > now;
+                    break;
+                case 'ended':
+                    timeMatch = endTime <= now;
+                    break;
+                default:
+                    timeMatch = true;
+            }
+        } else if (event.timeEnd) {
+            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
+            switch (timeTab) {
+                case 'upcoming':
+                    timeMatch = endTime > now;
+                    break;
+                case 'ongoing':
+                    timeMatch = endTime > now;
+                    break;
+                case 'ended':
+                    timeMatch = endTime <= now;
+                    break;
+                default:
+                    timeMatch = true;
+            }
+        } else if (event.showtimes && event.showtimes.length > 0) {
+            const showtimesInRange = event.showtimes.filter(showtime => {
+                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
+                const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
+                
+                switch (timeTab) {
+                    case 'upcoming':
+                        return startTime > now;
+                    case 'ongoing':
+                        return startTime <= now && endTime > now;
+                    case 'ended':
+                        return endTime <= now;
+                    default:
+                        return true;
+                }
+            });
+            timeMatch = showtimesInRange.length > 0;
         }
+        
         return statusMatch && timeMatch;
     });
 
-    if (loading) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
-                <ActivityIndicator size="large" color="#007BFF" />
-            </View>
-        );
-    }
-
-    // Component hiển thị khi không có vé
     const EmptyState = () => (
         <View style={styles.emptyContainer}>
             <Image 
@@ -80,70 +226,125 @@ const UserTicketsScreen = ({navigation, route}) => {
         </View>
     );
 
+    const getEventStatus = (event) => {
+        const now = Date.now();
+        
+        if (event.timeStart && event.timeEnd) {
+            const startTime = typeof event.timeStart === 'number' ? event.timeStart : new Date(event.timeStart).getTime();
+            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
+            
+            if (startTime > now) return 'upcoming';
+            if (startTime <= now && endTime > now) return 'ongoing';
+            if (endTime <= now) return 'ended';
+        } else if (event.showtimes && event.showtimes.length > 0) {
+            const hasUpcoming = event.showtimes.some(showtime => {
+                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
+                return startTime > now;
+            });
+            
+            const hasOngoing = event.showtimes.some(showtime => {
+                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
+                const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
+                return startTime <= now && endTime > now;
+            });
+            
+            if (hasOngoing) return 'ongoing';
+            if (hasUpcoming) return 'upcoming';
+            return 'ended';
+        }
+        
+        return 'unknown';
+    };
+
+    const getStatusBadge = (event) => {
+        const status = getEventStatus(event);
+        switch (status) {
+            case 'upcoming':
+                return { text: 'Sắp diễn ra', color: '#FFA500', backgroundColor: '#FFF3E0' };
+            case 'ongoing':
+                return { text: 'Đang diễn ra', color: '#4CAF50', backgroundColor: '#E8F5E8' };
+            case 'ended':
+                return { text: 'Đã kết thúc', color: '#9E9E9E', backgroundColor: '#F5F5F5' };
+            default:
+                return { text: 'Chưa xác định', color: '#757575', backgroundColor: '#EEEEEE' };
+        }
+    };
+
     return (
         <View style={{ flex: 1, padding: 0, backgroundColor: "#f5f5f5" }}>
             {/* Header */}
             <View style={{ backgroundColor: '#5669FF', paddingTop: 20, paddingBottom: 16, alignItems: 'center' }}>
                 <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>Vé của tôi</Text>
-                {/* Tab trạng thái */}
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 18 }}>
-                    {['Tất cả', 'Thành công', 'Đang xử lý', 'Đã hủy'].map((label, idx) => {
-                        const value = ['all', 'success', 'processing', 'canceled'][idx];
-                        return (
-                            <TouchableOpacity
-                                key={value}
-                                style={{
-                                    paddingVertical: 8,
-                                    paddingHorizontal: 18,
-                                    borderRadius: 20,
-                                    backgroundColor: statusTab === value ? '#fff' : '#5669FF',
-                                    marginHorizontal: 4,
-                                    borderWidth: 1,
-                                    borderColor: statusTab === value ? '#fff' : '#5669FF',
-                                }}
-                                onPress={() => setStatusTab(value)}
-                            >
-                                <Text style={{ color: statusTab === value ? '#5669FF' : '#fff', fontWeight: 'bold' }}>{label}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
             </View>
+            
             {/* Tab con */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', backgroundColor: '#fff', paddingVertical: 12 }}>
-                {['Sắp diễn ra', 'Đã kết thúc'].map((label, idx) => {
-                    const value = ['upcoming', 'ended'][idx];
-                    return (
-                        <TouchableOpacity
-                            key={value}
-                            style={{
-                                paddingVertical: 6,
-                                paddingHorizontal: 18,
-                                borderBottomWidth: 2,
-                                borderBottomColor: timeTab === value ? '#5669FF' : 'transparent',
-                                marginHorizontal: 8,
-                            }}
-                            onPress={() => setTimeTab(value)}
-                        >
-                            <Text style={{ color: timeTab === value ? '#5669FF' : '#000', fontWeight: 'bold', fontSize: 16 }}>{label}</Text>
-                        </TouchableOpacity>
-                    );
-                })}
+                {[
+                    { label: 'Sắp diễn ra', value: 'upcoming' },
+                    { label: 'Đang diễn ra', value: 'ongoing' },
+                    { label: 'Đã kết thúc', value: 'ended' }
+                ].map((tab) => (
+                    <TouchableOpacity
+                        key={tab.value}
+                        style={{
+                            paddingVertical: 6,
+                            paddingHorizontal: 12,
+                            borderBottomWidth: 2,
+                            borderBottomColor: timeTab === tab.value ? '#5669FF' : 'transparent',
+                            marginHorizontal: 4,
+                        }}
+                        onPress={() => setTimeTab(tab.value)}
+                    >
+                        <Text style={{ 
+                            color: timeTab === tab.value ? '#5669FF' : '#000', 
+                            fontWeight: timeTab === tab.value ? 'bold' : 'normal', 
+                            fontSize: 14 
+                        }}>
+                            {tab.label}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
             </View>
-            {/* Danh sách vé hoặc gợi ý */}
-            {filteredEvents.length === 0 ? (
+            
+            {/* Skeleton Loading hoặc Content */}
+            {loading ? (
+                <SkeletonLoading />
+            ) : filteredEvents.length === 0 ? (
                 <EmptyState />
             ) : (
                 <FlatList
                     data={filteredEvents}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={{ padding: 16 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={['#5669FF']}
+                            tintColor={'#5669FF'}
+                            title="Đang tải lại..."
+                            titleColor={'#5669FF'}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                         let eventDate = item.eventDate;
+                        
                         if (!eventDate && item.timeStart) {
-                            const date = new Date(item.timeStart);
+                            const startTime = typeof item.timeStart === 'number' ? item.timeStart : new Date(item.timeStart).getTime();
+                            const date = new Date(startTime);
                             eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         }
+                        
+                        if (!eventDate && item.showtimes && item.showtimes.length > 0) {
+                            const firstShowtime = item.showtimes[0];
+                            const startTime = typeof firstShowtime.startTime === 'number' ? firstShowtime.startTime : new Date(firstShowtime.startTime).getTime();
+                            const date = new Date(startTime);
+                            eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        }
+                        
+                        const statusBadge = getStatusBadge(item);
+                        
                         return (
                             <View style={styles.card}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -155,8 +356,21 @@ const UserTicketsScreen = ({navigation, route}) => {
                                         />
                                     )}
                                     <View style={{ flex: 1, marginLeft: item.avatar ? 12 : 0 }}>
-                                        <Text style={styles.eventName}>{item.name}</Text>
-                                        <Text style={styles.ticketCount}>🎟 Số vé: {item.tickets.length}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                                            <Text style={styles.eventName} numberOfLines={2}>{item.name}</Text>
+                                        </View>
+                                        <View style={[styles.statusBadge, { backgroundColor: statusBadge.backgroundColor }]}>
+                                            <Text style={[styles.statusText, { color: statusBadge.color }]}>
+                                                {statusBadge.text}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.ticketCount}>🎟 Số vé: {item.tickets ? item.tickets.length : 0}</Text>
+                                        {eventDate && (
+                                            <Text style={styles.eventDate}>📅 {eventDate}</Text>
+                                        )}
+                                        {item.showtimes && item.showtimes.length > 0 && (
+                                            <Text style={styles.showtimeCount}>⏰ Có {item.showtimes.length} suất chiếu</Text>
+                                        )}
                                     </View>
                                 </View>
                                 <TouchableOpacity
@@ -196,10 +410,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#eee',
     },
     eventName: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#222',
         marginBottom: 2,
+        flex: 1,
     },
     eventDate: {
         fontSize: 14,
@@ -209,6 +424,23 @@ const styles = StyleSheet.create({
     ticketCount: {
         fontSize: 14,
         color: '#888',
+        marginBottom: 4,
+    },
+    showtimeCount: {
+        fontSize: 14,
+        color: '#888',
+        marginBottom: 2,
+    },
+    statusBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        marginBottom: 4,
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '600',
     },
     detailButton: {
         marginTop: 14,
@@ -228,7 +460,6 @@ const styles = StyleSheet.create({
         fontSize: 15,
         letterSpacing: 0.5,
     },
-    // Styles cho empty state
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',

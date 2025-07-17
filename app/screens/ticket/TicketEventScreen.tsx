@@ -183,7 +183,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
             ]);
           }, 8000);
         } else {
-          console.log('Thanh toán không thánh công');
+          console.log('Thanh toán không thành công');
           setIsLoading(false);
         }
       }
@@ -198,12 +198,12 @@ const TicketEventScreen = ({navigation, route}: any) => {
           userId: userInfo?._id,
           amount:
             typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? totalAmount
+              ? formData.tickets.normal
               : totalPrice,
           bookingType: typeBase,
           bookingIds:
             typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? null
+              ? []
               : bookingIds,
           totalPrice:
             typeBase === undefined || typeBase === null || typeBase === 'none'
@@ -288,7 +288,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
             }}>
             <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
 
-            {/* Vé Thường */}
+            {/* Vé Phổ thông */}
             <View
               style={{
                 flexDirection: 'row',
@@ -296,47 +296,20 @@ const TicketEventScreen = ({navigation, route}: any) => {
                 justifyContent: 'space-between',
                 marginBottom: 12,
               }}>
-              <Text style={{fontSize: 16, color: '#2D3748'}}>
+              <Text style={{ fontSize: 16, color: '#2D3748' }}>
                 {ticketTypes.normal.name}
               </Text>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity
                   onPress={() => updateTicketQuantity('normal', -1)}
                   style={styles.quantityButton}>
                   <Text style={styles.quantityButtonText}>-</Text>
                 </TouchableOpacity>
-                <Text style={{marginHorizontal: 12, fontSize: 16}}>
+                <Text style={{ marginHorizontal: 12, fontSize: 16 }}>
                   {formData.tickets.normal}
                 </Text>
                 <TouchableOpacity
                   onPress={() => updateTicketQuantity('normal', 1)}
-                  style={styles.quantityButton}>
-                  <Text style={styles.quantityButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Vé VIP */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-              <Text style={{fontSize: 16, color: '#2D3748'}}>
-                {ticketTypes.vip.name}
-              </Text>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <TouchableOpacity
-                  onPress={() => updateTicketQuantity('vip', -1)}
-                  style={styles.quantityButton}>
-                  <Text style={styles.quantityButtonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={{marginHorizontal: 12, fontSize: 16}}>
-                  {formData.tickets.vip}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => updateTicketQuantity('vip', 1)}
                   style={styles.quantityButton}>
                   <Text style={styles.quantityButtonText}>+</Text>
                 </TouchableOpacity>

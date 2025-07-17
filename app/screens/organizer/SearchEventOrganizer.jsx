@@ -19,6 +19,9 @@ import { formatDate } from '../../services/utils/date';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { appColors } from '../../../app/constants/appColors';
 
+// Import skeleton loading components
+import SearchEventSkeletonLoader, { AdvancedEventCardSkeleton } from '../../constants/skeletonLoading';
+
 const SearchResultCard = ({ name, timeStart, timeEnd, soldTickets, image, navigation, eventId }) => (
   <TouchableOpacity 
     style={styles.resultCard}
@@ -53,10 +56,9 @@ const SearchEventOrganizer = ({ navigation }) => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState(null);
   
-
-
   // Fetch all events when component mounts
   const fetchAllEvents = async () => {
     try {
@@ -81,6 +83,7 @@ const SearchEventOrganizer = ({ navigation }) => {
   // Search function with debounce
   const handleSearch = useCallback((query) => {
     setSearchQuery(query);
+    setSearching(true);
     
     // Clear previous timeout
     if (searchTimeout) {
@@ -99,6 +102,7 @@ const SearchEventOrganizer = ({ navigation }) => {
         );
         setFilteredEvents(filtered);
       }
+      setSearching(false);
     }, 500);
 
     setSearchTimeout(newTimeout);
@@ -116,7 +120,32 @@ const SearchEventOrganizer = ({ navigation }) => {
   const clearSearch = () => {
     setSearchQuery('');
     setFilteredEvents(allEvents);
+    setSearching(false);
   };
+
+  // Render skeleton loading khi đang load dữ liệu ban đầu
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" />
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={26} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Tìm kiếm sự kiện</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        {/* Skeleton Loading */}
+        <SearchEventSkeletonLoader itemCount={6} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -156,10 +185,17 @@ const SearchEventOrganizer = ({ navigation }) => {
 
       {/* Search Results */}
       <View style={styles.resultsContainer}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#00D4AA" />
-            <Text style={styles.loadingText}>Đang tải sự kiện...</Text>
+        {searching ? (
+          // Skeleton loading khi đang search
+          <View style={styles.searchingContainer}>
+            <View style={styles.resultsHeader}>
+              <Text style={styles.resultsCount}>Đang tìm kiếm...</Text>
+            </View>
+            <View style={styles.listContainer}>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <AdvancedEventCardSkeleton key={index} />
+              ))}
+            </View>
           </View>
         ) : (
           <>
@@ -226,7 +262,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#DDD',
   },
-  
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -251,11 +286,6 @@ const styles = StyleSheet.create({
     borderColor: '#DDD',
     gap: 8,
   },
-  searchBarIcon: {
-    fontSize: 16,
-    marginRight: 12,
-    color: '#888',
-  },
   searchInput: {
     flex: 1,
     fontSize: 16,
@@ -273,15 +303,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-  loadingContainer: {
+  searchingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#666666',
-    fontSize: 16,
-    marginTop: 12,
   },
   resultsHeader: {
     paddingHorizontal: 20,

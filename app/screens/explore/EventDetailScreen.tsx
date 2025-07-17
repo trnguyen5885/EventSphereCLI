@@ -1,5 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState, useRef} from 'react';
+/* eslint-disable react-native/no-inline-styles */
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,29 +15,71 @@ import {
   Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {AxiosInstance} from '../../services';
-import {globalStyles} from '../../constants/globalStyles';
+import { AxiosInstance } from '../../services';
+import { globalStyles } from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
   RowComponent,
   TextComponent,
 } from '../../components';
-import {appColors} from '../../constants/appColors';
-import {formatDate} from '../../services/index';
+import { appColors } from '../../constants/appColors';
+import { formatDate } from '../../services/index';
 import RatingAndReview from '../review/RatingAndReview';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
 import MapPreview from '../map/MapPreview';
-import {TypeBase} from '@/app/models/explore/ExploreModels';
+import { TypeBase } from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
-import {formatTimeRange} from '../../services/utils/time';
+import { formatTimeRange } from '../../services/utils/time';
 import LoadingModal from '../../modals/LoadingModal';
 
-const EventDetailScreen = ({navigation, route}: any) => {
-  const {id} = route.params;
+const getValidShowtime = (showtimes: any[]) => {
+  const now = new Date();
+
+  // Tìm xuất chiếu đang diễn ra (startTime <= now <= endTime)
+  const currentShowtime = showtimes.find(st => {
+    const startTime = new Date(st.startTime);
+    const endTime = new Date(st.endTime);
+    return startTime <= now && now <= endTime;
+  });
+
+  // Nếu có xuất chiếu đang diễn ra, ưu tiên hiển thị
+  if (currentShowtime) {
+    return currentShowtime;
+  }
+
+  // Tìm xuất chiếu gần nhất với thời gian hiện tại
+  const sortedShowtimes = showtimes
+    .map(st => ({
+      ...st,
+      startTime: new Date(st.startTime),
+      endTime: new Date(st.endTime),
+      timeDiff: Math.abs(new Date(st.startTime).getTime() - now.getTime())
+    }))
+    .sort((a, b) => a.timeDiff - b.timeDiff);
+
+  return sortedShowtimes[0];
+};
+
+
+// Hàm kiểm tra xem suất chiếu đã kết thúc chưa
+const isShowtimeExpired = (endTime: string) => {
+  const now = new Date();
+  const showtimeEnd = new Date(endTime);
+  return showtimeEnd < now;
+};
+
+// Hàm kiểm tra xem có suất chiếu nào còn hiệu lực không
+const hasValidShowtime = (showtimes: any[]) => {
+  const now = new Date();
+  return showtimes.some(st => new Date(st.endTime) > now);
+};
+
+const EventDetailScreen = ({ navigation, route }: any) => {
+  const { id } = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   console.log(detailEvent);
-  
+
   const [organizer, setOrganizer] = useState<any>(null);
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<any>(null);
   // Thay đổi: Đặt tất cả các section ở trạng thái mở rộng mặc định
@@ -44,6 +87,8 @@ const EventDetailScreen = ({navigation, route}: any) => {
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(true);
   const [isLocationExpanded, setIsLocationExpanded] = useState(true);
   const [ticketInfoPositionY, setTicketInfoPositionY] = useState(0);
+  const validShowtime =
+    detailEvent?.showtimes ? getValidShowtime(detailEvent.showtimes) : null;
 
   const sheetRef = useRef<any>(null);
 
@@ -54,6 +99,15 @@ const EventDetailScreen = ({navigation, route}: any) => {
 
   console.log('Id Event: ', detailEvent?._id);
   console.log('Detail Event', detailEvent);
+
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
 
   useEffect(() => {
     const getDetailEvent = async () => {
@@ -134,7 +188,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
     navigation.goBack();
   };
 
-  const {width} = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   // Thêm state để quản lý việc mở rộng nội dung description
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -183,6 +237,16 @@ const EventDetailScreen = ({navigation, route}: any) => {
 
   const scrollRef = useRef<ScrollView>(null);
 
+  // Hàm xử lý nút mua vé chính
+  const handleMainBuyTicket = () => {
+    if (detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes)) {
+      scrollRef.current?.scrollTo({
+        y: ticketInfoPositionY - 15,
+        animated: true,
+      });
+    }
+  };
+
   if (!detailEvent) {
     return <LoadingModal visible={true} />;
   }
@@ -191,7 +255,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
     <View style={[globalStyles.container, styles.mainContainer]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
+        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
@@ -212,10 +276,10 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{uri: detailEvent?.avatar}}>
+          source={{ uri: detailEvent?.avatar }}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{uri: detailEvent?.avatar}}
+              source={{ uri: detailEvent?.avatar }}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -230,14 +294,47 @@ const EventDetailScreen = ({navigation, route}: any) => {
               />
               <View style={styles.detailRow}>
                 <Ionicons name="calendar" size={22} color={appColors.primary} />
-                <Text style={styles.detailSubtitle}>{`${formatDate(
-                  detailEvent?.timeStart,
-                )} - ${formatDate(detailEvent?.timeEnd)} `}</Text>
+                <View style={styles.detailTextContainer}>
+                  {detailEvent?.showtimes?.length > 0 && (
+                    <>
+                      {validShowtime && (
+                        <Text style={styles.detailSubtitle}>
+                          {`${formatTime(validShowtime.startTime)} - ${formatTime(validShowtime.endTime)}, ${formatDate(validShowtime.startTime)}`}
+                        </Text>
+                      )}
+
+                      {/* 👇 Thêm nút nếu có nhiều hơn 1 showtime */}
+                      {detailEvent.showtimes.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            scrollRef.current?.scrollTo({
+                              y: ticketInfoPositionY - 15,
+                              animated: true,
+                            });
+                          }}
+                          style={{
+                            marginTop: 6,
+                            alignSelf: 'flex-start',
+                            backgroundColor: '#FFFFFF',
+                            borderWidth: 1,
+                            borderColor: '#CBD5E0',
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                          }}>
+                          <Text style={{ color: '#1A202C', fontSize: 13, fontWeight: '600' }}>
+                            + {detailEvent.showtimes.length - 1} ngày khác
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
               </View>
 
               <View style={styles.detailRow}>
                 <Ionicons name="location" size={22} color={appColors.primary} />
-                <View>
+                <View style={styles.detailTextContainer}>
                   <Text style={styles.detailSubtitle}>
                     {detailEvent?.location ?? ''}
                   </Text>
@@ -251,13 +348,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <View style={styles.sectionContainer}>
           <View
             style={styles.sectionHeader}
-            >
+          >
             <TextComponent
               text="Giới thiệu"
               size={18}
-              styles={{fontWeight: 'bold', color: '#2D3748'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
-            
+
           </View>
 
           {/* Thay đổi: Luôn hiển thị content, không cần kiểm tra isEventInfoExpanded */}
@@ -272,13 +369,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
                     }}
                     enableCSSInlineProcessing={true}
                     tagsStyles={{
-                      strong: {fontWeight: 'bold', color: '#2D3748'},
-                      b: {fontWeight: 'bold', color: '#2D3748'},
-                      div: {marginBottom: 8},
-                      p: {color: '#4A5568', lineHeight: 20},
+                      strong: { fontWeight: 'bold', color: '#2D3748' },
+                      b: { fontWeight: 'bold', color: '#2D3748' },
+                      div: { marginBottom: 8 },
+                      p: { color: '#4A5568', lineHeight: 20 },
                     }}
                   />
-                  
+
                   {/* Thêm nút "Xem thêm/Thu gọn" nếu nội dung dài */}
                   {isDescriptionLong(detailEvent.description, 300) && (
                     <TouchableOpacity
@@ -310,44 +407,61 @@ const EventDetailScreen = ({navigation, route}: any) => {
             }>
             <View
               style={styles.sectionHeader}
-              >
+            >
               <TextComponent
                 text="Thông tin vé"
                 size={18}
-                styles={{fontWeight: 'bold', color: '#2D3748'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
-              
+
             </View>
 
             {/* Thay đổi: Luôn hiển thị content */}
             <View style={styles.sectionContent}>
               <View style={styles.contentWrapper}>
                 <View style={styles.showtimeContainer}>
-                  {detailEvent.showtimes.map(showTime => (
-                    <View key={showTime._id} style={[styles.showtimeButton]}>
-                      <View>
-                        <Text style={[styles.showtimeText]}>
-                          {formatTimeRange(
-                            showTime.startTime,
-                            showTime.endTime,
-                          )}
-                        </Text>
-                        <Text style={[styles.showtimeDateText]}>
-                          {formatDate(showTime.startTime)} -{' '}
-                          {formatDate(showTime.endTime)}
-                        </Text>
+                  {detailEvent.showtimes.map(showTime => {
+                    const isExpired = isShowtimeExpired(showTime.endTime);
+
+                    return (
+                      <View key={showTime._id} style={[
+                        styles.showtimeButton,
+                        isExpired && styles.expiredShowtimeButton
+                      ]}>
+                        <View>
+                          <Text style={[
+                            styles.showtimeText,
+                            isExpired && styles.expiredText
+                          ]}>
+                            {formatTime(showTime.startTime)} - {formatTime(showTime.endTime)}
+                          </Text>
+                          <Text style={[
+                            styles.showtimeDateText,
+                            isExpired && styles.expiredText
+                          ]}>
+                            {formatDate(showTime.startTime)}
+                          </Text>
+                        </View>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.buyTicketSmallButton,
+                            isExpired && styles.expiredButton
+                          ]}
+                          disabled={isExpired}
+                          onPress={() =>
+                            !isExpired && handleNavigation(detailEvent?.typeBase, showTime._id)
+                          }>
+                          <Text style={[
+                            styles.buyTicketSmallText,
+                            isExpired && styles.expiredButtonText
+                          ]}>
+                            {isExpired ? 'Đã kết thúc' : 'Mua vé ngay'}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity
-                        style={styles.buyTicketSmallButton}
-                        onPress={() =>
-                          handleNavigation(detailEvent?.typeBase, showTime._id)
-                        }>
-                        <Text style={styles.buyTicketSmallText}>
-                          Mua vé ngay
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             </View>
@@ -358,25 +472,21 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <View style={styles.sectionContainer}>
           <View
             style={styles.sectionHeader}
-            >
+          >
             <TextComponent
               text="Vị trí sự kiện"
               size={18}
-              styles={{fontWeight: 'bold', color: '#2D3748'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
-            
+
           </View>
 
           {/* Thay đổi: Luôn hiển thị content khi isLocationExpanded = true */}
           <View style={styles.sectionContent}>
             <View style={styles.contentWrapper}>
               <View style={styles.detailRowLocation}>
-                <Ionicons
-                  name="location"
-                  size={22}
-                  color={appColors.primary}
-                />
-                <View>
+                <Ionicons name="location" size={22} color={appColors.primary} />
+                <View style={styles.locationTextContainer}>
                   <Text style={styles.titleLocation}>
                     {detailEvent?.location ?? ''}
                   </Text>
@@ -398,7 +508,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
               <TextComponent
                 text="Ban tổ chức"
                 size={18}
-                styles={{fontWeight: 'bold', color: '#2D3748'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
             </View>
 
@@ -432,23 +542,29 @@ const EventDetailScreen = ({navigation, route}: any) => {
 
       <View style={styles.bottomButtonContainer}>
         <ButtonComponent
-          onPress={() => {
-            scrollRef.current?.scrollTo({
-              y: ticketInfoPositionY - 15,
-              animated: true,
-            });
-          }}
-          text={'Mua vé ngay'}
-          styles={styles.buyTicketButton}
+          onPress={handleMainBuyTicket}
+          text={
+            detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes)
+              ? 'Mua vé ngay'
+              : 'Đã kết thúc'
+          }
+          styles={[
+            styles.buyTicketButton,
+            !(detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes)) &&
+            styles.expiredMainButton
+          ]}
           type="primary"
+          disabled={!(detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes))}
           icon={
-            <CircleComponent color={appColors.white}>
-              <Ionicons
-                name="arrow-forward"
-                size={20}
-                color={appColors.primary}
-              />
-            </CircleComponent>
+            detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes) ? (
+              <CircleComponent color={appColors.white}>
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color={appColors.primary}
+                />
+              </CircleComponent>
+            ) : null
           }
           iconFlex="right"
         />
@@ -518,13 +634,18 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 16,
+    width: '100%',
+    flexShrink: 1,
   },
   detailRow: {
     columnGap: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from 'center' to 'flex-start'
     marginTop: 8,
     marginBottom: 16,
+    // Add flex properties for better wrapping
+    flex: 1,
+    flexWrap: 'wrap',
   },
   detailRowLocation: {
     columnGap: 12,
@@ -540,15 +661,25 @@ const styles = StyleSheet.create({
   },
   detailSubtitle: {
     color: appColors.white2,
-    maxWidth: 320,
-    lineHeight: 26,
+    flex: 1,
+    flexWrap: 'wrap',
+    lineHeight: 22,
     marginTop: 2,
+    fontSize: 14,
+  },
+  detailTextContainer: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  locationTextContainer: {
+    flex: 1,
+    flexShrink: 1,
   },
   titleLocation: {
     color: '#2D3748',
     maxWidth: 320,
     marginTop: 2,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   sectionContainer: {
@@ -640,6 +771,26 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.05,
     shadowRadius: 2,
+  },
+  // Styles cho suất chiếu đã kết thúc
+  expiredShowtimeButton: {
+    backgroundColor: '#F7FAFC',
+    borderColor: '#E2E8F0',
+    opacity: 0.7,
+  },
+  expiredText: {
+    color: '#A0AEC0',
+  },
+  expiredButton: {
+    backgroundColor: '#E2E8F0',
+    borderColor: '#CBD5E0',
+  },
+  expiredButtonText: {
+    color: '#718096',
+  },
+  expiredMainButton: {
+    backgroundColor: '#E2E8F0',
+    borderColor: '#CBD5E0',
   },
   showtimeText: {
     fontWeight: '600',

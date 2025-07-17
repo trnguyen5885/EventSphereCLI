@@ -10,7 +10,9 @@ import {
   View,
   PermissionsAndroid,
   Linking,
-  BackHandler, // Thêm BackHandler
+  BackHandler,
+  RefreshControl,
+  Image, // Thêm RefreshControl
 } from 'react-native';
 import React, { useEffect, useState, useCallback } from 'react';
 import { globalStyles } from '../../constants/globalStyles';
@@ -46,10 +48,12 @@ import SuggestedEventsScreen from './components/SuggestedEventsScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch } from 'react-redux';
 import { setLocation as setLocationRedux } from '../../redux/slices/authSlice';
+import { Text } from 'react-native-svg';
 
 const ExploreScreen = ({ navigation }: any) => {
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // Thêm state cho refreshing
   const tabs = [
     { id: 0, name: 'Đề xuất' },
     { id: 1, name: 'Nổi bật' },
@@ -203,24 +207,33 @@ const ExploreScreen = ({ navigation }: any) => {
     }, []),
   );
 
+  // Hàm fetch events - tách riêng để sử dụng lại
+  const fetchEvents = async () => {
+    try {
+      const response = await AxiosInstance().get<EventModel[], any>(
+        'events/home',
+      );
+      const res = await AxiosInstance().get<EventModel[], any>(
+        'interactions/topViewed',
+      );
+      setPopulateEvents(response);
+      const now = Date.now();
+      const ongoingEvents = response.filter(
+        (eventItem: EventModel) =>
+          now >= eventItem.timeStart && now <= eventItem.timeEnd,
+      );
+      const upcomingEvents = response.filter(
+        (eventItem: EventModel) => eventItem.timeStart > now,
+      );
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   useEffect(() => {
     const getEvents = async () => {
       try {
-        const response = await AxiosInstance().get<EventModel[], any>(
-          'events/home',
-        );
-        const res = await AxiosInstance().get<EventModel[], any>(
-          'interactions/topViewed',
-        );
-        setPopulateEvents(response);
-        const now = Date.now();
-        const ongoingEvents = response.filter(
-          (eventItem: EventModel) =>
-            now >= eventItem.timeStart && now <= eventItem.timeEnd,
-        );
-        const upcomingEvents = response.filter(
-          (eventItem: EventModel) => eventItem.timeStart > now,
-        );
+        await fetchEvents();
         setIsLoading(false);
       } catch (e) {
         console.log(e);
@@ -232,6 +245,20 @@ const ExploreScreen = ({ navigation }: any) => {
     return () => {
       setPopulateEvents([]);
     };
+  }, []);
+
+  // Hàm xử lý pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchEvents();
+      // Có thể thêm refresh location nếu cần
+      // requestLocationPermission();
+    } catch (error) {
+      console.log('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
   const handleInteraction = async (id: string) => {
@@ -251,7 +278,20 @@ const ExploreScreen = ({ navigation }: any) => {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[appColors.primary]} // Android
+          tintColor={appColors.primary} // iOS
+          title="Đang cập nhật..." // iOS
+          titleColor={appColors.primary} // iOS
+        />
+      }
+      showsVerticalScrollIndicator={false}
+    >
       <StatusBar
         barStyle={'light-content'}
         backgroundColor={appColors.primary}
@@ -262,45 +302,29 @@ const ExploreScreen = ({ navigation }: any) => {
           height: 70 + (Platform.OS === 'ios' ? 16 : 0),
           paddingVertical: 15
         }}>
-        <View style={{ paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: 10, marginRight: 16 }}>
           <RowComponent>
-            <TouchableOpacity onPress={() => navigation.openDrawer()}>
-              <HambergerMenu size={24} color={appColors.white} />
-            </TouchableOpacity>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+              <Image
+                source={require('../../../assets/images/logo3.png')}
+              />
+            </View>
+            
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <TouchableOpacity onPress={requestLocationPermission}>
-                <RowComponent>
-                  <TextComponent
-                    text="Vị trí hiện tại của bạn"
-                    color={appColors.white2}
-                    size={12}
-                  />
-                </RowComponent>
-                <TextComponent
-                  text={
-                    address?.compound?.district && address?.compound?.province
-                      ? `${address.compound.district}, ${address.compound.province}`
-                      : 'Đang lấy vị trí của bạn...'
-                  }
-                  flex={0}
-                  color={appColors.white}
-                  font={fontFamilies.medium}
-                  size={13}
-                />
-              </TouchableOpacity>
+
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('Search')}>
               <CircleComponent color="#524CE0" size={36}>
                 <View>
                   <Ionicons name="search-outline" size={20} color="#fff" />
-                  
+
                 </View>
               </CircleComponent>
             </TouchableOpacity>
           </RowComponent>
 
-          
+
         </View>
       </View>
 
@@ -308,6 +332,7 @@ const ExploreScreen = ({ navigation }: any) => {
         populateEvents={populateEvents}
         handleInteraction={handleInteraction}
         navigation={navigation}
+        isLoading={isLoading}
       />
     </ScrollView>
   );

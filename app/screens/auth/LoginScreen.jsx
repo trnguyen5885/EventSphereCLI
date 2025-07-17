@@ -180,7 +180,7 @@ const LoginScreen = ({ navigation }) => {
           <ButtonComponent
             type="link"
             text=" Đăng ký ngay"
-            onPress={() => navigation.navigate('RegisterOrganizer')}
+            onPress={() => navigation.navigate('Register')}
           />
         </RowComponent>
       </SectionComponent>

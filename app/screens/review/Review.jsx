@@ -15,16 +15,10 @@ const Review = ({navigation,route}) => {
     const [selectedTag, setSelectedTag] = useState('Đã tham gia');
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
-    const [userInfo, setUserInfo] = useState({
-        userId: null,
-        username: '',
-        avatar: ''
-    })
     const [image, setImage] = useState('');
     const [isLoading, setIsLoading] = useState(false)
     const userId = useSelector(state => state.auth.userId);
     const [name, setName] = useState('');
-
 
     useFocusEffect(
         useCallback(() => {
@@ -100,12 +94,11 @@ const Review = ({navigation,route}) => {
         setIsLoading(true);
         try {
             const response = await AxiosInstance().post('preview/post', {
-                userId: userInfo.userId,
+                userId: userId, // Sử dụng userId từ Redux store thay vì userInfo.userId
                 eventId: detailEventId,
                 comment: comment,
                 rating: rating,
                 image: image,
-
             });
 
             if(response.status) {
@@ -117,7 +110,6 @@ const Review = ({navigation,route}) => {
                         }
                       ]
                 );
-                
             }
         } catch(e) {
             console.log(e);
@@ -151,9 +143,6 @@ const Review = ({navigation,route}) => {
                         {/* tên sự kiện, đánh giá trung bình */}
                         <View style={styles.detailInfoContainer}>
                             <Text style={styles.detailInfoName}>{name}</Text>
-                            <Text style={styles.detailInfoRate}>
-                                <AntDesign name="star" size={18} color="grey" /> 9.5
-                            </Text>
                         </View>
                     </View>
 
@@ -359,6 +348,4 @@ const styles = StyleSheet.create({
     tagText: {
         color: '#111827', // màu mặc định
     },
-
 });
-
