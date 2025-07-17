@@ -1,35 +1,103 @@
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image, RefreshControl } from 'react-native'
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image, RefreshControl, Animated } from 'react-native'
 import React from 'react'
 import { useState } from 'react'
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AxiosInstance } from '../../services';
 import { TextComponent } from '../../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
+
+// Skeleton Placeholder Component
+const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = () => {
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+      ]).start(() => animate());
+    };
+    animate();
+  }, []);
+
+  const backgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#E1E9EE', '#F2F8FC'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          backgroundColor,
+          borderRadius,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+// Skeleton Card Component
+const SkeletonTicketCard = () => (
+  <View style={styles.card}>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {/* Avatar skeleton */}
+      <SkeletonPlaceholder width={60} height={60} borderRadius={8} />
+      
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        {/* Event name skeleton */}
+        <SkeletonPlaceholder width="80%" height={16} style={{ marginBottom: 8 }} />
+        
+        {/* Status badge skeleton */}
+        <SkeletonPlaceholder width={80} height={20} borderRadius={12} style={{ marginBottom: 8 }} />
+        
+        {/* Ticket count skeleton */}
+        <SkeletonPlaceholder width="60%" height={14} style={{ marginBottom: 4 }} />
+        
+        {/* Event date skeleton */}
+        <SkeletonPlaceholder width="50%" height={14} style={{ marginBottom: 4 }} />
+        
+        {/* Showtime count skeleton */}
+        <SkeletonPlaceholder width="40%" height={14} />
+      </View>
+    </View>
+    
+    {/* Button skeleton */}
+    <SkeletonPlaceholder width="100%" height={40} borderRadius={6} style={{ marginTop: 14 }} />
+  </View>
+);
+
+// Skeleton Loading Component
+const SkeletonLoading = () => (
+  <View style={{ flex: 1, padding: 16, backgroundColor: "#f5f5f5" }}>
+    {[1, 2, 3, 4, 5].map((_, index) => (
+      <SkeletonTicketCard key={index} />
+    ))}
+  </View>
+);
 
 const UserTicketsScreen = ({navigation, route}) => {
     const [userData, setUserData] = useState(null);
     const [tickets, setTickets] = useState([]);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false); // Thêm state cho pull-to-refresh
+    const [refreshing, setRefreshing] = useState(false);
     const userId = useSelector(state => state.auth.userId);
-    const [statusTab, setStatusTab] = useState('all'); // all, success, processing, canceled
-    const [timeTab, setTimeTab] = useState('upcoming'); // upcoming, ongoing, ended
-    const suggestedEvents = [
-        {
-            _id: 'suggest1',
-            name: 'YÊN ẤM MERCHANDISE',
-            image: 'https://res.cloudinary.com/deoqppiun/image/upload/v1750255690/ol5cbr0aoexpj06vvqwd.jpg',
-        },
-        {
-            _id: 'suggest2',
-            name: 'PHẬT BẢO NGHIÊM TRẬN - TRIỂN LÃM',
-            image: 'https://res.cloudinary.com/deoqppiun/image/upload/v1750846407/p5uul3jpk2ob6koenkm7.png',
-        },
-    ];
+    const [statusTab, setStatusTab] = useState('all');
+    const [timeTab, setTimeTab] = useState('upcoming');
 
-    // Tách logic gọi API thành function riêng để dùng chung
     const fetchTickets = async (isRefresh = false) => {
         if (isRefresh) {
             setRefreshing(true);
@@ -41,21 +109,22 @@ const UserTicketsScreen = ({navigation, route}) => {
             const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
             setUserData(tickets.data.user);
             const eventsData = tickets.data.events;
+            console.log("Tickets data:", tickets.data);
             
-            // Gọi API detail cho từng event để lấy timeStart và timeEnd
+            
             const eventsWithDetails = await Promise.all(
                 eventsData.map(async (event) => {
                     try {
                         const eventDetail = await AxiosInstance().get(`/events/detail/${event._id}`);
                         return {
                             ...event,
-                            timeStart: eventDetail.data.data.timeStart,
-                            timeEnd: eventDetail.data.data.timeEnd,
-                            showtimes: eventDetail.data.data.showtimes || []
+                            timeStart: eventDetail.data.timeStart,
+                            timeEnd: eventDetail.data.timeEnd,
+                            showtimes: eventDetail.data.showtimes || []
                         };
                     } catch (error) {
                         console.log(`Lỗi khi lấy chi tiết sự kiện ${event._id}:`, error);
-                        return event; // Trả về event gốc nếu có lỗi
+                        return event;
                     }
                 })
             );
@@ -76,12 +145,10 @@ const UserTicketsScreen = ({navigation, route}) => {
         fetchTickets();
     }, []);
 
-    // Hàm xử lý pull-to-refresh
     const onRefresh = () => {
         fetchTickets(true);
     };
 
-    // Lọc vé theo tab
     const now = Date.now();
     const filteredEvents = events.filter(event => {
         let statusMatch = statusTab === 'all' || event.status === statusTab;
@@ -105,7 +172,6 @@ const UserTicketsScreen = ({navigation, route}) => {
                     timeMatch = true;
             }
         } else if (event.timeEnd) {
-            // Fallback cho trường hợp chỉ có timeEnd
             const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
             switch (timeTab) {
                 case 'upcoming':
@@ -121,7 +187,6 @@ const UserTicketsScreen = ({navigation, route}) => {
                     timeMatch = true;
             }
         } else if (event.showtimes && event.showtimes.length > 0) {
-            // Sử dụng showtimes nếu có
             const showtimesInRange = event.showtimes.filter(showtime => {
                 const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
                 const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
@@ -143,15 +208,6 @@ const UserTicketsScreen = ({navigation, route}) => {
         return statusMatch && timeMatch;
     });
 
-    if (loading) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
-                <ActivityIndicator size="large" color="#007BFF" />
-            </View>
-        );
-    }
-
-    // Component hiển thị khi không có vé
     const EmptyState = () => (
         <View style={styles.emptyContainer}>
             <Image 
@@ -170,7 +226,6 @@ const UserTicketsScreen = ({navigation, route}) => {
         </View>
     );
 
-    // Hàm để lấy trạng thái event
     const getEventStatus = (event) => {
         const now = Date.now();
         
@@ -182,7 +237,6 @@ const UserTicketsScreen = ({navigation, route}) => {
             if (startTime <= now && endTime > now) return 'ongoing';
             if (endTime <= now) return 'ended';
         } else if (event.showtimes && event.showtimes.length > 0) {
-            // Sử dụng showtimes để xác định status
             const hasUpcoming = event.showtimes.some(showtime => {
                 const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
                 return startTime > now;
@@ -202,7 +256,6 @@ const UserTicketsScreen = ({navigation, route}) => {
         return 'unknown';
     };
 
-    // Hàm để lấy badge status
     const getStatusBadge = (event) => {
         const status = getEventStatus(event);
         switch (status) {
@@ -253,8 +306,10 @@ const UserTicketsScreen = ({navigation, route}) => {
                 ))}
             </View>
             
-            {/* Danh sách vé hoặc gợi ý */}
-            {filteredEvents.length === 0 ? (
+            {/* Skeleton Loading hoặc Content */}
+            {loading ? (
+                <SkeletonLoading />
+            ) : filteredEvents.length === 0 ? (
                 <EmptyState />
             ) : (
                 <FlatList
@@ -265,24 +320,22 @@ const UserTicketsScreen = ({navigation, route}) => {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            colors={['#5669FF']} // Android
-                            tintColor={'#5669FF'} // iOS
-                            title="Đang tải lại..." // iOS
-                            titleColor={'#5669FF'} // iOS
+                            colors={['#5669FF']}
+                            tintColor={'#5669FF'}
+                            title="Đang tải lại..."
+                            titleColor={'#5669FF'}
                         />
                     }
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                         let eventDate = item.eventDate;
                         
-                        // Ưu tiên lấy từ timeStart
                         if (!eventDate && item.timeStart) {
                             const startTime = typeof item.timeStart === 'number' ? item.timeStart : new Date(item.timeStart).getTime();
                             const date = new Date(startTime);
                             eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         }
                         
-                        // Nếu không có timeStart, lấy từ showtime đầu tiên
                         if (!eventDate && item.showtimes && item.showtimes.length > 0) {
                             const firstShowtime = item.showtimes[0];
                             const startTime = typeof firstShowtime.startTime === 'number' ? firstShowtime.startTime : new Date(firstShowtime.startTime).getTime();
@@ -407,7 +460,6 @@ const styles = StyleSheet.create({
         fontSize: 15,
         letterSpacing: 0.5,
     },
-    // Styles cho empty state
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',

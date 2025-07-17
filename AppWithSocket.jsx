@@ -8,15 +8,12 @@ import {
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {
-  RegisterScreen,
   EventDetailScreen,
   TicketEventScreen,
   PaymentScreen,
   NotificationScreen,
   UserTicketsScreen,
   ListTicket,
-  EventCategoryScreen,
-  EventSearchScreen,
   ProfileEdit,
   ProfileScreen,
   SeatsScreen,
@@ -29,7 +26,7 @@ import LoginScreen from './app/screens/auth/LoginScreen';
 import RatingAndReview from './app/screens/review/RatingAndReview';
 import OtpVerificationScreen from './app/screens/auth/OtpVerificationScreen';
 import OtpOrganizerVerificationScreen from './app/screens/authOrganizer/OtpOrganizerVerificationScreen';
-
+import EventSearchScreen from './app/screens/explore/EventSearchScreen';
 import DrawerNavigator from './app/navigation/DrawerNavigator';
 import OrganizerTabs from './app/screens/organizer/OrganizerTabs';
 import ProfileEditOrganizer from './app/screens/organizer/ProfileEditOrganizer';
@@ -48,6 +45,7 @@ import FriendRequestScreen from './app/screens/friend/FriendRequestScreen';
 import {getTokens} from './app/token/authTokens';
 import {getSocket, initSocket} from './app/socket/socket';
 import {jwtDecode} from 'jwt-decode';
+import RegisterScreen from './app/screens/auth/RegisterScreen';
 import LoginOrganizerScreen from './app/screens/authOrganizer/LoginOrganizerScreen';
 import RegisterOrganizerScreen from './app/screens/authOrganizer/RegisterOrganizerScreen';
 import EventDetailOrganizer from './app/screens/organizer/EventDetailOrganizer';
@@ -70,6 +68,8 @@ import PolicyViewerScreen from './app/screens/profile/PolicyViewerScreen';
 import FAQScreen from './app/screens/profile/FAQScreen';
 import ContactScreen from './app/screens/profile/ContactScreen';
 import QRScanner from './app/screens/organizer/QRScanner';
+import ScanShowTime from './app/screens/organizer/ScanShowTime';
+import FavoriteTag from './app/screens/FavoriteTag';
 
 
 const Stack = createNativeStackNavigator();
@@ -191,7 +191,6 @@ const AppWithSocket = () => {
             component={OtpOrganizerVerificationScreen}
           />
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
-          <Stack.Screen name="Category" component={EventCategoryScreen} />
           <Stack.Screen name="Search" component={EventSearchScreen} />
           <Stack.Screen name="Detail" component={EventDetailScreen} />
           <Stack.Screen name="Seats" component={SeatsScreen} />
@@ -236,6 +235,10 @@ const AppWithSocket = () => {
           <Stack.Screen name="FAQScreen" component={FAQScreen} />
           <Stack.Screen name="ContactScreen" component={ContactScreen} />
           <Stack.Screen name="QRScanner" component={QRScanner} />
+          <Stack.Screen name="ScanShowTime" component={ScanShowTime} />
+          <Stack.Screen name="FavoriteTag" component={FavoriteTag} />
+          
+
 
         </Stack.Navigator>
       </NavigationContainer>

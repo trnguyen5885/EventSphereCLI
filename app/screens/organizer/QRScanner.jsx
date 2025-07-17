@@ -40,8 +40,8 @@ export default function QRScanner({ route, navigation }) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Lấy eventId từ route params
-  const { eventId, eventName } = route.params || {};
-  console.log('Event ID:', eventId, 'Event Name:', eventName);
+  const { eventId, eventName, showtimeId, showtimeInfo } = route.params || {};
+  console.log('Event ID:', eventId, 'Event Name:', eventName, 'Showtime ID:', showtimeId, 'Showtime Info:', showtimeInfo);
 
   // Animation cho đường scan
   useEffect(() => {
@@ -117,28 +117,65 @@ export default function QRScanner({ route, navigation }) {
     return () => backHandler.remove();
   }, []);
 
-  const verifyTicket = async (ticketId) => {
+  // Thêm function để extract ticketId từ QR code
+  const extractTicketId = (qrCodeValue) => {
+    // Xử lý các format có thể có:
+    // "TicketID:9a0d-TCK000103" -> "9a0d-TCK000103"
+    // "9a0d-TCK000103" -> "9a0d-TCK000103"
+    // "ticketId:9a0d-TCK000103" -> "9a0d-TCK000103"
+
+    if (qrCodeValue.includes(':')) {
+      // Tách phần sau dấu ':'
+      const parts = qrCodeValue.split(':');
+      return parts[1].trim();
+    }
+
+    // Nếu không có dấu ':' thì trả về nguyên giá trị
+    return qrCodeValue.trim();
+  };
+
+  const verifyTicket = async (qrCodeValue) => {
     try {
       setIsScanning(false);
+
+      // Extract ticketId từ QR code
+      const ticketId = extractTicketId(qrCodeValue);
+
+      console.log('QR Code raw value:', qrCodeValue);
+      console.log('Extracted ticketId:', ticketId);
+
       const axiosJWT = AxiosInstance();
+
+      console.log('Sending verification request:', {
+        ticketId: ticketId,
+        showtimeId: showtimeId,
+      });
+
+      // Debug: Kiểm tra các tham số
+      if (!ticketId) {
+        throw new Error('Ticket ID is missing');
+      }
+      if (!showtimeId) {
+        throw new Error('Showtime ID is missing');
+      }
+
       const response = await axiosJWT.post('tickets/verify-ticket', {
         ticketId: ticketId,
-        // eventId: eventId
+        showtimeId: showtimeId,
       });
-      Alert.alert('Xác thực vé', `Thông tin: ${response}'}`);
-      console.log('Xác thực vé:', response.data);
 
+      console.log('API Response:', response);
 
-      if (response.data.success) {
+      if (response.success === true) {
         // Hiệu ứng thành công
         Vibration.vibrate([100, 100, 100]);
         startPulseAnimation();
         setScanCount(prev => prev + 1);
-        setLastScannedCode(ticketId);
+        setLastScannedCode(ticketId); // Lưu ticketId đã extract
 
         Alert.alert(
           '✅ Xác thực thành công',
-          `${response.data.message || 'Vé hợp lệ'}\n\nMã vé: ${ticketId}\nSố vé đã quét: ${scanCount + 1}`,
+          `${response.message || 'Vé hợp lệ'}\n\nMã vé: ${ticketId}\nSố vé đã quét: ${scanCount + 1}`,
           [
             {
               text: 'Quét tiếp',
@@ -162,7 +199,7 @@ export default function QRScanner({ route, navigation }) {
 
         Alert.alert(
           '❌ Xác thực thất bại',
-          `${response.data.message || 'Vé không hợp lệ'}\n\nMã vé: ${ticketId}`,
+          `${response.data?.message || 'Vé không hợp lệ'}\n\nMã vé: ${ticketId}`,
           [
             {
               text: 'Thử lại',
@@ -178,11 +215,26 @@ export default function QRScanner({ route, navigation }) {
       }
     } catch (error) {
       console.error('Lỗi khi xác thực vé:', error);
+
+      let errorMessage = 'Không thể xác thực vé. Vui lòng kiểm tra kết nối mạng và thử lại.';
+
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+        errorMessage = "Vé không thuộc suất diễn này!";
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+        errorMessage = 'Không nhận được phản hồi từ server. Kiểm tra kết nối mạng.';
+      } else {
+        console.error('Error message:', error.message);
+        errorMessage = `Lỗi: ${error.message}`;
+      }
+
       Vibration.vibrate([200, 100, 200, 100, 200]);
 
       Alert.alert(
-        '⚠️ Lỗi kết nối',
-        'Không thể xác thực vé. Vui lòng kiểm tra kết nối mạng và thử lại.',
+        '⚠️ Thông báo',
+        errorMessage,
         [
           {
             text: 'Thử lại',
@@ -198,6 +250,7 @@ export default function QRScanner({ route, navigation }) {
     }
   };
 
+  // Cập nhật phần xử lý onCodeScanned
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13'],
     onCodeScanned: codes => {
@@ -206,8 +259,11 @@ export default function QRScanner({ route, navigation }) {
 
       for (const code of codes) {
         if (code.value) {
+          // Extract ticketId để so sánh
+          const ticketId = extractTicketId(code.value);
+
           // Kiểm tra không quét trùng mã trong 30 giây
-          if (lastScannedCode === code.value) {
+          if (lastScannedCode === ticketId) {
             Alert.alert(
               '⚠️ Mã đã quét',
               'Mã QR này vừa được quét. Vui lòng quét mã khác.',
@@ -228,13 +284,9 @@ export default function QRScanner({ route, navigation }) {
 
           // Hiệu ứng âm thanh/rung khi quét
           Vibration.vibrate(100);
-          Alert.alert("📷 Mã QR đã quét", `Mã: ${code.value}`)
-          setTimeout(() => {
-            scanned.current = false;
-            setIsScanning(true);
-          }, 3000);
 
-          // verifyTicket(code.value);
+          // Gọi verifyTicket với raw QR code value
+          verifyTicket(code.value);
         } else {
           Alert.alert('❌ Lỗi', 'Không đọc được mã QR', [
             {

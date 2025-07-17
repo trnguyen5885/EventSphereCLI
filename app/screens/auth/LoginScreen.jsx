@@ -60,7 +60,7 @@ const LoginScreen = ({ navigation }) => {
       const response = await loginUser(email, password);
 
       if (response.status === 200) {
-        const { id, token, refreshToken, role } = response.data;
+        const { id, token, refreshToken, role, tags } = response.data;
 
         if (role !== 3) {
           setPasswordError('Tài khoản không phải người dùng');
@@ -74,10 +74,17 @@ const LoginScreen = ({ navigation }) => {
           })
         );
 
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Drawer' }],
-        });
+        if (Array.isArray(tags) && tags.length === 0) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'FavoriteTag' }],
+          });
+        } else {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Drawer' }],
+          });
+        }
       } else {
         setPasswordError('Đăng nhập thất bại');
       }
