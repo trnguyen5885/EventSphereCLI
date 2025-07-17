@@ -218,15 +218,15 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
               <View style={{
                 borderWidth: isTarget ? 3 : 2,
                 borderColor: isTarget ? '#FFD600' : '#fff',
-                borderRadius: 20,
+                borderRadius: 16,
                 overflow: 'hidden',
-                width: 40,
-                height: 40,
+                width: 32,
+                height: 32,
                 backgroundColor: isMe ? '#007bff' : '#eee',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: isMe ? '#fff' : '#333' }}>{initial}</Text>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: isMe ? '#fff' : '#333' }}>{initial}</Text>
               </View>
               <Callout tooltip>
                 <View style={styles.calloutBox}>

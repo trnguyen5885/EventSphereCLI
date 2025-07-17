@@ -299,14 +299,15 @@ const ExploreScreen = ({ navigation }: any) => {
       <View
         style={{
           backgroundColor: appColors.primary,
-          height: 70 + (Platform.OS === 'ios' ? 16 : 0),
-          paddingVertical: 15
+          height: 60 + (Platform.OS === 'ios' ? 16 : 0),
+          paddingVertical: 10
         }}>
         <View style={{ paddingHorizontal: 10, marginRight: 16 }}>
           <RowComponent>
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
               <Image
                 source={require('../../../assets/images/logo3.png')}
+                style={{ width: 180, height: 30, resizeMode: 'contain' }}
               />
             </View>
             
