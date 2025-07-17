@@ -16,11 +16,32 @@ const getDistanceInKm = (lat1, lon1, lat2, lon2) => {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
-const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
+// CustomMarker hiển thị avatar picUrl
+const CustomMarker = ({ picUrl, name }) => (
+  <View style={{
+    borderWidth: 2,
+    borderColor: '#fff',
+    borderRadius: 20,
+    overflow: 'hidden',
+    width: 40,
+    height: 40,
+    backgroundColor: '#eee',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }}>
+    <Image
+      source={{ uri: picUrl }}
+      style={{ width: 36, height: 36, borderRadius: 18 }}
+    />
+  </View>
+);
+
+const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) => {
   const [routeCoords, setRouteCoords] = useState([]);
   const [useStraightLine, setUseStraightLine] = useState(false);
   const mapRef = useRef(null);
 
+  const targetMember = members.find(m => (m._id || m.id) === targetMemberId);
   const firstLocation = members.find(m => m.location?.coordinates?.length === 2);
   const firstLocationLat = firstLocation?.location?.coordinates[1] || 0;
   const firstLocationLng = firstLocation?.location?.coordinates[0] || 0;
@@ -98,7 +119,7 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
       setRouteCoords([]);
     }
   }, [myLocation, targetMember]);
-
+  
   const handleRegionChangeComplete = (newRegion) => {
     setRegion(r => {
       if (
@@ -118,7 +139,7 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
       </View>
     );
   }
-
+  
   return (
     <View style={styles.mapContainer}>
       <View style={styles.zoomControl}>
@@ -169,66 +190,74 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
         onRegionChangeComplete={handleRegionChangeComplete}
         showsUserLocation={!!myLocation}
       >
-        {members.map(member => (
-          member.location?.coordinates?.length === 2 && (
+        {members.map(member => {
+          const isTarget = targetMember &&
+            (member._id || member.id) === (targetMember._id || targetMember.id);
+
+          // Xác định marker của chính mình
+          const isMe = myLocation &&
+            Math.abs(member.latitude - myLocation.latitude) < 0.00001 &&
+            Math.abs(member.longitude - myLocation.longitude) < 0.00001;
+
+          // Lấy chữ cái đầu của username hoặc chữ 'Bạn' nếu là mình
+          const initial = isMe ? 'Tôi' : (member.username ? member.username.charAt(0).toUpperCase() : '?');
+
+          return typeof member.latitude === 'number' && typeof member.longitude === 'number' && (
             <Marker
               key={member._id || member.id}
               coordinate={{
-                latitude: member.location.coordinates[1],
-                longitude: member.location.coordinates[0]
+                latitude: member.latitude,
+                longitude: member.longitude
               }}
               onPress={() => {
-                setTargetMember({
-                  latitude: member.location.coordinates[1],
-                  longitude: member.location.coordinates[0],
-                  id: member._id || member.id,
-                  picUrl: member.picUrl,
-                  name: member.name,
-                  email: member.email
-                });
+                if (!isTarget) {
+                  setTargetMemberId(member._id || member.id);
+                }
               }}
             >
-              {/* Nếu là targetMember và có picUrl thì hiển thị avatar, ngược lại là chấm cam */}
-              {(targetMember && ((targetMember.id && targetMember.id === (member._id || member.id)) || (targetMember._id && targetMember._id === (member._id || member.id))) && member.picUrl) ? (
-                <View style={{
-                  borderWidth: 2,
-                  borderColor: '#fff',
-                  borderRadius: 20,
-                  overflow: 'hidden',
-                  width: 40,
-                  height: 40,
-                  backgroundColor: '#eee',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Image
-                    source={{ uri: member.picUrl }}
-                    style={{ width: 36, height: 36, borderRadius: 18 }}
-                  />
-                </View>
-              ) : (
-                <View style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
-                  backgroundColor: 'orange',
-                  borderWidth: 2,
-                  borderColor: '#fff'
-                }} />
-              )}
+              <View style={{
+                borderWidth: isTarget ? 3 : 2,
+                borderColor: isTarget ? '#FFD600' : '#fff',
+                borderRadius: 16,
+                overflow: 'hidden',
+                width: 32,
+                height: 32,
+                backgroundColor: isMe ? '#007bff' : '#eee',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: isMe ? '#fff' : '#333' }}>{initial}</Text>
+              </View>
               <Callout tooltip>
                 <View style={styles.calloutBox}>
-                  <Text style={styles.calloutName}>{member.name}</Text>
+                  <Image
+                    source={{ uri: member.picUrl }}
+                    style={{ width: 40, height: 40, borderRadius: 20, marginBottom: 6 }}
+                  />
                   <Text style={styles.calloutEmail}>{member.email}</Text>
                   <Text style={styles.calloutDirection}>Nhấn để chỉ đường</Text>
                 </View>
               </Callout>
             </Marker>
-          )
-        ))}
+          );
+        })}
+
 
         {myLocation && (
-          <Marker coordinate={myLocation} title="Vị trí của tôi" pinColor="blue">
+          <Marker coordinate={myLocation}>
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: '#007bff',
+              borderWidth: 2,
+              borderColor: '#fff',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Tôi</Text>
+            </View>
+
             <Callout tooltip>
               <View style={styles.calloutBox}>
                 <Text style={[styles.calloutName, { color: '#28a745' }]}>Bạn</Text>
@@ -237,6 +266,7 @@ const GroupMap = ({ members, myLocation, targetMember, setTargetMember }) => {
             </Callout>
           </Marker>
         )}
+
 
         {myLocation && targetMember && (
           useStraightLine ? (

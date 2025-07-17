@@ -15,6 +15,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {globalStyles} from '../constants/globalStyles';
 import GroupScreen from '../screens/connect/GroupScreen';
 import ConnectScreen from '../screens/connect/ConnectScreen';
+import TestSheet from '../screens/connect/TestSheet';
 
 const TabNavigator = () => {
   const Tab = createBottomTabNavigator();

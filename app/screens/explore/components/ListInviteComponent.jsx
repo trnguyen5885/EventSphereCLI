@@ -4,7 +4,7 @@ import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/botto
 import { AxiosInstance } from '../../../services';
 import { appColors } from '../../../constants/appColors';
 
-const ListInviteComponent = ({ sheetRef, eventId }) => {
+const ListInviteComponent = ({ sheetRef, eventId, onInvite }) => {
   const [selected, setSelected] = useState([]);
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,14 +35,18 @@ const ListInviteComponent = ({ sheetRef, eventId }) => {
 
   const handleInvite = async () => {
     if (selected.length === 0) return;
-    
+    const selectedFriends = friends.filter(x => selected.includes(x._id));
     try {
-      const body = {
-        eventId: eventId,
-        userIds: friends.filter(x => selected.includes(x._id)).map(x => x._id)
+      if (onInvite) {
+        await onInvite(selectedFriends);
+      } else {
+        const body = {
+          eventId: eventId,
+          userIds: selectedFriends.map(x => x._id)
+        };
+        console.log("Body:", JSON.stringify(body));
+        await AxiosInstance().post('friends/invites', body);
       }
-      console.log("Body:", JSON.stringify(body));
-      const res = await AxiosInstance().post('friends/invites', body);
       setSelected([]);
       sheetRef.current?.close();
     } catch (error) {

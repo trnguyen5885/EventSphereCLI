@@ -24,8 +24,8 @@ const SocialLogin = ({ navigation }) => {
       
       if (userInfo.data.idToken) {
         const res = await socialLogin(userInfo.data.idToken);
-        const { id, token, refreshToken, role, ...userData } = res.data;
-
+        const { id, token, refreshToken, role, tags,...userData } = res.data;
+        console.log("Data: ", JSON.stringify(res.data));
         // Lưu thông tin đăng nhập vào Redux
         dispatch(
           loginSuccess({
@@ -42,10 +42,17 @@ const SocialLogin = ({ navigation }) => {
 
         // Điều hướng theo role
         if (role === 3) {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Drawer' }],
-          });
+          if (Array.isArray(tags) && tags.length === 0) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'FavoriteTag' }],
+            });
+          } else {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Drawer' }],
+            });
+          }
         } else if (role === 2) {
           navigation.reset({
             index: 0,

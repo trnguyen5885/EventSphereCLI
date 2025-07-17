@@ -7,7 +7,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createGroup, getGroupsByUser } from './services/connectApi';
 import { useSelector } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import AxiosInstance from '../../services/api/AxiosInstance';
 import { appColors } from '../../constants/appColors';
 
@@ -22,6 +22,7 @@ const ConnectScreen = ({ navigation }) => {
   const userId = useSelector(state => state.auth.userId);
   const userLocation = useSelector(state => state.auth.location);
   const [myGroups, setMyGroups] = useState([]);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -42,8 +43,8 @@ const ConnectScreen = ({ navigation }) => {
       const groups = await getGroupsByUser(userId);
       setMyGroups(groups || []);
     };
-    fetchGroups();
-  }, [userId, showGroupForm]);
+    if (isFocused) fetchGroups();
+  }, [userId, isFocused]);
 
   const handleCreateGroup = async () => {
     if (!groupName || !selectedEvent) {
@@ -95,7 +96,7 @@ const ConnectScreen = ({ navigation }) => {
       </TouchableOpacity>
     </View>
   );
-
+  console.log("My group: "+JSON.stringify(myGroups));
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#6C5CE7" />
@@ -169,7 +170,8 @@ const ConnectScreen = ({ navigation }) => {
               onPress={() => navigation.navigate('GroupScreen', { 
                 groupId: item._id, 
                 groupName: item.groupName,
-                userLocation 
+                userLocation,
+                ownerId: item.ownerId 
               })}
             >
               <View style={styles.groupCardContent}>

@@ -498,7 +498,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
           <View style={styles.amountContainer}>
             <Text style={styles.amountLabel}>Số tiền thanh toán</Text>
             <Text style={styles.amountValue}>
-              {totalPrice?.toLocaleString('vi-VN')} VNĐ
+              {amount?.toLocaleString('vi-VN')} VNĐ
             </Text>
           </View>
 

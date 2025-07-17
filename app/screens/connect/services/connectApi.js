@@ -103,7 +103,7 @@ export const leaveGroup = async (groupId, userId) => {
 // Xóa group
 export const deleteGroup = async (groupId) => {
   try {
-    const res = await AxiosInstance().delete(`/connects/${groupId}`);
+    const res = await AxiosInstance().delete(`/connects/delete/${groupId}`);
     return res;
   } catch (error) {
     console.log(error);

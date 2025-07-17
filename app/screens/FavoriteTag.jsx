@@ -22,7 +22,6 @@ const FavoriteTag = () => {
 
   // Mapping tags với icon tương ứng
   const tagIcons = {
-    "2025": "🎉",
     "âm nhạc": "🎵",
     "Ẩm thực": "🍽️",
     "Cải Lương": "🎭",
@@ -54,19 +53,17 @@ const FavoriteTag = () => {
       setLoading(true);
       setError('');
       const axiosJWT = AxiosInstance();
-      const res = await axiosJWT.get('tags/suggest');
+      const res = await axiosJWT.get('tags/default');
 
-      // API trả về mảng string trực tiếp
+      // API trả về mảng object
       if (res.data) {
-        console.log('Fetched tags:', res);
         setTags(res.data);
       } else {
         // Fallback data với dữ liệu chính xác từ API
         setTags([
-          "2025", "âm nhạc", "Ẩm thực", "Cải Lương", "concert",
-          "Gia đình", "Giải trí", "Hài Kịch", "Hội chợ", "Hội thảo",
-          "Kịch", "Kịch thiếu nhi", "Lễ hội", "live", "Nghệ thuật",
-          "rock", "Sân khấu kịch", "Sơn Tùng", "Thể thao", "Workshop"
+          { name: "Cải Lương" }, { name: "Gia đình" }, { name: "Giải trí" }, { name: "Hài Kịch" },
+          { name: "Hội chợ" }, { name: "Hội thảo" }, { name: "Kịch" }, { name: "Lễ hội" },
+          { name: "Nghệ thuật" }, { name: "Thể thao" }, { name: "Workshop" }, { name: "âm nhạc" }, { name: "Ẩm thực" }
         ]);
       }
     } catch (err) {
@@ -74,10 +71,9 @@ const FavoriteTag = () => {
       setError('Không thể tải danh sách thể loại');
       // Sử dụng dữ liệu chính xác từ API làm fallback
       setTags([
-        "2025", "âm nhạc", "Ẩm thực", "Cải Lương", "concert",
-        "Gia đình", "Giải trí", "Hài Kịch", "Hội chợ", "Hội thảo",
-        "Kịch", "Kịch thiếu nhi", "Lễ hội", "live", "Nghệ thuật",
-        "rock", "Sân khấu kịch", "Sơn Tùng", "Thể thao", "Workshop"
+        { name: "Cải Lương" }, { name: "Gia đình" }, { name: "Giải trí" }, { name: "Hài Kịch" },
+        { name: "Hội chợ" }, { name: "Hội thảo" }, { name: "Kịch" }, { name: "Lễ hội" },
+        { name: "Nghệ thuật" }, { name: "Thể thao" }, { name: "Workshop" }, { name: "âm nhạc" }, { name: "Ẩm thực" }
       ]);
     } finally {
       setLoading(false);
@@ -86,9 +82,9 @@ const FavoriteTag = () => {
 
   // Xử lý chọn/bỏ chọn tag
   const toggleTag = (tag) => {
-    if (selectedTags.includes(tag)) {
+    if (selectedTags.some(item => item.name === tag.name)) {
       // Bỏ chọn tag
-      setSelectedTags(selectedTags.filter(item => item !== tag));
+      setSelectedTags(selectedTags.filter(item => item.name !== tag.name));
     } else {
       // Chọn tag (chỉ cho phép chọn tối đa 5)
       if (selectedTags.length < 5) {
@@ -104,7 +100,7 @@ const FavoriteTag = () => {
   };
 
   // Xử lý nút Tiếp tục
-  const handleContinue = () => {
+  const handleContinue = async() => {
     if (selectedTags.length !== 5) {
       Alert.alert(
         'Thông báo',
@@ -113,12 +109,13 @@ const FavoriteTag = () => {
       );
       return;
     }
-
-    // Có thể lưu selectedTags vào AsyncStorage hoặc context
-    console.log('Selected tags:', selectedTags);
+    const body = {
+      tag: selectedTags.map(tag => tag._id)
+    };
+    await AxiosInstance().put('/users/addTag', body);
 
     // Navigate to Welcome screen
-    navigation.navigate('Welcome');
+    navigation.navigate('Drawer');
   };
 
   if (loading) {
@@ -139,7 +136,7 @@ const FavoriteTag = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chọn thể loại của bạn</Text>
+        <Text style={styles.headerTitle}>Chọn danh mục yêu thích</Text>
         <Text style={styles.headerSubtitle}>
           Dựa trên danh mục của bạn, chúng tôi sẽ hiển thị cho bạn các chủ đề liên quan
         </Text>
@@ -180,19 +177,19 @@ const FavoriteTag = () => {
                 key={index}
                 style={[
                   styles.tagItem,
-                  selectedTags.includes(tag) && styles.tagItemSelected
+                  selectedTags.some(item => item.name === tag.name) && styles.tagItemSelected
                 ]}
                 onPress={() => toggleTag(tag)}
                 activeOpacity={0.7}
               >
                 <Text style={styles.tagIcon}>
-                  {tagIcons[tag] || "🎯"}
+                  {tagIcons[tag.name] || "🎯"}
                 </Text>
                 <Text style={[
                   styles.tagText,
-                  selectedTags.includes(tag) && styles.tagTextSelected
+                  selectedTags.some(item => item.name === tag.name) && styles.tagTextSelected
                 ]}>
-                  {tag}
+                  {tag.name}
                 </Text>
               </TouchableOpacity>
             ))}

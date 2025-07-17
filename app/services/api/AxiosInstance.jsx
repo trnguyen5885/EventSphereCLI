@@ -26,14 +26,15 @@ const AxiosInstance = (contentType = 'application/json') => {
         async (error)=>{
             const originalRequest = error.config;
 
-            if(error.res?.status===401 && !originalRequest._retry){
+            if(error.res?.status===401 || !originalRequest._retry){
                 originalRequest._retry = true;
                 try{
                     const tokens = await getTokens();
-
-                    const res = await axios.post(`${appInfo.BASE_URL}/users/refresh-token`,{
+                    console.log("Refresh Token: "+tokens?.refreshToken);
+                    const body = {
                         refreshToken: tokens?.refreshToken,
-                    });
+                    }
+                    const res = await axios.post(`${appInfo.BASE_URL}/users/refresh-token`, body);
                     const newAccessToken = res.token;
                     await saveTokens(newAccessToken, tokens.refreshToken);
 
