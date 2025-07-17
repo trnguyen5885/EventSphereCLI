@@ -7,6 +7,8 @@ import {
   Animated,
   TouchableOpacity,
   Text,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { EventModel } from '@/app/models';
@@ -73,7 +75,7 @@ const SVGItems = [
   },
 ];
 
-const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
+const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }: { width: number | string; height: number; borderRadius?: number; style?: StyleProp<ViewStyle> }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -103,10 +105,10 @@ const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
     <Animated.View
       style={[
         {
-          width,
           height,
           backgroundColor,
           borderRadius,
+          ...(width === '100%' ? { width: '100%' as const } : { width }),
         },
         style,
       ]}
@@ -141,11 +143,11 @@ const EventSection = ({
           <View style={{ flexDirection: 'row' }}>
             {[1, 2, 3].map((_, index) => (
               <View key={index} style={{ marginRight: 12, padding: 8 }}>
-                <SkeletonPlaceholder width={200} height={120} borderRadius={12} />
+                <SkeletonPlaceholder width={200} height={120} borderRadius={12} style={{}} />
                 <View style={{ paddingTop: 8 }}>
                   <SkeletonPlaceholder width={160} height={16} style={{ marginBottom: 8 }} />
                   <SkeletonPlaceholder width={120} height={14} style={{ marginBottom: 6 }} />
-                  <SkeletonPlaceholder width={80} height={12} />
+                  <SkeletonPlaceholder width={80} height={12} style={{}} />
                 </View>
               </View>
             ))}
@@ -203,7 +205,7 @@ const EventGridSection = ({
             <View key={row} style={{ flexDirection: 'row', marginBottom: 12 }}>
               {[0, 1].map(col => (
                 <View key={col} style={{ flex: 1, marginHorizontal: 6 }}>
-                  <SkeletonPlaceholder width="100%" height={160} borderRadius={12} />
+                  <SkeletonPlaceholder width="100%" height={160} borderRadius={12} style={{}} />
                 </View>
               ))}
             </View>
@@ -321,7 +323,7 @@ const SuggestedEventsScreen = ({
   const [musicEvents, setMusicEvents] = useState<EventModel[]>([]);
   const [workshopEvents, setWorkshopEvents] = useState<EventModel[]>([]);
   const [otherEvents, setOtherEvents] = useState<EventModel[]>([]);
-
+  const [recommentEvents, setRecommentEvents] = useState<EventModel[]>([]);
 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -330,6 +332,7 @@ const SuggestedEventsScreen = ({
   const fetchEvents = async () => {
     try {
       const response = await AxiosInstance().get<EventModel[]>('events/home');
+      const res = await AxiosInstance().get<EventModel[]>('events/for-you');
       const now = Date.now();
 
       const allEvents = response.data || [];
@@ -349,7 +352,7 @@ const SuggestedEventsScreen = ({
       setMusicEvents(music.slice(0, 4)); // lấy 4 sự kiện đầu tiên
       setWorkshopEvents(workshop.slice(0, 4));
       setOtherEvents(others.slice(0, 4));
-
+      setRecommentEvents(res.events);
 
       // Filter ongoing events based on showtimes
       const ongoing = allEvents.filter(event => {
@@ -382,6 +385,7 @@ const SuggestedEventsScreen = ({
     },
     [handleInteraction, navigation],
   );
+console.log("Recomment Event: ", JSON.stringify(recommentEvents));
 
   return (
     <ScrollView
@@ -391,7 +395,7 @@ const SuggestedEventsScreen = ({
       {/* Banner với skeleton */}
       {isLoadingData ? (
         <View style={[styles.paddingContent, { marginVertical: 15 }]}>
-          <SkeletonPlaceholder width="100%" height={180} borderRadius={12} />
+          <SkeletonPlaceholder width="100%" height={180} borderRadius={12} style={{}} />
         </View>
       ) : (
         <BassicBannerComponent
@@ -413,6 +417,15 @@ const SuggestedEventsScreen = ({
         onPressItem={onPressEvent}
         loading={isLoadingData}
       />
+
+      {recommentEvents?.length > 2 && (
+        <EventSection
+          title="Dành cho bạn"
+          data={recommentEvents}
+          onPressItem={onPressEvent}
+          loading={isLoadingData}
+        />
+      )}
 
       <EventGridSection
         title="Sự kiện Âm nhạc"

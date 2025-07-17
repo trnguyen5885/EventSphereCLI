@@ -44,7 +44,7 @@ const ConnectScreen = ({ navigation }) => {
       setMyGroups(groups || []);
     };
     if (isFocused) fetchGroups();
-  }, [userId, showGroupForm, isFocused]);
+  }, [userId, isFocused]);
 
   const handleCreateGroup = async () => {
     if (!groupName || !selectedEvent) {

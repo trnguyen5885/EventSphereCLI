@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Dimensions, TextInput, ActivityIndicator, Image, ScrollView,
@@ -52,6 +52,7 @@ const GroupScreen = ({ route, navigation }) => {
   const [showConfirmDeleteSheet, setShowConfirmDeleteSheet] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [confirmType, setConfirmType] = useState(null); // 'leave' | 'delete'
+  const [targetMemberId, setTargetMemberId] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -175,20 +176,27 @@ const handleDeleteGroup = async () => {
   };
 
   const handleTargetMember = (member) => {
-    setTargetMember(null);
-    setTimeout(() => {
-      setTargetMember(member);
-      if (myLocation && hasLocation(member)) {
-        const dist = getDistanceInKm(myLocation.latitude, myLocation.longitude, member.latitude, member.longitude);
-        setDistanceText(formatDistance(dist));
-      } else {
-        setDistanceText('');
-      }
-    }, 50);
+    const id = member._id || member.id;
+    if (targetMemberId === id) return;
+    setTargetMemberId(id);
+    if (myLocation && hasLocation(member)) {
+      const dist = getDistanceInKm(myLocation.latitude, myLocation.longitude, member.latitude, member.longitude);
+      setDistanceText(formatDistance(dist));
+    } else {
+      setDistanceText('');
+    }
   };
 
-  const onlineMembers = membersWithLocation.filter(hasLocation);
-  const offlineMembers = membersWithLocation.filter(m => !hasLocation(m));
+  const onlineMembers = useMemo(() => membersWithLocation.filter(hasLocation), [membersWithLocation]);
+  const offlineMembers = useMemo(() => membersWithLocation.filter(m => !hasLocation(m)), [membersWithLocation]);
+
+  const allMembers = useMemo(() => {
+    if (!targetMemberId) return onlineMembers;
+    const hasTarget = onlineMembers.some(m => (m._id || m.id) === targetMemberId);
+    if (hasTarget) return onlineMembers;
+    const target = membersWithLocation.find(m => (m._id || m.id) === targetMemberId);
+    return target ? [...onlineMembers, target] : onlineMembers;
+  }, [onlineMembers, targetMemberId, membersWithLocation]);
 
   return (
     <View style={styles.container}>
@@ -250,7 +258,7 @@ const handleDeleteGroup = async () => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Map Container */}
         <View style={styles.mapContainer}>
-          <GroupMap members={onlineMembers} myLocation={myLocation} targetMember={targetMember} />
+          <GroupMap members={allMembers} myLocation={myLocation} targetMemberId={targetMemberId} setTargetMemberId={setTargetMemberId} />
           {distanceText !== '' && (
             <View style={styles.distanceContainer}>
               <MaterialIcons name="straighten" size={16} color="#6C5CE7" />
