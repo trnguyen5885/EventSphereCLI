@@ -18,6 +18,7 @@ import {
   ProfileScreen,
   SeatsScreen,
   ZonesScreen,
+  EventScreen,
 } from './app/screens';
 import SplashScreen from './app/screens/SplashScreen';
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
@@ -70,6 +71,7 @@ import ContactScreen from './app/screens/profile/ContactScreen';
 import QRScanner from './app/screens/organizer/QRScanner';
 import ScanShowTime from './app/screens/organizer/ScanShowTime';
 import FavoriteTag from './app/screens/FavoriteTag';
+import ListByTag from './app/screens/explore/ListByTag';
 
 
 const Stack = createNativeStackNavigator();
@@ -237,7 +239,8 @@ const AppWithSocket = () => {
           <Stack.Screen name="QRScanner" component={QRScanner} />
           <Stack.Screen name="ScanShowTime" component={ScanShowTime} />
           <Stack.Screen name="FavoriteTag" component={FavoriteTag} />
-          
+          <Stack.Screen name="ListByTag" component={ListByTag} />
+
 
 
         </Stack.Navigator>

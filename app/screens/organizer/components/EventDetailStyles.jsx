@@ -145,7 +145,7 @@ export const styles = StyleSheet.create({
         elevation: 4,
     },
     chartHeader: {
-        marginBottom: 20,
+        
     },
     chartLegend: {
         flexDirection: 'column',
@@ -229,6 +229,7 @@ export const styles = StyleSheet.create({
         marginHorizontal: 20,
         borderRadius: 16,
         padding: 20,
+        marginTop: 20,
         marginBottom: 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },

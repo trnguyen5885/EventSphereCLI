@@ -135,109 +135,72 @@ export default function QRScanner({ route, navigation }) {
   };
 
   const verifyTicket = async (qrCodeValue) => {
-    try {
-      setIsScanning(false);
+  try {
+    setIsScanning(false);
 
-      // Extract ticketId từ QR code
-      const ticketId = extractTicketId(qrCodeValue);
+    const ticketId = extractTicketId(qrCodeValue);
 
-      console.log('QR Code raw value:', qrCodeValue);
-      console.log('Extracted ticketId:', ticketId);
+    console.log('QR Code raw value:', qrCodeValue);
+    console.log('Extracted ticketId:', ticketId);
 
-      const axiosJWT = AxiosInstance();
+    if (!ticketId) throw new Error('Ticket ID is missing');
+    if (!showtimeId) throw new Error('Showtime ID is missing');
 
-      console.log('Sending verification request:', {
-        ticketId: ticketId,
-        showtimeId: showtimeId,
-      });
+    const axiosJWT = AxiosInstance();
 
-      // Debug: Kiểm tra các tham số
-      if (!ticketId) {
-        throw new Error('Ticket ID is missing');
-      }
-      if (!showtimeId) {
-        throw new Error('Showtime ID is missing');
-      }
+    const response = await axiosJWT.post('tickets/verify-ticket', {
+      ticketId: ticketId,
+      showtimeId: showtimeId,
+    });
 
-      const response = await axiosJWT.post('tickets/verify-ticket', {
-        ticketId: ticketId,
-        showtimeId: showtimeId,
-      });
+    console.log('API Response:', response);
 
-      console.log('API Response:', response);
+    const msg = response?.message || 'Vé không hợp lệ';
 
-      if (response.success === true) {
-        // Hiệu ứng thành công
-        Vibration.vibrate([100, 100, 100]);
-        startPulseAnimation();
-        setScanCount(prev => prev + 1);
-        setLastScannedCode(ticketId); // Lưu ticketId đã extract
-
-        Alert.alert(
-          '✅ Xác thực thành công',
-          `${response.message || 'Vé hợp lệ'}\n\nMã vé: ${ticketId}\nSố vé đã quét: ${scanCount + 1}`,
-          [
-            {
-              text: 'Quét tiếp',
-              onPress: () => {
-                setTimeout(() => {
-                  scanned.current = false;
-                  setIsScanning(true);
-                }, 1000);
-              },
-            },
-            {
-              text: 'Hoàn thành',
-              style: 'cancel',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
-      } else {
-        // Hiệu ứng thất bại
-        Vibration.vibrate([200, 100, 200]);
-
-        Alert.alert(
-          '❌ Xác thực thất bại',
-          `${response.data?.message || 'Vé không hợp lệ'}\n\nMã vé: ${ticketId}`,
-          [
-            {
-              text: 'Thử lại',
-              onPress: () => {
-                setTimeout(() => {
-                  scanned.current = false;
-                  setIsScanning(true);
-                }, 1000);
-              },
-            },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Lỗi khi xác thực vé:', error);
-
-      let errorMessage = 'Không thể xác thực vé. Vui lòng kiểm tra kết nối mạng và thử lại.';
-
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Error status:', error.response.status);
-        errorMessage = "Vé không thuộc suất diễn này!";
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        errorMessage = 'Không nhận được phản hồi từ server. Kiểm tra kết nối mạng.';
-      } else {
-        console.error('Error message:', error.message);
-        errorMessage = `Lỗi: ${error.message}`;
-      }
-
-      Vibration.vibrate([200, 100, 200, 100, 200]);
+    if (response.success) {
+      // ✅ Vé hợp lệ
+      Vibration.vibrate([100, 100, 100]);
+      startPulseAnimation();
+      setScanCount(prev => prev + 1);
+      setLastScannedCode(ticketId);
 
       Alert.alert(
-        '⚠️ Thông báo',
-        errorMessage,
+        '✅ Xác thực thành công',
+        `${msg}\n\nMã vé: ${ticketId}\nSố vé đã quét: ${scanCount + 1}`,
         [
           {
-            text: 'Thử lại',
+            text: 'Quét tiếp',
+            onPress: () => {
+              setTimeout(() => {
+                scanned.current = false;
+                setIsScanning(true);
+              }, 1000);
+            },
+          },
+          {
+            text: 'Hoàn thành',
+            style: 'cancel',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } else {
+      // ❌ Vé không hợp lệ hoặc lỗi khác
+      Vibration.vibrate([200, 100, 200]);
+      let alertTitle = '❌ Xác thực thất bại';
+
+      if (msg.includes('đã được sử dụng')) {
+        alertTitle = '⚠️ Vé đã được sử dụng';
+      } else if (msg.includes('không khớp')) {
+        alertTitle = '⚠️ Vé không đúng suất diễn';
+      }
+
+      Alert.alert(
+        alertTitle,
+        `${msg}\n\nMã vé: ${ticketId}`,
+        [
+          {
+            text: 'OK',
             onPress: () => {
               setTimeout(() => {
                 scanned.current = false;
@@ -248,7 +211,37 @@ export default function QRScanner({ route, navigation }) {
         ]
       );
     }
-  };
+  } catch (error) {
+    console.error('Lỗi khi xác thực vé:', error);
+
+    let errorMessage = 'Không thể xác thực vé. Vui lòng kiểm tra kết nối mạng và thử lại.';
+
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = `Lỗi: ${error.message}`;
+    }
+
+    Vibration.vibrate([200, 100, 200, 100, 200]);
+
+    Alert.alert(
+      '⚠️ Thông báo',
+      errorMessage,
+      [
+        {
+          text: 'Thử lại',
+          onPress: () => {
+            setTimeout(() => {
+              scanned.current = false;
+              setIsScanning(true);
+            }, 1000);
+          },
+        },
+      ]
+    );
+  }
+};
+
 
   // Cập nhật phần xử lý onCodeScanned
   const codeScanner = useCodeScanner({

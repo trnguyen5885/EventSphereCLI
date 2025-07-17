@@ -48,6 +48,7 @@ import SuggestedEventsScreen from './components/SuggestedEventsScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch } from 'react-redux';
 import { setLocation as setLocationRedux } from '../../redux/slices/authSlice';
+import { Text } from 'react-native-svg';
 
 const ExploreScreen = ({ navigation }: any) => {
   const [populateEvents, setPopulateEvents] = useState<EventModel[]>();
@@ -277,7 +278,7 @@ const ExploreScreen = ({ navigation }: any) => {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.9)' }}
       refreshControl={
         <RefreshControl
@@ -301,46 +302,29 @@ const ExploreScreen = ({ navigation }: any) => {
           height: 70 + (Platform.OS === 'ios' ? 16 : 0),
           paddingVertical: 15
         }}>
-        <View style={{ paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: 10, marginRight: 16 }}>
           <RowComponent>
-            <Image
-              source={require('../../../assets/images/logo2.png')}
-              style={{ width: 35, height: 35, borderRadius: 20 }}
-            />
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+              <Image
+                source={require('../../../assets/images/logo3.png')}
+              />
+            </View>
+            
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <TouchableOpacity onPress={requestLocationPermission}>
-                <RowComponent>
-                  <TextComponent
-                    text="Vị trí hiện tại của bạn"
-                    color={appColors.white2}
-                    size={12}
-                  />
-                </RowComponent>
-                <TextComponent
-                  text={
-                    address?.compound?.district && address?.compound?.province
-                      ? `${address.compound.district}, ${address.compound.province}`
-                      : 'Đang lấy vị trí của bạn...'
-                  }
-                  flex={0}
-                  color={appColors.white}
-                  font={fontFamilies.medium}
-                  size={13}
-                />
-              </TouchableOpacity>
+
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('Search')}>
               <CircleComponent color="#524CE0" size={36}>
                 <View>
                   <Ionicons name="search-outline" size={20} color="#fff" />
-                  
+
                 </View>
               </CircleComponent>
             </TouchableOpacity>
           </RowComponent>
 
-          
+
         </View>
       </View>
 
