@@ -5,6 +5,8 @@ import {
   ActivityIndicator,
   ScrollView,
   Animated,
+  TouchableOpacity,
+  Text,
 } from 'react-native';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { EventModel } from '@/app/models';
@@ -16,6 +18,7 @@ import EventItem from '../../../components/EventItem';
 import { AxiosInstance } from '../../../services';
 import BannerComponent from '../components/BannerComponent';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import TopEventItem from './TopEventItem';
 import SVG1 from '../../../../assets/svgs/SVG1.svg';
 import SVG2 from '../../../../assets/svgs/SVG2.svg';
@@ -167,6 +170,72 @@ const EventSection = ({
   );
 };
 
+const EventGridSection = ({
+  title,
+  data,
+  onPressItem,
+  onPressMore,
+  loading = false,
+}: {
+  title: string;
+  data?: EventModel[];
+  onPressItem: (item: EventModel) => void;
+  onPressMore?: () => void;
+  loading?: boolean;
+}) => {
+  return (
+    <View style={{ marginVertical: 12 }}>
+      <View style={[globalStyles.row, styles.paddingContent, { justifyContent: 'space-between', marginBottom: 12 }]}>
+        <TextComponent text={title} size={18} title />
+        {onPressMore && (
+          <TouchableOpacity
+            onPress={onPressMore}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          >
+            <Text style={{ color: appColors.primary }}>Xem thêm</Text>
+            <Ionicons name="chevron-forward-outline" size={16} color={appColors.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
+      {loading ? (
+        <View style={{ paddingHorizontal: 12 }}>
+          {[0, 1].map(row => (
+            <View key={row} style={{ flexDirection: 'row', marginBottom: 12 }}>
+              {[0, 1].map(col => (
+                <View key={col} style={{ flex: 1, marginHorizontal: 6 }}>
+                  <SkeletonPlaceholder width="100%" height={160} borderRadius={12} />
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={{ paddingHorizontal: 12 }}>
+          {[0, 1].map(row => (
+            <View key={row} style={{ flexDirection: 'row', marginBottom: 12 }}>
+              {[0, 1].map(col => {
+                const index = row * 2 + col;
+                const item = data?.[index];
+                if (!item) return <View key={col} style={{ flex: 1, marginHorizontal: 6 }} />;
+                return (
+                  <View key={item._id} style={{ flex: 1, marginHorizontal: 6 }}>
+                    <EventItem
+                      onPress={() => onPressItem(item)}
+                      type="grid"
+                      item={item}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
+
 const EventTopSection = ({
   title,
   data,
@@ -193,11 +262,11 @@ const EventTopSection = ({
         <View style={{ flexDirection: 'row', paddingHorizontal: 12 }}>
           {[1, 2, 3, 4, 5].map((_, index) => (
             <View key={index} style={{ marginRight: 16, alignItems: 'center' }}>
-              <SkeletonPlaceholder 
-                width={120} 
-                height={80} 
-                borderRadius={12} 
-                style={{ marginBottom: 8 }} 
+              <SkeletonPlaceholder
+                width={120}
+                height={80}
+                borderRadius={12}
+                style={{ marginBottom: 8 }}
               />
             </View>
           ))}
@@ -229,27 +298,18 @@ const hasOngoingShowtimes = (event: EventModel, now: number) => {
   if (!event.showtimes || event.showtimes.length === 0) {
     return false;
   }
-  
+
   // Check if any showtime is happening today or in the future
   return event.showtimes.some(showtime => {
     const showDate = new Date(showtime.startTime);
     const nowDate = new Date(now);
-    
+
     // Check if the showtime is today or in the future
-    return showDate.toDateString() === nowDate.toDateString() || 
-           showtime.startTime > now;
+    return showDate.toDateString() === nowDate.toDateString() ||
+      showtime.startTime > now;
   });
 };
 
-// Utility function to check if event has upcoming showtimes
-const hasUpcomingShowtimes = (event: EventModel, now: number) => {
-  if (!event.showtimes || event.showtimes.length === 0) {
-    return false;
-  }
-  
-  // Check if any showtime is in the future
-  return event.showtimes.some(showtime => showtime.startTime > now);
-};
 
 const SuggestedEventsScreen = ({
   handleInteraction,
@@ -257,8 +317,12 @@ const SuggestedEventsScreen = ({
   isLoading: parentLoading = false,
 }: SuggestedEventsScreenProps) => {
   const [eventsOngoing, setEventsOngoing] = useState<EventModel[]>([]);
-  const [eventsUpcoming, setEventsUpcoming] = useState<EventModel[]>([]);
   const [eventsTrending, setEventsTrending] = useState<EventModel[]>([]);
+  const [musicEvents, setMusicEvents] = useState<EventModel[]>([]);
+  const [workshopEvents, setWorkshopEvents] = useState<EventModel[]>([]);
+  const [otherEvents, setOtherEvents] = useState<EventModel[]>([]);
+
+
   const [loading, setLoading] = useState<boolean>(true);
 
   const isLoadingData = parentLoading || loading;
@@ -270,18 +334,29 @@ const SuggestedEventsScreen = ({
 
       const allEvents = response.data || [];
 
+      const music = allEvents.filter(event =>
+        event.tags?.some(tag => tag.toLowerCase().includes('âm nhạc'))
+      );
+      const workshop = allEvents.filter(event =>
+        event.tags?.some(tag => tag.toLowerCase().includes('workshop'))
+      );
+      const others = allEvents.filter(event =>
+        !event.tags?.some(tag =>
+          tag.toLowerCase().includes('âm nhạc') || tag.toLowerCase().includes('workshop')
+        )
+      );
+
+      setMusicEvents(music.slice(0, 4)); // lấy 4 sự kiện đầu tiên
+      setWorkshopEvents(workshop.slice(0, 4));
+      setOtherEvents(others.slice(0, 4));
+
+
       // Filter ongoing events based on showtimes
       const ongoing = allEvents.filter(event => {
         return hasOngoingShowtimes(event, now);
       });
 
-      // Filter upcoming events based on showtimes
-      const upcoming = allEvents.filter(event => {
-        return hasUpcomingShowtimes(event, now);
-      });
-
       setEventsOngoing(ongoing);
-      setEventsUpcoming(upcoming);
       setEventsTrending(allEvents.slice(0, 10)); // Thay đổi logic nếu có trường trending riêng
     } catch (e) {
       console.log(e);
@@ -296,7 +371,6 @@ const SuggestedEventsScreen = ({
     }
     return () => {
       setEventsOngoing([]);
-      setEventsUpcoming([]);
       setEventsTrending([]);
     };
   }, []);
@@ -321,7 +395,7 @@ const SuggestedEventsScreen = ({
         </View>
       ) : (
         <BassicBannerComponent
-          events={[...eventsOngoing, ...eventsUpcoming].slice(0, 5)}
+          events={[...eventsOngoing].slice(0, 5)}
         />
       )}
 
@@ -340,12 +414,40 @@ const SuggestedEventsScreen = ({
         loading={isLoadingData}
       />
 
-      <EventSection
-        title="Sự kiện sắp diễn ra ⏰"
-        data={eventsUpcoming}
+      <EventGridSection
+        title="Sự kiện Âm nhạc"
+        data={musicEvents}
         onPressItem={onPressEvent}
         loading={isLoadingData}
+        onPressMore={() => {
+          // navigate đến trang danh sách toàn bộ sự kiện Âm nhạc
+          navigation.navigate('ListByTag', { tag: 'Âm nhạc' });
+        }}
       />
+
+      <EventGridSection
+        title="Sự kiện Workshop"
+        data={workshopEvents}
+        onPressItem={onPressEvent}
+        loading={isLoadingData}
+        onPressMore={() => {
+          navigation.navigate('ListByTag', { tag: 'Workshop' });
+        }}
+      />
+
+      <EventGridSection
+        title="Sự kiện khác"
+        data={otherEvents}
+        onPressItem={onPressEvent}
+        loading={isLoadingData}
+        onPressMore={() => {
+          navigation.navigate('ListByTag', { tag: 'other' });
+        }}
+      />
+
+
+
+
     </ScrollView>
   );
 };

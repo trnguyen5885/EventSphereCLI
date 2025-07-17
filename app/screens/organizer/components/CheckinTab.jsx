@@ -1,99 +1,97 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import CircularProgress from './CircularProgress';
 import { appColors } from '../../../constants/appColors';
 import { styles } from './EventDetailStyles';
+import AxiosInstance from '../../../services/api/AxiosInstance';
 
 const CheckinTab = ({ eventData }) => {
-    const totalTickets = eventData?.totalTicketsEvent || 1;
+    const [ticketStats, setTicketStats] = useState({ used: 0, issued: 1 });
     const soldTickets = eventData?.soldTickets || 0;
-    const checkedInTickets = Math.floor(soldTickets * 0.87); // 87% đã check-in
-    const leftTickets = soldTickets - checkedInTickets;
 
-    const checkinPercentage = soldTickets > 0 ? Math.round((checkedInTickets / soldTickets) * 100) : 0;
+    useEffect(() => {
+        if (!eventData?._id) return;
+        console.log('Fetching ticket count for event:', eventData._id);
 
-    // Dữ liệu mẫu cho loại vé
-    const ticketTypes = [
-        {
-            id: 1,
-            name: 'Ticket Type 1',
-            sold: 250,
-            total: 280,
-            percentage: 87
-        },
-        {
-            id: 2,
-            name: 'Ticket Type 2',
-            sold: 180,
-            total: 200,
-            percentage: 90
-        }
-    ];
 
-    const renderEventStats = () => (
-        <View style={styles.eventStats}>
-            <View style={styles.statItem}>
-                <Ionicons name="people" size={24} color="#3B82F6" />
-                <View style={styles.statInfo}>
-                    <Text style={styles.statLabel}>Trong sự kiện</Text>
-                    <Text style={styles.statValue}>1.200</Text>
+        const fetchTicketCount = async () => {
+            try {
+                const api = AxiosInstance();
+                const res = await api.get(`tickets/count/${eventData._id}`);
+                if (res.data) {
+                    console.log('Ticket count fetched successfully:', res.data);
+
+                    setTicketStats(res.data);
+                }
+            } catch (err) {
+                console.error('Error fetching ticket count:', err);
+            }
+        };
+
+        fetchTicketCount();
+    }, [eventData?._id]);
+
+
+    const { used, issued } = ticketStats;
+    const checkinPercentage = soldTickets > 0 ? Math.round((used / soldTickets) * 100) : 0;
+
+    const renderCheckinSummary = () => (
+        <View style={styles.checkinSummary}>
+            <View style={styles.summaryRow}>
+                <View style={styles.summaryInfo}>
+                    <Text style={styles.summaryLabel}>Đã check-in</Text>
+                    <Text style={styles.summaryValue}>{used} vé</Text>
+                    <Text style={styles.summaryTotal}>Tổng số vé {soldTickets}</Text>
                 </View>
-            </View>
-
-            <View style={styles.statItem}>
-                <MaterialIcons name="exit-to-app" size={24} color="#EF4444" />
-                <View style={styles.statInfo}>
-                    <Text style={styles.statLabel}>Đã ra ngoài</Text>
-                    <Text style={styles.statValue}>35</Text>
-                </View>
+                <CircularProgress percentage={checkinPercentage} color={appColors.primary} />
             </View>
         </View>
     );
 
-    const renderTicketTypes = () => (
-        <>
-            <Text style={styles.sectionTitle}>Chi tiết</Text>
-            {ticketTypes.map((ticket) => (
-                <View key={ticket.id} style={styles.ticketTypeCard}>
-                    <View style={styles.summaryRow}>
-                        <View style={styles.summaryInfo}>
-                            <Text style={styles.ticketTypeName}>{ticket.name}</Text>
-                            <Text style={styles.summaryValue}>{ticket.sold} vé</Text>
-                            <Text style={styles.summaryTotal}>Đã bán {ticket.total}</Text>
+    const renderTicketDetails = () => {
+        if (eventData?.typeBase === 'none') {
+            return (
+                <Text style={[styles.sectionTitle, { color: 'gray', textAlign: 'center', marginTop: 20 }]}>Sự kiện này không có thông tin vé để check-in</Text>
+            );
+        }
+
+        if (eventData?.showtimes?.length === 0) {
+            return (
+                <Text style={[styles.sectionTitle, { color: 'gray', textAlign: 'center', marginTop: 20 }]}>Sự kiện chưa có suất chiếu cụ thể</Text>
+            );
+        }
+
+        return (
+            <>
+                <Text style={styles.sectionTitle}>Suất chiếu</Text>
+                {eventData.showtimes.map((showtime, index) => {
+                    const sold = showtime.soldTickets || 0;
+                    const total = showtime.totalTickets || 1;
+                    const percent = Math.round((sold / total) * 100);
+
+                    return (
+                        <View key={showtime._id} style={styles.ticketTypeCard}>
+                            <View style={styles.summaryRow}>
+                                <View style={styles.summaryInfo}>
+                                    <Text style={styles.ticketTypeName}>Suất #{index + 1}</Text>
+                                    <Text style={styles.summaryValue}>{sold} vé</Text>
+                                    <Text style={styles.summaryTotal}>Tổng: {total}</Text>
+                                </View>
+                                <CircularProgress percentage={percent} color={appColors.primary} size={60} />
+                            </View>
                         </View>
-                        <CircularProgress percentage={ticket.percentage} color={appColors.primary} size={60} />
-                    </View>
-                </View>
-            ))}
-        </>
-    );
+                    );
+                })}
+            </>
+        );
+    };
 
     return (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.checkinButtons}>
-                <TouchableOpacity style={[styles.checkinButton, styles.activeCheckinButton]}>
-                    <Text style={[styles.checkinButtonText, styles.activeCheckinButtonText]}>Check-in</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.checkinButton}>
-                    <Text style={styles.checkinButtonText}>Redeem</Text>
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.checkinSummary}>
-                <View style={styles.summaryRow}>
-                    <View style={styles.summaryInfo}>
-                        <Text style={styles.summaryLabel}>Đã check-in</Text>
-                        <Text style={styles.summaryValue}>{checkedInTickets} vé</Text>
-                        <Text style={styles.summaryTotal}>Đã bán {soldTickets}</Text>
-                    </View>
-                    <CircularProgress percentage={checkinPercentage} color={appColors.primary} />
-                </View>
-            </View>
-
-            {renderEventStats()}
-            {renderTicketTypes()}
+            {renderCheckinSummary()}
+            {renderTicketDetails()}
         </ScrollView>
     );
 };

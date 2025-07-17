@@ -18,7 +18,7 @@ import { globalStyles } from '../constants/globalStyles';
 
 interface Props {
   item: any;
-  type: 'list' | 'card';
+  type: 'list' | 'card' | 'grid';
   styles?: StyleProp<ViewStyle>;
   onPress?: () => void;
 }
@@ -53,11 +53,11 @@ const getValidShowtime = (showtimes: any[]) => {
 
 const EventItem = (props: Props) => {
   const { item, type, styles, onPress } = props;
-  
+
   const validShowtime =
     item?.showtimes ? getValidShowtime(item.showtimes) : null;
 
-  
+
 
   return type === 'card' ? (
     <CardComponent
@@ -85,15 +85,15 @@ const EventItem = (props: Props) => {
           rowGap: 5,
         }}>
         <TextComponent
-          numberOfLine={2}
+          numberOfLine={1}
           title
-          size={16}
+          size={14}
           text={item.name}
-          styles={{ marginTop: 15, fontWeight: 'bold', height: 39 }}
+          styles={{ marginTop: 12, fontWeight: 'bold', height: 20 }}
         />
         <TextComponent
           text={`Từ ${formatPrice(item.minTicketPrice)}`}
-          styles={{ fontSize: 17, fontWeight: 'bold', color: appColors.primary }}
+          styles={{ fontSize: 13, fontWeight: 'bold', color: appColors.primary, marginTop: 4 }}
         />
 
         <View style={[globalStyles.row, { columnGap: 5, alignItems: 'center' }]}>
@@ -105,7 +105,7 @@ const EventItem = (props: Props) => {
               numberOfLines={1}
               ellipsizeMode="tail"
               style={{
-                fontSize: 14,
+                fontSize: 12,
                 color: '#666',
                 flex: 1,
               }}
@@ -124,6 +124,57 @@ const EventItem = (props: Props) => {
         </View>
       </View>
     </CardComponent>
+  ) : type === 'grid' ? (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        {
+          borderRadius: 12,
+          backgroundColor: '#fff',
+          overflow: 'hidden',
+        },
+        styles,
+      ]}
+    >
+      <Image
+        source={{ uri: item.avatar }}
+        style={{
+          width: '100%',
+          height: 100,
+          borderRadius: 10,
+          resizeMode: 'cover',
+        }}
+      />
+      <View style={{ padding: 8 }}>
+        <TextComponent
+          text={item.name}
+          title
+          numberOfLine={1}
+          size={14}
+          styles={{ fontWeight: 'bold', height: 20 }}
+        />
+        <TextComponent
+          text={`Từ ${formatPrice(item.minTicketPrice)}`}
+          styles={{
+            fontSize: 13,
+            fontWeight: 'bold',
+            color: appColors.primary,
+            marginTop: 4,
+          }}
+        />
+        {validShowtime && (
+          <View style={[globalStyles.row, { marginTop: 4 }]}>
+            <Ionicons name="calendar-outline" size={14} color="#888" />
+            <Text
+              style={{ marginLeft: 4, fontSize: 12, color: '#666' }}
+              numberOfLines={1}
+            >
+              {formatDate(validShowtime.startTime)}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
   ) : (
     <></>
   );
