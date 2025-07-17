@@ -18,6 +18,7 @@ import {
   ProfileScreen,
   SeatsScreen,
   ZonesScreen,
+  EventScreen,
 } from './app/screens';
 import SplashScreen from './app/screens/SplashScreen';
 import WelcomeScreen from './app/screens/auth/WelcomeScreen';
