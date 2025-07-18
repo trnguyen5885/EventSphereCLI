@@ -10,6 +10,7 @@ import {
   Platform,
   NativeModules,
   Alert,
+  Image,
 } from 'react-native';
 import {CardComponent, RowComponent} from '../../components';
 import {appColors} from '../../constants/appColors';
@@ -21,6 +22,8 @@ import LoadingModal from '../../modals/LoadingModal';
 import {UserModel} from '@/app/models/user/UserModel';
 import {EventModel} from '@/app/models';
 import {useSelector} from 'react-redux';
+import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const {ZaloPayModule} = NativeModules;
 
@@ -69,6 +72,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
         );
         setEventInfo(response.data);
         setUserInfo(responseUser.data);
+        console.log(response.data);
       } catch (error) {
         console.log('Lỗi khi fetch event/user:', error);
       }
@@ -136,7 +140,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
           nameUser: userInfo?.username,
         };
         const response = await AxiosInstance().post('/payments', bodyPayment);
-
+        console.log(bodyPayment);
         ZaloPayModule.payOrder(response.data.zp_trans_token);
 
         const bodyOrder = {
@@ -196,19 +200,10 @@ const TicketEventScreen = ({navigation, route}: any) => {
           eventName: eventInfo?.name || 'Thanh toán vé',
           eventId: id,
           userId: userInfo?._id,
-          amount:
-            typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? formData.tickets.normal
-              : totalPrice,
+          amount: typeBase === 'none' ? formData.tickets.normal : totalPrice,
           bookingType: typeBase,
-          bookingIds:
-            typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? []
-              : bookingIds,
-          totalPrice:
-            typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? calculateTotal()
-              : totalPrice,
+          bookingIds: typeBase === 'none' ? [] : bookingIds,
+          totalPrice: typeBase === 'none' ? calculateTotal() : totalPrice,
           showtimeId: showtimeId,
         });
       }
@@ -237,28 +232,22 @@ const TicketEventScreen = ({navigation, route}: any) => {
         </RowComponent>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}>
         {/* Event Information */}
         <View style={styles.eventInfoContainer}>
           <Text style={styles.eventName}>{eventInfo?.name}</Text>
-          <View style={styles.locationContainer}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color={appColors.primary}
-            />
-            <Text style={styles.eventLocation}>{eventInfo?.location}</Text>
-          </View>
           <View style={styles.timeContainer}>
-            <Ionicons
-              name="calendar-outline"
-              size={16}
-              color={appColors.primary}
-            />
+            <Ionicons name="calendar" size={20} color={appColors.primary} />
             <Text style={styles.eventTime}>
               {eventInfo?.timeStart ? formatDate(eventInfo.timeStart) : ''} -{' '}
               {eventInfo?.timeEnd ? formatDate(eventInfo.timeEnd) : ''}
             </Text>
+          </View>
+          <View style={styles.locationContainer}>
+            <Ionicons name="location" size={20} color={appColors.primary} />
+            <Text style={styles.eventLocation}>{eventInfo?.location}</Text>
           </View>
         </View>
 
@@ -296,16 +285,16 @@ const TicketEventScreen = ({navigation, route}: any) => {
                 justifyContent: 'space-between',
                 marginBottom: 12,
               }}>
-              <Text style={{ fontSize: 16, color: '#2D3748' }}>
+              <Text style={{fontSize: 16, color: '#2D3748'}}>
                 {ticketTypes.normal.name}
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <TouchableOpacity
                   onPress={() => updateTicketQuantity('normal', -1)}
                   style={styles.quantityButton}>
                   <Text style={styles.quantityButtonText}>-</Text>
                 </TouchableOpacity>
-                <Text style={{ marginHorizontal: 12, fontSize: 16 }}>
+                <Text style={{marginHorizontal: 12, fontSize: 16}}>
                   {formData.tickets.normal}
                 </Text>
                 <TouchableOpacity
@@ -337,6 +326,10 @@ const TicketEventScreen = ({navigation, route}: any) => {
               </View>
               <View style={styles.paymentMethodInfo}>
                 <Text style={styles.paymentText}>Zalo Pay</Text>
+                <Image
+                  style={{width: 30, height: 30, resizeMode: 'cover'}}
+                  source={require('../../../assets/images/zalopay-logo.png')}
+                />
               </View>
             </View>
           </TouchableOpacity>
@@ -359,74 +352,9 @@ const TicketEventScreen = ({navigation, route}: any) => {
               <View style={styles.paymentMethodInfo}>
                 <Text style={styles.paymentText}>Chuyển khoản ngân hàng</Text>
               </View>
+              <FontAwesome name="bank" size={25} color={appColors.primary} />
             </View>
           </TouchableOpacity>
-        </View>
-
-        {/* Order Summary */}
-        <View style={styles.orderSummaryContainer}>
-          {/* <View style={styles.orderSummaryHeader}>
-            <Text style={styles.orderSummaryTitle}>Thông tin đặt vé</Text>
-            <TouchableOpacity>
-              <Text style={styles.changeTicketText}>Chọn lại vé</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.ticketDetailContainer}>
-            <View style={styles.ticketDetailHeader}>
-              <Text style={styles.ticketTypeText}>Loại vé</Text>
-              <Text style={styles.ticketQuantityText}>Số lượng</Text>
-            </View>
-
-            <View style={styles.ticketDetailRow}>
-              <Text style={styles.ticketDetailName}>
-                Hạng Regular (Không dành cho trẻ dưới 16 tuổi)
-              </Text>
-              <Text style={styles.ticketDetailQuantity}>01</Text>
-            </View>
-
-            <View style={styles.ticketPriceRow}>
-              <Text style={styles.ticketPrice}>250.000 đ</Text>
-              <Text style={styles.ticketTotalPrice}>250.000 đ</Text>
-            </View>
-
-            <View style={styles.ticketTag}>
-              <Text style={styles.ticketTagText}>M-1</Text>
-            </View>
-          </View> */}
-
-          <View style={styles.orderInfoContainer}>
-            <Text style={styles.orderInfoTitle}>Thông tin đơn hàng</Text>
-
-            <View style={styles.orderInfoRow}>
-              <Text style={styles.orderInfoLabel}>Tạm tính</Text>
-              <Text style={styles.orderInfoValue}>
-                {typeBase === undefined ||
-                typeBase === null ||
-                typeBase === 'none'
-                  ? calculateTotal().toLocaleString('vi-VN')
-                  : totalPrice.toLocaleString('vi-VN')}{' '}
-                VND
-              </Text>
-            </View>
-
-            <View style={styles.orderTotalRow}>
-              <Text style={styles.orderTotalLabel}>Tổng tiền</Text>
-              <Text style={styles.orderTotalValue}>
-                {typeBase === undefined ||
-                typeBase === null ||
-                typeBase === 'none'
-                  ? calculateTotal().toLocaleString('vi-VN')
-                  : totalPrice.toLocaleString('vi-VN')}{' '}
-                VND
-              </Text>
-            </View>
-
-            <Text style={styles.agreementText}>
-              Bằng việc tiến hành đặt mua, bạn đã đồng ý với{' '}
-              <Text style={styles.linkText}>Điều Kiện Giao Dịch Chung</Text>
-            </Text>
-          </View>
         </View>
       </ScrollView>
 
@@ -524,6 +452,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   eventName: {
+    textAlign: 'center',
     color: '#2D3748',
     fontSize: 18,
     fontWeight: 'bold',
@@ -532,7 +461,7 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginTop: 12,
   },
   eventLocation: {
     color: '#4A5568',
@@ -598,6 +527,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    marginBottom: 10,
   },
   paymentMethod: {
     paddingVertical: 16,
@@ -638,6 +568,9 @@ const styles = StyleSheet.create({
   },
   paymentMethodInfo: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   paymentText: {
     color: '#2D3748',

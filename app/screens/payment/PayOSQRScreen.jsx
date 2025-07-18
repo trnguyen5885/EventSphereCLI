@@ -413,7 +413,12 @@ const PayOSQRScreen = ({ route, navigation }) => {
           [
             {
               text: 'Xem đơn hàng',
-              onPress: () => navigation.navigate('Drawer'),
+              onPress: () => navigation.navigate('Drawer', {
+                screen: 'Home',
+                    params: {
+                      screen: 'Vé của tôi',
+                },
+              }),
             },
           ],
           { cancelable: false }
@@ -498,7 +503,7 @@ const PayOSQRScreen = ({ route, navigation }) => {
           <View style={styles.amountContainer}>
             <Text style={styles.amountLabel}>Số tiền thanh toán</Text>
             <Text style={styles.amountValue}>
-              {amount?.toLocaleString('vi-VN')} VNĐ
+              {totalPrice?.toLocaleString('vi-VN')} VNĐ
             </Text>
           </View>
 
