@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 
 import Clipboard from '@react-native-clipboard/clipboard';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
@@ -15,6 +15,8 @@ import LoadingModal from '../../modals/LoadingModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { loginSuccess } from '../../redux/slices/authSlice';
+import { Animated } from 'react-native';
+
 
 
 const ProfileEdit = ({ navigation }) => {
@@ -30,7 +32,39 @@ const ProfileEdit = ({ navigation }) => {
   );
 
 
-  const [image, setImage] = useState(userData?.picUrl || '');
+  const [image, setImage] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const spinValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isUploadingImage) {
+      Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinValue.stopAnimation();
+      spinValue.setValue(0);
+    }
+  }, [isUploadingImage]);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+
+
+
+  console.log('User Data ne:', userData);
+  console.log('Image URL:', image);
+
+
+
+
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -42,14 +76,16 @@ const ProfileEdit = ({ navigation }) => {
       try {
         const res = await AxiosInstance().get(`users/getUser/${userId}`);
         const user = res.data;
+
         setName(user.username);
-        setImage(user.picUrl);
+        setImage(user.picUrl || userData?.picUrl || '');
         setEmail(user.email);
         setPhoneNumber(user.phoneNumber || '');
         setBirthDate(user.date || '01/01/2013');
         setGender(parseInt(user.gender));
+
+
         console.log('Thông tin người dùng:', user);
-        
       } catch (error) {
         console.log('Lỗi khi lấy thông tin người dùng:', error);
       }
@@ -59,6 +95,7 @@ const ProfileEdit = ({ navigation }) => {
       fetchUserInfo();
     }
   }, [userId]);
+
 
   const handleNavigation = () => {
     navigation.goBack();
@@ -93,6 +130,8 @@ const ProfileEdit = ({ navigation }) => {
   };
 
   const uploadImage = async (imageUri) => {
+    setIsUploadingImage(true); // Bắt đầu loading
+
     let formData = new FormData();
     formData.append('file', {
       uri: imageUri,
@@ -121,8 +160,11 @@ const ProfileEdit = ({ navigation }) => {
     } catch (error) {
       console.log('Upload lỗi:', error);
       Alert.alert('Lỗi!', 'Không thể tải ảnh lên.');
+    } finally {
+      setIsUploadingImage(false); // Kết thúc loading
     }
   };
+
 
   const handleEditProfile = async () => {
     if (!name.trim()) {
@@ -235,15 +277,26 @@ const ProfileEdit = ({ navigation }) => {
 
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
-            <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
+            <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={isUploadingImage}>
               <Image
-                source={{ uri: image || 'https://via.placeholder.com/150' }}
+                source={{ uri: image || 'https://avatar.iran.liara.run/public' }}
                 style={styles.avatar}
               />
-              <View style={styles.cameraIcon}>
-                <Ionicons name="camera" size={25} color="white" />
-              </View>
+
+              {/* Hiển thị overlay loading nếu đang upload */}
+              {isUploadingImage ? (
+                <View style={styles.cameraIcon}>
+                  <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                    <Ionicons name="refresh" size={30} color="white" />
+                  </Animated.View>
+                </View>
+              ) : (
+                <View style={styles.cameraIcon}>
+                  <Ionicons name="camera" size={25} color="white" />
+                </View>
+              )}
             </TouchableOpacity>
+
 
             <Text style={styles.avatarHint}>
               Cung cấp thông tin chính xác sẽ hỗ trợ bạn trong quá trình mua vé, hoặc khi cần xác thực về
@@ -544,6 +597,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 15,
   },
+  loadingSpinner: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });
 
 export default ProfileEdit;

@@ -31,7 +31,7 @@ const GroupScreen = ({ route, navigation }) => {
   const userId = useSelector(state => state.auth.userId);
   const userEmail = useSelector(state => state.auth.userData?.email);
 
-  const isOwner = String(userId) === String(ownerId._id);
+  const isOwner = String(userId) === String(ownerId?._id);
 
   const [members, setMembers] = useState([]);
   const [locations, setLocations] = useState([]);

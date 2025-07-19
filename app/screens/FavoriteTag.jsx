@@ -112,7 +112,7 @@ const FavoriteTag = () => {
     const body = {
       tag: selectedTags.map(tag => tag._id)
     };
-    await AxiosInstance().put('/users/addTag', body);
+    // await AxiosInstance().put('/users/addTag', body);
 
     // Navigate to Welcome screen
     navigation.navigate('Drawer');

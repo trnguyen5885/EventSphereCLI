@@ -21,6 +21,8 @@ const SocialLogin = ({ navigation }) => {
 
       const userInfo = await GoogleSignin.signIn();
       console.log("Google User Info:", userInfo);
+      console.log("Google User Photo:", userInfo.data.user.photo);
+      
       
       if (userInfo.data.idToken) {
         const res = await socialLogin(userInfo.data.idToken);
@@ -35,10 +37,15 @@ const SocialLogin = ({ navigation }) => {
               token,
               refreshToken,
               role,
-              ...userData
+              picUrl: userInfo.data.user.photo,
+              ...userData,
+              
             },
+            
+            
           }),
         );
+        console.log("User Data:", userData);
 
         // Điều hướng theo role
         if (role === 3) {

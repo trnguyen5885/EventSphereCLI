@@ -16,13 +16,15 @@ import { CommonActions } from '@react-navigation/native';
 import { logout } from '../../redux/slices/authSlice';
 import CustomLogoutDialog from '../../components/CustomLogoutDialog'; // Import component dialog
 import { ToastAndroid, Alert } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native';
+
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const userId = useSelector(state => state.auth.userId);
+  const { userData, userId } = useSelector((state) => state.auth);
 
-  const [name, setName] = useState('');
-  const [image, setImage] = useState('');
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState(userData?.username || '');
+  const [image, setImage] = useState(userData?.picUrl || '');
+  const [email, setEmail] = useState(userData?.email || '');
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false); // State cho dialog
@@ -31,18 +33,23 @@ const ProfileScreen = ({ navigation }) => {
     try {
       if (userId) {
         const response = await AxiosInstance().get(`users/getUser/${userId}`);
-        setName(response.data.username);
-        setImage(response.data.picUrl);
-        setEmail(response.data.email);
+        const user = response.data;
+        setName(user.username || userData?.username || '');
+        setEmail(user.email || userData?.email || '');
+        setImage(user.picUrl || userData?.picUrl || '');
       }
     } catch (error) {
       console.log('Lỗi khi lấy thông tin người dùng:', error);
     }
   };
 
-  useEffect(() => {
+
+  useFocusEffect(
+  React.useCallback(() => {
     getUserInfo();
-  }, [userId]);
+  }, [userId])
+);
+
 
   // Hàm hiển thị dialog đăng xuất
   const showLogoutConfirmation = () => {
@@ -100,12 +107,12 @@ const ProfileScreen = ({ navigation }) => {
   }, [userId]);
 
   const showLanguageToast = () => {
-  if (Platform.OS === 'android') {
-    ToastAndroid.show('Ngôn ngữ khác đang được phát triển', ToastAndroid.SHORT);
-  } else {
-    Alert.alert('Thông báo', 'Ngôn ngữ khác đang được phát triển');
-  }
-};
+    if (Platform.OS === 'android') {
+      ToastAndroid.show('Ngôn ngữ khác đang được phát triển', ToastAndroid.SHORT);
+    } else {
+      Alert.alert('Thông báo', 'Ngôn ngữ khác đang được phát triển');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -124,9 +131,10 @@ const ProfileScreen = ({ navigation }) => {
           <Image
             style={styles.profileAVT}
             source={{
-              uri: image ? image : 'https://avatar.iran.liara.run/public'
+              uri: image || 'https://avatar.iran.liara.run/public',
             }}
           />
+
         </View>
 
         {/* Tên người dùng nằm dưới avatar */}
@@ -255,13 +263,13 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: appColors.primary, // Màu xanh lá như trong ảnh
     height: 120, // Chiều cao cố định cho header
-    
+
     position: 'relative',
   },
 
   headerBackground: {
     position: 'absolute',
-    
+
     width: '100%',
     height: '100%',
     zIndex: 1, // đẩy ảnh nền xuống dưới các thành phần khác
