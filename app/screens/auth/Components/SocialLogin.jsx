@@ -37,9 +37,8 @@ const SocialLogin = ({ navigation }) => {
               token,
               refreshToken,
               role,
-              picUrl: userInfo.data.user.photo,
+              picUrl: userInfo.data.user.photo, // Thêm ảnh đại diện từ Google
               ...userData,
-              
             },
             
             
