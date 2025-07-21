@@ -25,40 +25,61 @@ import { appColors } from '../../constants/appColors';
 
 const { width } = Dimensions.get('window');
 
-const EventCard = ({ name, timeStart, timeEnd, ticketPrice, soldTickets, image, navigation, eventId }) => (
-  <View style={styles.card}>
-    <View style={styles.cardHeader}>
-      <Image source={{ uri: image }} style={styles.eventImage} />
-      <View style={styles.eventInfo}>
-        <Text style={styles.eventTitle} numberOfLines={2}>{name}</Text>
-        <Text style={styles.eventDate}>Bắt đầu: {formatDate(timeStart)}</Text>
-        <Text style={styles.eventDate}>Kết thúc: {formatDate(timeEnd)}</Text>
-        <Text style={styles.soldTickets}>Đã bán: {soldTickets} vé</Text>
+const EventCard = ({
+  name,
+  timeStart,
+  timeEnd,
+  ticketPrice,
+  soldTickets,
+  image,
+  showtimes,
+  navigation,
+  eventId
+}) => {
+  const validShowtime = showtimes?.length > 0 ? getValidShowtime(showtimes) : null;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Image source={{ uri: image }} style={styles.eventImage} />
+        <View style={styles.eventInfo}>
+          <Text style={styles.eventTitle} numberOfLines={2}>{name}</Text>
+
+          <Text style={styles.eventDate}>
+            {validShowtime
+              ? `${formatTime(validShowtime.startTime)} - ${formatTime(validShowtime.endTime)}, ${formatDate(validShowtime.startTime)}`
+              : 'Chưa xác định'}
+          </Text>
+          <Text style={styles.soldTickets}>Đã bán: {soldTickets} vé</Text>
+        </View>
+      </View>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.manageButton}
+          onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
+        >
+          <FontAwesome5 name="chart-bar" color={appColors.primary} size={20} />
+          <Text style={styles.manageButtonText}>Quản lý</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.scanButton}
+          onPress={() =>
+            navigation.navigate('ScanShowTime', {
+              eventId: eventId,
+              eventName: name,
+            })
+          }
+        >
+          <MaterialIcons name="qr-code-scanner" color="#fff" size={20} />
+          <Text style={styles.scanButtonText}>Quét vé</Text>
+        </TouchableOpacity>
       </View>
     </View>
+  );
+};
 
-    <View style={styles.buttonContainer}>
-      <TouchableOpacity
-        style={styles.manageButton}
-        onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
-      >
-        <FontAwesome5 name="chart-bar" color={appColors.primary} size={20} />
-        <Text style={styles.manageButtonText}>Quản lý</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.scanButton}
-        onPress={() => navigation.navigate('ScanShowTime', { 
-          eventId: eventId,
-          eventName: name,
-        })}
-      >
-        <MaterialIcons name="qr-code-scanner" color="#fff" size={20} />
-        <Text style={styles.scanButtonText}>Quét vé</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-);
 
 // Sửa FilterTabs component - thêm navigation vào props
 const FilterTabs = ({ activeTab, setActiveTab, navigation }) => (
@@ -99,10 +120,51 @@ const FilterTabs = ({ activeTab, setActiveTab, navigation }) => (
   </View>
 );
 
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+};
+
+const getValidShowtime = (showtimes: any[]) => {
+  const now = new Date();
+
+  // Tìm xuất chiếu đang diễn ra (startTime <= now <= endTime)
+  const currentShowtime = showtimes.find(st => {
+    const startTime = new Date(st.startTime);
+    const endTime = new Date(st.endTime);
+    return startTime <= now && now <= endTime;
+  });
+
+  // Nếu có xuất chiếu đang diễn ra, ưu tiên hiển thị
+  if (currentShowtime) {
+    return currentShowtime;
+  }
+
+  // Tìm xuất chiếu gần nhất với thời gian hiện tại
+  const sortedShowtimes = showtimes
+    .map(st => ({
+      ...st,
+      startTime: new Date(st.startTime),
+      endTime: new Date(st.endTime),
+      timeDiff: Math.abs(new Date(st.startTime).getTime() - now.getTime())
+    }))
+    .sort((a, b) => a.timeDiff - b.timeDiff);
+
+  return sortedShowtimes[0];
+};
+
 const EventManagement = ({ navigation }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('upcoming');
+
+  const validShowtime =
+    events?.showtimes ? getValidShowtime(events.showtimes) : null;
+
 
   const fetchEvents = async () => {
     try {
@@ -183,6 +245,7 @@ const EventManagement = ({ navigation }) => {
               soldTickets={item.soldTickets}
               image={item.avatar}
               eventId={item._id}
+              showtimes={item.showtimes}
               navigation={navigation}
             />
           ))}

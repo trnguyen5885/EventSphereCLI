@@ -9,6 +9,7 @@ import {
   Text,
   StyleProp,
   ViewStyle,
+  Image,
 } from 'react-native';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { EventModel } from '@/app/models';
@@ -75,7 +76,19 @@ const SVGItems = [
   },
 ];
 
-const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }: { width: number | string; height: number; borderRadius?: number; style?: StyleProp<ViewStyle> }) => {
+const SkeletonPlaceholder = ({
+  width,
+  height,
+  borderRadius = 8,
+  style,
+  showIcon = true,
+}: {
+  width: number | string;
+  height: number;
+  borderRadius?: number;
+  style?: StyleProp<ViewStyle>;
+  showIcon?: boolean;
+}) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -106,15 +119,30 @@ const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }: { width
       style={[
         {
           height,
-          backgroundColor,
           borderRadius,
+          backgroundColor,
+          justifyContent: 'center',
+          alignItems: 'center',
           ...(width === '100%' ? { width: '100%' as const } : { width }),
         },
         style,
       ]}
-    />
+    >
+      {showIcon && (
+        <Image
+          source={require('../../../../assets/images/icon.png')}
+          style={{
+            width: 32,
+            height: 32,
+            opacity: 0.2,
+            resizeMode: 'contain',
+          }}
+        />
+      )}
+    </Animated.View>
   );
 };
+
 
 const EventSection = ({
   title,
@@ -145,9 +173,9 @@ const EventSection = ({
               <View key={index} style={{ marginRight: 12, padding: 8 }}>
                 <SkeletonPlaceholder width={200} height={120} borderRadius={12} style={{}} />
                 <View style={{ paddingTop: 8 }}>
-                  <SkeletonPlaceholder width={160} height={16} style={{ marginBottom: 8 }} />
-                  <SkeletonPlaceholder width={120} height={14} style={{ marginBottom: 6 }} />
-                  <SkeletonPlaceholder width={80} height={12} style={{}} />
+                  <SkeletonPlaceholder width={160} height={16} style={{ marginBottom: 8 }} showIcon={false} />
+                  <SkeletonPlaceholder width={120} height={14} style={{ marginBottom: 6 }} showIcon={false} />
+                  <SkeletonPlaceholder width={80} height={12} showIcon={false} />
                 </View>
               </View>
             ))}
@@ -325,39 +353,63 @@ const SuggestedEventsScreen = ({
   const [otherEvents, setOtherEvents] = useState<EventModel[]>([]);
   const [recommentEvents, setRecommentEvents] = useState<EventModel[]>([]);
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingTrending, setLoadingTrending] = useState(true);
+  const [loadingOngoing, setLoadingOngoing] = useState(true);
+  const [loadingMusic, setLoadingMusic] = useState(true);
+  const [loadingWorkshop, setLoadingWorkshop] = useState(true);
+  const [loadingOthers, setLoadingOthers] = useState(true);
+  const [loadingRecommend, setLoadingRecommend] = useState(true);
 
-  const isLoadingData = parentLoading || loading;
 
-  const fetchEvents = async () => {
+  const isLoadingData = parentLoading || loadingTrending || loadingOngoing || loadingMusic || loadingWorkshop || loadingOthers || loadingRecommend;
+
+
+  const fetchTrendingEvents = async () => {
+    setLoadingTrending(true);
     try {
-      const [homeResult, forYouResult] = await Promise.allSettled([
-        AxiosInstance().get<EventModel[]>('events/home'),
-        AxiosInstance().get<EventModel[]>('events/for-you')
-      ]);
-      const response = homeResult.status === 'fulfilled' ? homeResult.value : { data: [] };
-      const res = forYouResult.status === 'fulfilled' ? forYouResult.value : { events: [] };
-      console.log(JSON.stringify(response));
+      const response = await AxiosInstance().get<EventModel[]>('events/home');
+      const res = await AxiosInstance().get<EventModel[]>('events/for-you');
       const now = Date.now();
 
-      const allEvents = Array.isArray(response.data) ? response.data : [];
+      const allEvents = response.data || [];
 
       const music = allEvents.filter(event =>
         event.tags?.some(tag => tag.toLowerCase().includes('âm nhạc'))
       );
-      const workshop = allEvents.filter(event =>
+      setMusicEvents(music.slice(0, 4));
+    } catch (e) {
+      console.log('Error fetching music events:', e);
+    } finally {
+      setLoadingMusic(false);
+    }
+  };
+
+  const fetchWorkshopEvents = async () => {
+    setLoadingWorkshop(true);
+    try {
+      const res = await AxiosInstance().get<EventModel[]>('events/home');
+      const workshop = res.data.filter(event =>
         event.tags?.some(tag => tag.toLowerCase().includes('workshop'))
       );
-      const others = allEvents.filter(event =>
+      setWorkshopEvents(workshop.slice(0, 4));
+    } catch (e) {
+      console.log('Error fetching workshop events:', e);
+    } finally {
+      setLoadingWorkshop(false);
+    }
+  };
+
+  const fetchOtherEvents = async () => {
+    setLoadingOthers(true);
+    try {
+      const res = await AxiosInstance().get<EventModel[]>('events/home');
+      const others = res.data.filter(event =>
         !event.tags?.some(tag =>
           tag.toLowerCase().includes('âm nhạc') || tag.toLowerCase().includes('workshop')
         )
       );
-
-      setMusicEvents(music.slice(0, 4)); // lấy 4 sự kiện đầu tiên
-      setWorkshopEvents(workshop.slice(0, 4));
       setOtherEvents(others.slice(0, 4));
-      setRecommentEvents(Array.isArray(res?.events) ? res.events : []);
+      setRecommentEvents(res.events);
 
       // Filter ongoing events based on showtimes
       const ongoing = allEvents.filter(event => {
@@ -367,21 +419,23 @@ const SuggestedEventsScreen = ({
       setEventsOngoing(ongoing);
       setEventsTrending(allEvents.slice(0, 10)); // Thay đổi logic nếu có trường trending riêng
     } catch (e) {
-      console.log(e);
+      console.log('Error fetching recommended events:', e);
     } finally {
-      setLoading(false);
+      setLoadingRecommend(false);
     }
   };
 
+
+
   useEffect(() => {
-    if (!parentLoading) {
-      fetchEvents();
-    }
-    return () => {
-      setEventsOngoing([]);
-      setEventsTrending([]);
-    };
+    fetchTrendingEvents();
+    fetchOngoingEvents();
+    fetchMusicEvents();
+    fetchWorkshopEvents();
+    fetchOtherEvents();
+    fetchRecommendEvents();
   }, []);
+
 
   const onPressEvent = useCallback(
     (item: EventModel) => {
@@ -390,7 +444,7 @@ const SuggestedEventsScreen = ({
     },
     [handleInteraction, navigation],
   );
-console.log("Recomment Event: ", JSON.stringify(recommentEvents));
+  console.log("Recomment Event: ", JSON.stringify(recommentEvents));
 
   return (
     <ScrollView
@@ -413,14 +467,14 @@ console.log("Recomment Event: ", JSON.stringify(recommentEvents));
         title="Sự kiện xu hướng 🔥"
         data={eventsTrending}
         onPressItem={onPressEvent}
-        loading={isLoadingData}
+        loading={loadingTrending}
       />
 
       <EventSection
         title="Sự kiện đang mở bán vé 🎉"
         data={eventsOngoing}
         onPressItem={onPressEvent}
-        loading={isLoadingData}
+        loading={loadingOngoing}
       />
 
       {recommentEvents?.length > 2 && (
@@ -428,7 +482,7 @@ console.log("Recomment Event: ", JSON.stringify(recommentEvents));
           title="Dành cho bạn"
           data={recommentEvents}
           onPressItem={onPressEvent}
-          loading={isLoadingData}
+          loading={loadingRecommend}
         />
       )}
 
@@ -436,35 +490,25 @@ console.log("Recomment Event: ", JSON.stringify(recommentEvents));
         title="Sự kiện Âm nhạc"
         data={musicEvents}
         onPressItem={onPressEvent}
-        loading={isLoadingData}
-        onPressMore={() => {
-          // navigate đến trang danh sách toàn bộ sự kiện Âm nhạc
-          navigation.navigate('ListByTag', { tag: 'Âm nhạc' });
-        }}
+        loading={loadingMusic}
+        onPressMore={() => navigation.navigate('ListByTag', { tag: 'Âm nhạc' })}
       />
 
       <EventGridSection
         title="Sự kiện Workshop"
         data={workshopEvents}
         onPressItem={onPressEvent}
-        loading={isLoadingData}
-        onPressMore={() => {
-          navigation.navigate('ListByTag', { tag: 'Workshop' });
-        }}
+        loading={loadingWorkshop}
+        onPressMore={() => navigation.navigate('ListByTag', { tag: 'Workshop' })}
       />
 
       <EventGridSection
         title="Sự kiện khác"
         data={otherEvents}
         onPressItem={onPressEvent}
-        loading={isLoadingData}
-        onPressMore={() => {
-          navigation.navigate('ListByTag', { tag: 'other' });
-        }}
+        loading={loadingOthers}
+        onPressMore={() => navigation.navigate('ListByTag', { tag: 'other' })}
       />
-
-
-
 
     </ScrollView>
   );

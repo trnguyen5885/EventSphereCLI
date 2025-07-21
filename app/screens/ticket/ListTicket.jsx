@@ -39,7 +39,7 @@ const ListTicket = ({ navigation, route }) => {
                     </View>
                     <View style={styles.recipientDetail}>
                         <Text>Số điện thoại</Text>
-                        <Text>{user.phoneNumber || 'N/A'}</Text>
+                        <Text>{user.phoneNumber || 'Không có'}</Text>
                     </View>
                     <View style={styles.recipientDetail}>
                         <Text>Email</Text>

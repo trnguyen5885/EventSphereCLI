@@ -1,31 +1,36 @@
 /* eslint-disable react-native/no-inline-styles */
 import {
-  StyleSheet,
-  Text,
-  View,
-  Platform,
-  StatusBar,
-  FlatList,
-  ListRenderItemInfo,
-  TouchableOpacity,
-  Animated,
-  Dimensions,
+  StyleSheet, Text, View, Platform, StatusBar,
+  FlatList, ListRenderItemInfo, TouchableOpacity,
+  Animated, Dimensions
 } from 'react-native';
 import React, { useEffect, useState, useRef } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { InputComponent, RowComponent } from '../../components';
 import EventItem from '../../components/EventItem';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { AxiosInstance } from '../../services';
 import { EventModel } from '@/app/models';
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 40) / 2; // 40 = padding horizontal + gap
+const cardWidth = (width - 40) / 2;
 
-// Loading Skeleton Component
-const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
+// Skeleton loading placeholder
+const SkeletonPlaceholder = ({
+  width,
+  height,
+  borderRadius = 8,
+  style,
+  showIcon = true,
+}: {
+  width: number | string;
+  height: number;
+  borderRadius?: number;
+  style?: any;
+  showIcon?: boolean;
+}) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -59,136 +64,123 @@ const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
           height,
           backgroundColor,
           borderRadius,
+          justifyContent: 'center',
+          alignItems: 'center',
         },
         style,
       ]}
-    />
+    >
+      {showIcon && (
+        <Animated.Image
+          source={require('../../../assets/images/icon.png')}
+          style={{
+            width: 28,
+            height: 28,
+            opacity: 0.2,
+            resizeMode: 'contain',
+          }}
+        />
+      )}
+    </Animated.View>
   );
 };
 
-// Event Card Skeleton
-const EventCardSkeleton = () => {
-  return (
-    <View style={styles.skeletonCard}>
-      {/* Image skeleton */}
-      <SkeletonPlaceholder
-        width={cardWidth - 20}
-        height={120}
-        borderRadius={8}
-        style={{ marginBottom: 8 }}
-      />
+const EventCardSkeleton = () => (
+  <View style={styles.skeletonCard}>
+    {/* Ảnh: có icon */}
+    <SkeletonPlaceholder width={cardWidth - 20} height={120} style={{ marginBottom: 8 }} showIcon />
 
-      {/* Title skeleton */}
-      <SkeletonPlaceholder
-        width={cardWidth - 40}
-        height={16}
-        borderRadius={4}
-        style={{ marginBottom: 6 }}
-      />
+    {/* Text: không icon */}
+    <SkeletonPlaceholder width={cardWidth - 40} height={16} style={{ marginBottom: 6 }} showIcon={false} />
+    <SkeletonPlaceholder width={cardWidth - 60} height={12} style={{ marginBottom: 6 }} showIcon={false} />
+    <SkeletonPlaceholder width={cardWidth - 50} height={12} style={{ marginBottom: 8 }} showIcon={false} />
+  </View>
+);
 
-      {/* Date skeleton */}
-      <SkeletonPlaceholder
-        width={cardWidth - 60}
-        height={12}
-        borderRadius={4}
-        style={{ marginBottom: 6 }}
-      />
 
-      {/* Location skeleton */}
-      <SkeletonPlaceholder
-        width={cardWidth - 50}
-        height={12}
-        borderRadius={4}
-        style={{ marginBottom: 8 }}
-      />
-
-      {/* Price skeleton */}
-      <SkeletonPlaceholder
-        width={60}
-        height={14}
-        borderRadius={4}
-      />
-    </View>
-  );
-};
-
-// Skeleton List Component
-const SkeletonList = () => {
-  const skeletonData = Array(6).fill(null); // Hiển thị 6 skeleton cards
-
+const SkeletonList = ({ count = 6 }) => {
+  const data = Array(count).fill(null);
   return (
     <FlatList
-      data={skeletonData}
+      data={data}
+      keyExtractor={(_, i) => `skeleton-${i}`}
       numColumns={2}
       columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 10 }}
-      keyExtractor={(_, index) => `skeleton-${index}`}
-      showsVerticalScrollIndicator={false}
       renderItem={() => <EventCardSkeleton />}
     />
   );
 };
 
 const EventSearch = ({ navigation }: any) => {
-  const [values, setValues] = useState('');
-  const [eventsSearch, setEventsSearch] = useState<EventModel[]>([]);
+  const [query, setQuery] = useState('');
+  const [events, setEvents] = useState<EventModel[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Loại bỏ isInitialLoad state vì không cần thiết
+  const [isSearching, setIsSearching] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const handleNavigation = () => {
-    navigation.goBack();
-  };
-
-  // Hợp nhất logic search vào 1 function
-  const searchEvents = async (query: string) => {
+  const fetchEvents = async (q: string, pageNumber = 1, append = false) => {
     try {
-      setIsLoading(true);
-      const response = await AxiosInstance().get<EventModel[]>(
-        `events/search?query=${query}`,
+      if (pageNumber === 1 && !append) setIsSearching(true);
+      else setIsFetchingMore(true);
+
+      const limit = 10;
+      const res = await AxiosInstance().get<EventModel[]>(
+        `events/search?query=${q}&page=${pageNumber}&limit=${limit}`
       );
-      setEventsSearch(response.data);
+
+      setHasMore(res.data.length >= limit);
+      if (append) {
+        setEvents(prev => [...prev, ...res.data]);
+      } else {
+        setEvents(res.data);
+      }
+
     } catch (e) {
-      console.log(e);
-      setEventsSearch([]);
+      console.log('❌ Search error:', e);
+      if (!append) setEvents([]);
     } finally {
+      setIsSearching(false);
+      setIsFetchingMore(false);
       setIsLoading(false);
     }
   };
 
-  // Chỉ có 1 useEffect để xử lý cả initial load và search
   useEffect(() => {
-    // Clear timeout cũ nếu có
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
-    // Debounce search để tránh gọi API quá nhiều
     searchTimeoutRef.current = setTimeout(() => {
-      searchEvents(values);
-    }, values.length === 0 ? 0 : 300); // Không delay cho initial load
+      setPage(1);
+      fetchEvents(query, 1);
+    }, 300);
 
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, [values]);
+  }, [query]);
+
+  const handleLoadMore = () => {
+    if (hasMore && !isFetchingMore && !isSearching) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchEvents(query, nextPage, true);
+    }
+  };
 
   const renderContent = () => {
-    if (isLoading) {
-      return <SkeletonList />;
-    }
+    if (isLoading || isSearching) return <SkeletonList />;
 
-    if (eventsSearch.length === 0) {
+    if (events.length === 0) {
       return (
         <View style={styles.emptyState}>
           <MaterialIcons name="event-busy" size={60} color="#ccc" />
-          <Text style={styles.emptyStateText}>
-            Không tìm thấy sự kiện nào
-          </Text>
+          <Text style={styles.emptyStateText}>Không tìm thấy sự kiện nào</Text>
           <Text style={styles.emptyStateSubText}>
-            {values.trim() ? 'Thử tìm kiếm với từ khóa khác' : 'Hiện tại chưa có sự kiện nào'}
+            {query.trim() ? 'Thử từ khóa khác' : 'Hiện tại chưa có sự kiện nào'}
           </Text>
         </View>
       );
@@ -196,19 +188,15 @@ const EventSearch = ({ navigation }: any) => {
 
     return (
       <FlatList
-        data={eventsSearch}
+        data={events}
+        keyExtractor={item => item._id}
         numColumns={2}
         columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 10 }}
-        keyExtractor={(item) => item._id}
-        showsVerticalScrollIndicator={false}
         renderItem={({ item }: ListRenderItemInfo<EventModel>) => (
           <EventItem
-            onPress={() => {
-              navigation.navigate('Detail', {
-                id: item._id,
-              });
-            }}
+            item={item}
             type="card"
+            onPress={() => navigation.navigate('Detail', { id: item._id })}
             styles={{
               flex: 1,
               padding: 10,
@@ -222,18 +210,22 @@ const EventSearch = ({ navigation }: any) => {
               elevation: 3,
               marginBottom: 20
             }}
-            item={item}
           />
         )}
-        contentContainerStyle={{
-          paddingBottom: 40,
-        }}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={isFetchingMore ? <SkeletonList count={2} /> : null}
+        contentContainerStyle={{ paddingBottom: 40 }}
       />
     );
   };
 
+  const handleNavigation = () => {
+    navigation.goBack();
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: "white" }}>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
         <RowComponent onPress={handleNavigation} styles={{ columnGap: 25, justifyContent: "center", alignItems: "center" }}>
@@ -246,14 +238,12 @@ const EventSearch = ({ navigation }: any) => {
         </RowComponent>
 
         <InputComponent
-          value={values}
-          onChange={text => setValues(text)}
+          value={query}
+          onChange={text => setQuery(text)}
           placeholder="Nhập từ khoá..."
           allowClear
           customStyles={{ minHeight: 46 }}
-          affix={
-            <MaterialIcons name="search" size={24} color="rgba(0,0,0,0.5)" />
-          }
+          affix={<MaterialIcons name="search" size={24} color="rgba(0,0,0,0.5)" />}
         />
       </View>
 
@@ -292,10 +282,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: cardWidth,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
@@ -310,8 +297,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#666',
     marginTop: 16,
-    textAlign: 'center',
     fontWeight: '500',
+    textAlign: 'center',
   },
   emptyStateSubText: {
     fontSize: 14,
