@@ -22,34 +22,82 @@ import { appColors } from '../../../app/constants/appColors';
 // Import skeleton loading components
 import SearchEventSkeletonLoader, { AdvancedEventCardSkeleton } from '../../constants/skeletonLoading';
 
-const SearchResultCard = ({ name, timeStart, timeEnd, soldTickets, image, navigation, eventId }) => (
-  <TouchableOpacity 
-    style={styles.resultCard}
-    onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
-  >
-    <Image source={{ uri: image }} style={styles.resultImage} />
-    <View style={styles.resultInfo}>
-      <Text style={styles.resultTitle} numberOfLines={2}>{name}</Text>
-      <Text style={styles.resultDate}>Bắt đầu: {formatDate(timeStart)}</Text>
-      <Text style={styles.resultDate}>Kết thúc: {formatDate(timeEnd)}</Text>
-      <Text style={styles.resultSold}>Đã bán: {soldTickets} vé</Text>
-    </View>
-    <View style={styles.resultActions}>
-      <TouchableOpacity
-        style={styles.manageBtn}
-        onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
-      >
-        <Text style={styles.manageBtnText}>Quản lý</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.scanBtn}
-        onPress={() => navigation.navigate('QRScanner', { eventId })}
-      >
-        <Text style={styles.scanBtnText}>Quét vé</Text>
-      </TouchableOpacity>
-    </View>
-  </TouchableOpacity>
-);
+
+const getValidShowtime = (showtimes = []) => {
+  const now = new Date();
+
+  const current = showtimes.find(st => {
+    const start = new Date(st.startTime);
+    const end = new Date(st.endTime);
+    return start <= now && now <= end;
+  });
+
+  if (current) return current;
+
+  return showtimes
+    .map(st => ({
+      ...st,
+      startTime: new Date(st.startTime),
+      endTime: new Date(st.endTime),
+      diff: Math.abs(new Date(st.startTime) - now)
+    }))
+    .sort((a, b) => a.diff - b.diff)[0];
+};
+
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+};
+
+
+
+const SearchResultCard = ({ name, timeStart, timeEnd, soldTickets, image, showtimes = [], navigation, eventId }) => {
+  const validShowtime = getValidShowtime(showtimes);
+
+  return (
+    <TouchableOpacity 
+      style={styles.resultCard}
+      onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
+    >
+      <Image source={{ uri: image }} style={styles.resultImage} />
+      <View style={styles.resultInfo}>
+        <Text style={styles.resultTitle} numberOfLines={2}>{name}</Text>
+
+        <Text style={styles.resultDate}>
+          {validShowtime
+            ? `${formatTime(validShowtime.startTime)} - ${formatTime(validShowtime.endTime)}, ${formatDate(validShowtime.startTime)}`
+            : formatDate(timeStart)}
+        </Text>
+        <Text style={styles.resultSold}>Đã bán: {soldTickets} vé</Text>
+      </View>
+
+      <View style={styles.resultActions}>
+        <TouchableOpacity
+          style={styles.manageBtn}
+          onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
+        >
+          <Text style={styles.manageBtnText}>Quản lý</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.scanBtn}
+          onPress={() =>
+            navigation.navigate('ScanShowTime', {
+              eventId: eventId,
+              eventName: name,
+            })
+          }
+        >
+          <Text style={styles.scanBtnText}>Quét vé</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 
 const SearchEventOrganizer = ({ navigation }) => {
   const [allEvents, setAllEvents] = useState([]);
@@ -229,6 +277,7 @@ const SearchEventOrganizer = ({ navigation }) => {
                     timeEnd={item.timeEnd}
                     soldTickets={item.soldTickets}
                     image={item.avatar}
+                    showtimes={item.showtimes}
                     eventId={item._id}
                     navigation={navigation}
                   />

@@ -1,94 +1,103 @@
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image, RefreshControl, Animated } from 'react-native'
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, Image, RefreshControl, Animated, TextInput } from 'react-native'
 import React from 'react'
 import { useState } from 'react'
 import { useEffect, useRef } from 'react';
 import { AxiosInstance } from '../../services';
-import { TextComponent } from '../../components';
+import { InputComponent, TextComponent } from '../../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 // Skeleton Placeholder Component
-const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style }) => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
+const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style, showIcon = false }) => {
+    const animatedValue = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const animate = () => {
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: false,
-        }),
-      ]).start(() => animate());
-    };
-    animate();
-  }, []);
+    useEffect(() => {
+        const animate = () => {
+            Animated.sequence([
+                Animated.timing(animatedValue, {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(animatedValue, {
+                    toValue: 0,
+                    duration: 1000,
+                    useNativeDriver: false,
+                }),
+            ]).start(() => animate());
+        };
+        animate();
+    }, []);
 
-  const backgroundColor = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['#E1E9EE', '#F2F8FC'],
-  });
+    const backgroundColor = animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#E1E9EE', '#F2F8FC'],
+    });
 
-  return (
-    <Animated.View
-      style={[
-        {
-          width,
-          height,
-          backgroundColor,
-          borderRadius,
-        },
-        style,
-      ]}
-    />
-  );
+    return (
+        <Animated.View
+            style={[
+                {
+                    width,
+                    height,
+                    backgroundColor,
+                    borderRadius,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                },
+                style,
+            ]}
+        >
+            {showIcon && (
+                <Animated.Image
+                    source={require('../../../assets/images/icon.png')}
+                    style={{
+                        width: 28,
+                        height: 28,
+                        opacity: 0.2,
+                        resizeMode: 'contain',
+                    }}
+                />
+            )}
+        </Animated.View>
+    );
 };
+
 
 // Skeleton Card Component
 const SkeletonTicketCard = () => (
-  <View style={styles.card}>
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      {/* Avatar skeleton */}
-      <SkeletonPlaceholder width={60} height={60} borderRadius={8} />
-      
-      <View style={{ flex: 1, marginLeft: 12 }}>
-        {/* Event name skeleton */}
-        <SkeletonPlaceholder width="80%" height={16} style={{ marginBottom: 8 }} />
-        
-        {/* Status badge skeleton */}
-        <SkeletonPlaceholder width={80} height={20} borderRadius={12} style={{ marginBottom: 8 }} />
-        
-        {/* Ticket count skeleton */}
-        <SkeletonPlaceholder width="60%" height={14} style={{ marginBottom: 4 }} />
-        
-        {/* Event date skeleton */}
-        <SkeletonPlaceholder width="50%" height={14} style={{ marginBottom: 4 }} />
-        
-        {/* Showtime count skeleton */}
-        <SkeletonPlaceholder width="40%" height={14} />
-      </View>
+    <View style={styles.card}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {/* Avatar skeleton: có icon */}
+            <SkeletonPlaceholder width={60} height={60} borderRadius={8} showIcon />
+
+            <View style={{ flex: 1, marginLeft: 12 }}>
+                {/* Các dòng text: không icon */}
+                <SkeletonPlaceholder width="80%" height={16} style={{ marginBottom: 8 }} />
+                <SkeletonPlaceholder width={80} height={20} borderRadius={12} style={{ marginBottom: 8 }} />
+                <SkeletonPlaceholder width="60%" height={14} style={{ marginBottom: 4 }} />
+                <SkeletonPlaceholder width="50%" height={14} style={{ marginBottom: 4 }} />
+                <SkeletonPlaceholder width="40%" height={14} />
+            </View>
+        </View>
+
+        {/* Button skeleton: không icon */}
+        <SkeletonPlaceholder width="100%" height={40} borderRadius={6} style={{ marginTop: 14 }} />
     </View>
-    
-    {/* Button skeleton */}
-    <SkeletonPlaceholder width="100%" height={40} borderRadius={6} style={{ marginTop: 14 }} />
-  </View>
 );
+
 
 // Skeleton Loading Component
 const SkeletonLoading = () => (
-  <View style={{ flex: 1, padding: 16, backgroundColor: "#f5f5f5" }}>
-    {[1, 2, 3, 4, 5].map((_, index) => (
-      <SkeletonTicketCard key={index} />
-    ))}
-  </View>
+    <View style={{ flex: 1, padding: 16, backgroundColor: "#f5f5f5" }}>
+        {[1, 2, 3, 4, 5].map((_, index) => (
+            <SkeletonTicketCard key={index} />
+        ))}
+    </View>
 );
 
-const UserTicketsScreen = ({navigation, route}) => {
+const UserTicketsScreen = ({ navigation, route }) => {
     const [userData, setUserData] = useState(null);
     const [tickets, setTickets] = useState([]);
     const [events, setEvents] = useState([]);
@@ -96,7 +105,7 @@ const UserTicketsScreen = ({navigation, route}) => {
     const [refreshing, setRefreshing] = useState(false);
     const userId = useSelector(state => state.auth.userId);
     const [statusTab, setStatusTab] = useState('all');
-    const [timeTab, setTimeTab] = useState('upcoming');
+    const [searchText, setSearchText] = useState('');
 
     const fetchTickets = async (isRefresh = false) => {
         if (isRefresh) {
@@ -104,14 +113,14 @@ const UserTicketsScreen = ({navigation, route}) => {
         } else {
             setLoading(true);
         }
-        
+
         try {
             const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
             setUserData(tickets.data.user);
             const eventsData = tickets.data.events;
             console.log("Tickets data:", tickets.data);
-            
-            
+
+
             const eventsWithDetails = await Promise.all(
                 eventsData.map(async (event) => {
                     try {
@@ -128,7 +137,7 @@ const UserTicketsScreen = ({navigation, route}) => {
                     }
                 })
             );
-            
+
             setEvents(eventsWithDetails);
         } catch (e) {
             console.log("Lấy vé thất bại: ", e);
@@ -150,73 +159,21 @@ const UserTicketsScreen = ({navigation, route}) => {
     };
 
     const now = Date.now();
-    const filteredEvents = events.filter(event => {
-        let statusMatch = statusTab === 'all' || event.status === statusTab;
-        let timeMatch = true;
-        
-        if (event.timeStart && event.timeEnd) {
-            const startTime = typeof event.timeStart === 'number' ? event.timeStart : new Date(event.timeStart).getTime();
-            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
-            
-            switch (timeTab) {
-                case 'upcoming':
-                    timeMatch = startTime > now;
-                    break;
-                case 'ongoing':
-                    timeMatch = startTime <= now && endTime > now;
-                    break;
-                case 'ended':
-                    timeMatch = endTime <= now;
-                    break;
-                default:
-                    timeMatch = true;
-            }
-        } else if (event.timeEnd) {
-            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
-            switch (timeTab) {
-                case 'upcoming':
-                    timeMatch = endTime > now;
-                    break;
-                case 'ongoing':
-                    timeMatch = endTime > now;
-                    break;
-                case 'ended':
-                    timeMatch = endTime <= now;
-                    break;
-                default:
-                    timeMatch = true;
-            }
-        } else if (event.showtimes && event.showtimes.length > 0) {
-            const showtimesInRange = event.showtimes.filter(showtime => {
-                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
-                const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
-                
-                switch (timeTab) {
-                    case 'upcoming':
-                        return startTime > now;
-                    case 'ongoing':
-                        return startTime <= now && endTime > now;
-                    case 'ended':
-                        return endTime <= now;
-                    default:
-                        return true;
-                }
-            });
-            timeMatch = showtimesInRange.length > 0;
-        }
-        
-        return statusMatch && timeMatch;
-    });
+    const filteredEvents = events.filter(event =>
+        (event.name || '').toLowerCase().includes((searchText || '').toLowerCase())
+    );
+
+
 
     const EmptyState = () => (
         <View style={styles.emptyContainer}>
-            <Image 
-                source={require('../../../assets/images/icon.png')} 
+            <Image
+                source={require('../../../assets/images/icon.png')}
                 style={styles.emptyIcon}
                 resizeMode="contain"
             />
             <Text style={styles.emptyText}>Bạn chưa có vé nào cả!</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
                 style={styles.buyTicketButton}
                 onPress={() => navigation.jumpTo('Khám phá')}
                 activeOpacity={0.8}
@@ -228,11 +185,11 @@ const UserTicketsScreen = ({navigation, route}) => {
 
     const getEventStatus = (event) => {
         const now = Date.now();
-        
+
         if (event.timeStart && event.timeEnd) {
             const startTime = typeof event.timeStart === 'number' ? event.timeStart : new Date(event.timeStart).getTime();
             const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
-            
+
             if (startTime > now) return 'upcoming';
             if (startTime <= now && endTime > now) return 'ongoing';
             if (endTime <= now) return 'ended';
@@ -241,18 +198,18 @@ const UserTicketsScreen = ({navigation, route}) => {
                 const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
                 return startTime > now;
             });
-            
+
             const hasOngoing = event.showtimes.some(showtime => {
                 const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
                 const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
                 return startTime <= now && endTime > now;
             });
-            
+
             if (hasOngoing) return 'ongoing';
             if (hasUpcoming) return 'upcoming';
             return 'ended';
         }
-        
+
         return 'unknown';
     };
 
@@ -276,36 +233,18 @@ const UserTicketsScreen = ({navigation, route}) => {
             <View style={{ backgroundColor: '#5669FF', paddingTop: 20, paddingBottom: 16, alignItems: 'center' }}>
                 <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>Vé của tôi</Text>
             </View>
-            
-            {/* Tab con */}
-            <View style={{ flexDirection: 'row', justifyContent: 'center', backgroundColor: '#fff', paddingVertical: 12 }}>
-                {[
-                    { label: 'Sắp diễn ra', value: 'upcoming' },
-                    { label: 'Đang diễn ra', value: 'ongoing' },
-                    { label: 'Đã kết thúc', value: 'ended' }
-                ].map((tab) => (
-                    <TouchableOpacity
-                        key={tab.value}
-                        style={{
-                            paddingVertical: 6,
-                            paddingHorizontal: 12,
-                            borderBottomWidth: 2,
-                            borderBottomColor: timeTab === tab.value ? '#5669FF' : 'transparent',
-                            marginHorizontal: 4,
-                        }}
-                        onPress={() => setTimeTab(tab.value)}
-                    >
-                        <Text style={{ 
-                            color: timeTab === tab.value ? '#5669FF' : '#000', 
-                            fontWeight: timeTab === tab.value ? 'bold' : 'normal', 
-                            fontSize: 14 
-                        }}>
-                            {tab.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+
+            <View style={{ paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#fff' }}>
+                <InputComponent
+                    value={searchText}
+                    onChange={text => setSearchText(text)}
+                    placeholder="Nhập vé cần tìm..."
+                    allowClear
+                    customStyles={{ minHeight: 46 }}
+                    affix={<MaterialIcons name="search" size={24} color="rgba(0,0,0,0.5)" />}
+                />
             </View>
-            
+
             {/* Skeleton Loading hoặc Content */}
             {loading ? (
                 <SkeletonLoading />
@@ -329,22 +268,22 @@ const UserTicketsScreen = ({navigation, route}) => {
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                         let eventDate = item.eventDate;
-                        
+
                         if (!eventDate && item.timeStart) {
                             const startTime = typeof item.timeStart === 'number' ? item.timeStart : new Date(item.timeStart).getTime();
                             const date = new Date(startTime);
                             eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         }
-                        
+
                         if (!eventDate && item.showtimes && item.showtimes.length > 0) {
                             const firstShowtime = item.showtimes[0];
                             const startTime = typeof firstShowtime.startTime === 'number' ? firstShowtime.startTime : new Date(firstShowtime.startTime).getTime();
                             const date = new Date(startTime);
                             eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
                         }
-                        
+
                         const statusBadge = getStatusBadge(item);
-                        
+
                         return (
                             <View style={styles.card}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>

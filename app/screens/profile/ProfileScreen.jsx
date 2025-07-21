@@ -17,6 +17,8 @@ import { logout } from '../../redux/slices/authSlice';
 import CustomLogoutDialog from '../../components/CustomLogoutDialog'; // Import component dialog
 import { ToastAndroid, Alert } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -64,6 +66,9 @@ const ProfileScreen = ({ navigation }) => {
   const handleSignout = async () => {
     setIsLoading(true);
     try {
+      // Đăng xuất Google để hiển thị lại hộp thoại chọn tài khoản lần sau
+      await GoogleSignin.signOut();
+      
       // Xoá trong AsyncStorage
       await AsyncStorage.removeItem("userId");
       await AsyncStorage.removeItem("savedCredentials");

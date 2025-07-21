@@ -15,11 +15,52 @@ import CheckinTab from './components/CheckinTab';
 import OrdersTab from './components/OrdersTab';
 import AxiosInstance from '../../services/api/AxiosInstance';
 
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+};
+
+const getValidShowtime = (showtimes: any[]) => {
+  const now = new Date();
+
+  // Tìm xuất chiếu đang diễn ra (startTime <= now <= endTime)
+  const currentShowtime = showtimes.find(st => {
+    const startTime = new Date(st.startTime);
+    const endTime = new Date(st.endTime);
+    return startTime <= now && now <= endTime;
+  });
+
+  // Nếu có xuất chiếu đang diễn ra, ưu tiên hiển thị
+  if (currentShowtime) {
+    return currentShowtime;
+  }
+
+  // Tìm xuất chiếu gần nhất với thời gian hiện tại
+  const sortedShowtimes = showtimes
+    .map(st => ({
+      ...st,
+      startTime: new Date(st.startTime),
+      endTime: new Date(st.endTime),
+      timeDiff: Math.abs(new Date(st.startTime).getTime() - now.getTime())
+    }))
+    .sort((a, b) => a.timeDiff - b.timeDiff);
+
+  return sortedShowtimes[0];
+};
+
 const EventDetailOrganizer = ({ route, navigation }) => {
   const [activeTab, setActiveTab] = useState('revenue');
   const [loading, setLoading] = useState(true);
   const [eventsData, setEventsData] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+  const validShowtime =
+    selectedEvent?.showtimes ? getValidShowtime(selectedEvent.showtimes) : null;
+
 
   const eventId = route?.params?.eventId;
   console.log('📦 eventId route param:', eventId);
@@ -30,6 +71,8 @@ const EventDetailOrganizer = ({ route, navigation }) => {
     }
   };
 
+
+
   const fetchEventsData = async () => {
     try {
       setLoading(true);
@@ -39,6 +82,7 @@ const EventDetailOrganizer = ({ route, navigation }) => {
       if (response.status === 200 && Array.isArray(response.events)) {
         setEventsData(response.events);
         console.log('📊 Fetched events:', response.events);
+
 
         let selected = null;
         if (eventId) {
@@ -82,7 +126,7 @@ const EventDetailOrganizer = ({ route, navigation }) => {
       <View style={styles.headerInfo}>
         <Text style={styles.headerTitle}>{selectedEvent?.name}</Text>
         <Text style={styles.headerSubtitle}>
-          {formatDate(selectedEvent?.timeStart)} - {formatDate(selectedEvent?.timeEnd)}
+          {validShowtime ? `${formatTime(validShowtime.startTime)} - ${formatTime(validShowtime.endTime)}, ${formatDate(validShowtime.startTime)}` : 'Chưa xác định'}
         </Text>
       </View>
     </View>
