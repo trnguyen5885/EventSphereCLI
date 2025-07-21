@@ -247,7 +247,7 @@ const MapScreen = () => {
           </Marker>
         )}
         {displayedEvents
-          .filter(
+          ?.filter(
             e =>
               e.location_map?.coordinates?.length === 2 &&
               typeof e.location_map.coordinates[0] === 'number' &&

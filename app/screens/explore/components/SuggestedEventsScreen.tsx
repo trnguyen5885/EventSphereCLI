@@ -331,11 +331,16 @@ const SuggestedEventsScreen = ({
 
   const fetchEvents = async () => {
     try {
-      const response = await AxiosInstance().get<EventModel[]>('events/home');
-      const res = await AxiosInstance().get<EventModel[]>('events/for-you');
+      const [homeResult, forYouResult] = await Promise.allSettled([
+        AxiosInstance().get<EventModel[]>('events/home'),
+        AxiosInstance().get<EventModel[]>('events/for-you')
+      ]);
+      const response = homeResult.status === 'fulfilled' ? homeResult.value : { data: [] };
+      const res = forYouResult.status === 'fulfilled' ? forYouResult.value : { events: [] };
+      console.log(JSON.stringify(response));
       const now = Date.now();
 
-      const allEvents = response.data || [];
+      const allEvents = Array.isArray(response.data) ? response.data : [];
 
       const music = allEvents.filter(event =>
         event.tags?.some(tag => tag.toLowerCase().includes('âm nhạc'))
@@ -352,7 +357,7 @@ const SuggestedEventsScreen = ({
       setMusicEvents(music.slice(0, 4)); // lấy 4 sự kiện đầu tiên
       setWorkshopEvents(workshop.slice(0, 4));
       setOtherEvents(others.slice(0, 4));
-      setRecommentEvents(res.events);
+      setRecommentEvents(Array.isArray(res?.events) ? res.events : []);
 
       // Filter ongoing events based on showtimes
       const ongoing = allEvents.filter(event => {

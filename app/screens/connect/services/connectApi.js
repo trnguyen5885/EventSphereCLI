@@ -145,9 +145,9 @@ export const getGroupMembers = async (groupId) => {
 };
 
 // Cập nhật vị trí của user trong nhóm
-export const updateLocation = async (groupId, userId, latitude, longitude) => {
+export const updateLocation = async (groupId, userId, latitude, longitude, isSharing) => {
   try {
-    const body = { userId, latitude, longitude };
+    const body = { userId, latitude, longitude, isSharing };
     const res = await AxiosInstance().post(`/connects/${groupId}/location`, body);
     return res;
   } catch (error) {
