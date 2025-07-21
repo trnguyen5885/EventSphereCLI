@@ -367,13 +367,34 @@ const SuggestedEventsScreen = ({
   const fetchTrendingEvents = async () => {
     setLoadingTrending(true);
     try {
-      const response = await AxiosInstance().get<EventModel[]>('events/home');
-      const res = await AxiosInstance().get<EventModel[]>('events/for-you');
+      const res = await AxiosInstance().get<EventModel[]>('events/home');
+      setEventsTrending(res.data.slice(0, 10));
+    } catch (e) {
+      console.log('Error fetching trending events:', e);
+    } finally {
+      setLoadingTrending(false);
+    }
+  };
+
+  const fetchOngoingEvents = async () => {
+    setLoadingOngoing(true);
+    try {
+      const res = await AxiosInstance().get<EventModel[]>('events/home');
       const now = Date.now();
+      const ongoing = res.data.filter(event => hasOngoingShowtimes(event, now));
+      setEventsOngoing(ongoing);
+    } catch (e) {
+      console.log('Error fetching ongoing events:', e);
+    } finally {
+      setLoadingOngoing(false);
+    }
+  };
 
-      const allEvents = response.data || [];
-
-      const music = allEvents.filter(event =>
+  const fetchMusicEvents = async () => {
+    setLoadingMusic(true);
+    try {
+      const res = await AxiosInstance().get<EventModel[]>('events/home');
+      const music = res.data.filter(event =>
         event.tags?.some(tag => tag.toLowerCase().includes('âm nhạc'))
       );
       setMusicEvents(music.slice(0, 4));
@@ -409,15 +430,18 @@ const SuggestedEventsScreen = ({
         )
       );
       setOtherEvents(others.slice(0, 4));
-      setRecommentEvents(res.events);
+    } catch (e) {
+      console.log('Error fetching other events:', e);
+    } finally {
+      setLoadingOthers(false);
+    }
+  };
 
-      // Filter ongoing events based on showtimes
-      const ongoing = allEvents.filter(event => {
-        return hasOngoingShowtimes(event, now);
-      });
-
-      setEventsOngoing(ongoing);
-      setEventsTrending(allEvents.slice(0, 10)); // Thay đổi logic nếu có trường trending riêng
+  const fetchRecommendEvents = async () => {
+    setLoadingRecommend(true);
+    try {
+      const res = await AxiosInstance().get<any>('events/for-you');
+      setRecommentEvents(res.events || []);
     } catch (e) {
       console.log('Error fetching recommended events:', e);
     } finally {

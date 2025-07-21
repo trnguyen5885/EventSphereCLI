@@ -66,7 +66,7 @@ const TabNavigator = () => {
       <Tab.Screen name="Khám phá" component={ExploreScreen} />
       <Tab.Screen name="Vé của tôi" component={EventScreen} />
       <Tab.Screen name="Địa điểm" component={ConnectScreen} />
-      <Tab.Screen name="Thông tin" component={MapScreen} />
+      <Tab.Screen name="Thông tin" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };
