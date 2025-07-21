@@ -93,6 +93,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       socket.off('periodicMessage', handlePeriodicMessage);
       socket.offAny(handleAnyEvent);
       socket.emit('leave', {room: `event_${id}_showtime_${showtimeId}`});
+      setSeats([]);
       setSelectedSeats([]);
     };
   }, [id, showtimeId]);
@@ -200,9 +201,10 @@ const SeatsScreen = ({navigation, route}: any) => {
         ],
         {cancelable: true},
       );
-    } else if (seat.status === SeatStatus.BOOKED) return;
+    } else if (seat.status === SeatStatus.BOOKED);
     else if (seat.status === SeatStatus.RESERVED) {
       Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
+
       return;
     } else {
       try {
@@ -248,6 +250,7 @@ const SeatsScreen = ({navigation, route}: any) => {
                 onPress: () => {
                   setSelectedSeats([]);
                   fetchSeatsFromApi();
+                  console.log(seat.status);
                 },
               },
             ],
@@ -282,7 +285,39 @@ const SeatsScreen = ({navigation, route}: any) => {
   };
 
   const handleGoback = () => {
-    navigation.goBack();
+    if (selectedSeats.length === 0) {
+      navigation.goBack();
+      return;
+    }
+
+    Alert.alert(
+      'Xác nhận thoát',
+      'Bạn có chắc chắn muốn quay lại? Tất cả ghế đã chọn sẽ bị huỷ.',
+      [
+        {text: 'Hủy', style: 'cancel'},
+        {
+          text: 'Thoát',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              const response = await AxiosInstance().post(
+                '/users/cancelAllReservedSeats',
+              );
+
+              setSelectedSeats([]);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Huỷ ghế thất bại:', error);
+              Alert.alert('Lỗi', 'Không thể huỷ vé. Vui lòng thử lại.');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ],
+      {cancelable: true},
+    );
   };
 
   const panGesture = Gesture.Pan()
@@ -308,9 +343,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
         <RowComponent onPress={handleGoback} styles={{columnGap: 25}}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chọn khu vực ghế</Text>
