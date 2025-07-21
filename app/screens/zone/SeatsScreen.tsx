@@ -226,7 +226,10 @@ const SeatsScreen = ({navigation, route}: any) => {
           },
           action: 'select',
         });
-        bookingId.push(response.bookingId);
+        if (bookingId.length <= 0) {
+          bookingId.push(response.bookingId);
+        }
+
         if (response.message === 'Ghế đã được chọn trước đó.') {
           Alert.alert(
             'Lỗi',
