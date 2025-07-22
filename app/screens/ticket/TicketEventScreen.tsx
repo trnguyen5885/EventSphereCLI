@@ -132,7 +132,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
       if (formData.paymentMethod === 'zalo') {
         const totalAmount = calculateTotal();
         const bodyPayment = {
-          amount: typeBase === 'none' ? totalAmount : quantity,
+          amount: typeBase === 'none' ? totalAmount : totalPrice,
           urlCalbackSuccess:
             'https://gamesphereapi.onrender.com/payments/callback',
           dataSave: 'save',
