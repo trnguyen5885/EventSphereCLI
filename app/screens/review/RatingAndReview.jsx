@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image} from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image, Dimensions, Modal, FlatList } from 'react-native';
 import { appColors } from '../../constants/appColors';
 import { TextComponent } from '../../components';
 import { appInfo } from '../../constants/appInfos';
@@ -9,38 +9,43 @@ import { AxiosInstance, formatDate, formatDateCreateAt } from '../../services';
 import { globalStyles } from '../../constants/globalStyles';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const RatingAndReview = ({detailEventId}) => {
-     const navigation = useNavigation();
-     const [listReview, setListReivew] = useState([]);
-     const [isExpanded, setIsExpanded] = useState(false);
-     const socketRef = useRef(null);
+const { width: screenWidth } = Dimensions.get('window');
 
-     console.log(listReview);
+const RatingAndReview = ({ detailEventId }) => {
+    const navigation = useNavigation();
+    const [listReview, setListReivew] = useState([]);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+    const socketRef = useRef(null);
 
-     useEffect(() => {
+    console.log(listReview);
+
+    useEffect(() => {
         socketRef.current = io(appInfo.BASE_URL_NOAPI, {
             transports: ['websocket'],
-          });
+        });
 
         // Lắng nghe sự kiện 'newPostEvent'
         socketRef.current.on('newPostEvent', (data) => {
-          if (data.post.eventId === detailEventId) {
-            setListReivew((prevReviews) => [data.post, ...prevReviews]);
-          }
+            if (data.post.eventId === detailEventId) {
+                setListReivew((prevReviews) => [data.post, ...prevReviews]);
+            }
         });
 
         // Dọn dẹp khi component bị hủy
         return () => {
-          socketRef.current.disconnect();
+            socketRef.current.disconnect();
         };
-      }, [detailEventId]);
+    }, [detailEventId]);
 
-      useEffect(() => {
+    useEffect(() => {
         const getListReviewDetailEvent = async () => {
             try {
                 const response = await AxiosInstance().get(`preview/${detailEventId}`);
                 setListReivew(response.data);
-            } catch(e) {
+            } catch (e) {
                 console.log(e);
             }
         };
@@ -49,17 +54,29 @@ const RatingAndReview = ({detailEventId}) => {
 
         return () => {
             setListReivew([]);
-          };
-      },[detailEventId]);
+        };
+    }, [detailEventId]);
 
     const toggleExpanded = () => {
         setIsExpanded(!isExpanded);
     };
 
+    const openImageModal = (images, startIndex = 0) => {
+        setSelectedImages(images);
+        setCurrentImageIndex(startIndex);
+        setIsImageModalVisible(true);
+    };
+
+    const closeImageModal = () => {
+        setIsImageModalVisible(false);
+        setSelectedImages([]);
+        setCurrentImageIndex(0);
+    };
+
     const displayedReviews = isExpanded ? listReview : listReview.slice(0, 2);
 
     const renderStars = (rating) => {
-        return Array.from({length: 5}, (_, index) => (
+        return Array.from({ length: 5 }, (_, index) => (
             <Ionicons
                 key={index}
                 name={index < rating ? 'star' : 'star-outline'}
@@ -69,14 +86,83 @@ const RatingAndReview = ({detailEventId}) => {
         ));
     };
 
+    // Component hiển thị grid ảnh
+    const renderImageGrid = (images) => {
+        if (!images || images.length === 0) return null;
+
+        // Nếu chỉ có 1 ảnh
+        if (images.length === 1) {
+            return (
+                <TouchableOpacity 
+                    style={styles.singleImageContainer}
+                    onPress={() => openImageModal(images, 0)}
+                    activeOpacity={0.8}
+                >
+                    <Image source={{ uri: images[0] }} style={styles.singleImage} />
+                </TouchableOpacity>
+            );
+        }
+
+        // Nếu có 2 ảnh
+        if (images.length === 2) {
+            return (
+                <View style={styles.twoImagesContainer}>
+                    {images.map((image, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            onPress={() => openImageModal(images, index)}
+                            activeOpacity={0.8}
+                        >
+                            <Image source={{ uri: image }} style={styles.twoImages} />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            );
+        }
+
+        // Nếu có 3 ảnh trở lên
+        return (
+            <View style={styles.multipleImagesContainer}>
+                <TouchableOpacity
+                    onPress={() => openImageModal(images, 0)}
+                    activeOpacity={0.8}
+                >
+                    <Image source={{ uri: images[0] }} style={styles.mainImage} />
+                </TouchableOpacity>
+                <View style={styles.sideImagesContainer}>
+                    <TouchableOpacity
+                        onPress={() => openImageModal(images, 1)}
+                        activeOpacity={0.8}
+                    >
+                        <Image source={{ uri: images[1] }} style={styles.sideImage} />
+                    </TouchableOpacity>
+                    {images[2] ? (
+                        <TouchableOpacity
+                            style={styles.lastImageContainer}
+                            onPress={() => openImageModal(images, 2)}
+                            activeOpacity={0.8}
+                        >
+                            <Image source={{ uri: images[2] }} style={styles.sideImage} />
+                            {images.length > 3 && (
+                                <View style={styles.moreImagesOverlay}>
+                                    <Text style={styles.moreImagesText}>+{images.length - 3}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    ) : null}
+                </View>
+            </View>
+        );
+    };
+
     return (
         <View style={styles.sectionContainer}>
             {/* Header Section */}
             <TouchableOpacity style={styles.sectionHeader} onPress={toggleExpanded}>
-                <TextComponent 
-                    text="Đánh giá và nhận xét" 
-                    size={18} 
-                    styles={{ fontWeight: 'bold', color: '#1F2937' }} 
+                <TextComponent
+                    text="Đánh giá và nhận xét"
+                    size={18}
+                    styles={{ fontWeight: 'bold', color: '#1F2937' }}
                 />
                 <View style={styles.headerRight}>
                     <Text style={styles.reviewCount}>({listReview.length})</Text>
@@ -92,9 +178,9 @@ const RatingAndReview = ({detailEventId}) => {
             {isExpanded && (
                 <View style={styles.sectionContent}>
                     <View style={styles.contentWrapper}>
-                        {/* Nút đánh giả của bạn */}
-                        <TouchableOpacity 
-                            activeOpacity={0.8} 
+                        {/* Nút đánh giá của bạn */}
+                        <TouchableOpacity
+                            activeOpacity={0.8}
                             onPress={() => navigation.navigate('Review', {
                                 detailEventId: detailEventId,
                             })}
@@ -112,15 +198,15 @@ const RatingAndReview = ({detailEventId}) => {
                                     styles.commentItem,
                                     index === displayedReviews.length - 1 && styles.lastCommentItem
                                 ]}>
-                                    {/* Header: avatar + tên + ngày */}
+                                    {/* Header: avatar + tên + rating */}
                                     <View style={styles.commentHeader}>
-                                        <Image 
-                                            style={styles.commentAvt} 
+                                        <Image
+                                            style={styles.commentAvt}
                                             source={{
-                                                uri: item?.userId?.picUrl ? 
-                                                    item?.userId?.picUrl : 
+                                                uri: item?.userId?.picUrl ?
+                                                    item?.userId?.picUrl :
                                                     'https://avatar.iran.liara.run/public'
-                                            }}  
+                                            }}
                                         />
                                         <View style={styles.commentUserInfo}>
                                             <Text style={styles.commentName}>
@@ -132,24 +218,21 @@ const RatingAndReview = ({detailEventId}) => {
                                         </View>
                                     </View>
 
-                                    {/* Nội dung bình luận - Chỉ hiển thị nếu có comment */}
+                                    {/* Hiển thị ảnh từ trường image */}
+                                    {item.image && item.image.length > 0 && (
+                                        <View style={styles.imagesContainer}>
+                                            {renderImageGrid(item.image)}
+                                        </View>
+                                    )}
+
+                                    {/* Nội dung bình luận */}
                                     {item.comment && item.comment.trim() !== '' && (
                                         <Text style={styles.commentContent}>
                                             {item.comment}
                                         </Text>
                                     )}
 
-                                    {/* Các hành động */}
-                                    <View style={styles.actionButtonContainer}>
-                                        <TouchableOpacity style={styles.actionButtons}>
-                                            <Ionicons name="heart-outline" size={16} color="#6B7280" />
-                                            <Text style={styles.actionButtonText}>Thích</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={styles.actionButtons}>
-                                            <Ionicons name="flag-outline" size={16} color="#6B7280" />
-                                            <Text style={styles.actionButtonText}>Báo cáo</Text>
-                                        </TouchableOpacity>
-                                    </View>
+                                    
                                 </View>
                             ))
                         ) : (
@@ -162,7 +245,7 @@ const RatingAndReview = ({detailEventId}) => {
 
                         {/* Nút xem thêm/ít hơn */}
                         {listReview.length > 2 && (
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={styles.showMoreButton}
                                 onPress={toggleExpanded}
                             >
@@ -176,11 +259,72 @@ const RatingAndReview = ({detailEventId}) => {
                                 />
                             </TouchableOpacity>
                         )}
-
-                        
                     </View>
                 </View>
             )}
+
+            {/* Modal xem ảnh full screen */}
+            <Modal
+                visible={isImageModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={closeImageModal}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={closeImageModal}
+                        >
+                            <Ionicons name="close" size={28} color="white" />
+                        </TouchableOpacity>
+                        <Text style={styles.imageCounter}>
+                            {currentImageIndex + 1} / {selectedImages.length}
+                        </Text>
+                    </View>
+                    
+                    <FlatList
+                        data={selectedImages}
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        initialScrollIndex={currentImageIndex}
+                        getItemLayout={(data, index) => ({
+                            length: screenWidth,
+                            offset: screenWidth * index,
+                            index,
+                        })}
+                        onMomentumScrollEnd={(event) => {
+                            const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+                            setCurrentImageIndex(newIndex);
+                        }}
+                        renderItem={({ item }) => (
+                            <View style={styles.imageContainer}>
+                                <Image
+                                    source={{ uri: item }}
+                                    style={styles.fullScreenImage}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                        )}
+                        keyExtractor={(item, index) => index.toString()}
+                    />
+                    
+                    {selectedImages.length > 1 && (
+                        <View style={styles.dotsContainer}>
+                            {selectedImages.map((_, index) => (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.dot,
+                                        index === currentImageIndex && styles.activeDot
+                                    ]}
+                                />
+                            ))}
+                        </View>
+                    )}
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -195,9 +339,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
         overflow: 'hidden',
-        
     },
-    
+
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -274,94 +417,243 @@ const styles = StyleSheet.create({
         gap: 2,
     },
 
-    commentContent: {
-        color: '#374151',
-        fontSize: 15,
-        lineHeight: 22,
+    // Images Container
+    imagesContainer: {
         marginBottom: 12,
     },
 
-    // Các nút hành động dưới comment
+    // Single Image
+    singleImageContainer: {
+        alignItems: 'flex-start',
+    },
+
+    singleImage: {
+        width: screenWidth - 64, // Trừ padding
+        height: 200,
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+    },
+
+    // Two Images
+    twoImagesContainer: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+
+    twoImages: {
+        width: (screenWidth - 80) / 2, // Chia đôi trừ padding và gap
+        height: 150,
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+    },
+
+    // Multiple Images (3+)
+    multipleImagesContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        height: 150,
+    },
+
+    mainImage: {
+        width: (screenWidth - 80) * 0.6, // 60% width
+        height: 150,
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+    },
+
+    sideImagesContainer: {
+        flex: 1,
+        gap: 8,
+    },
+
+    sideImage: {
+        width: '100%',
+        height: 71, // (150 - 8) / 2
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+    },
+
+    lastImageContainer: {
+        position: 'relative',
+    },
+
+    moreImagesOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    moreImagesText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+
+    // Comment Content
+    commentContent: {
+        fontSize: 15,
+        lineHeight: 20,
+        color: '#374151',
+        marginBottom: 12,
+    },
+
+    // Action Buttons
     actionButtonContainer: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 16,
     },
 
     actionButtons: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        backgroundColor: '#F3F4F6',
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+        gap: 4,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
     },
 
     actionButtonText: {
-        color: '#6B7280',
-        fontSize: 13,
-    },
-
-    // Nút xem thêm
-    showMoreButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-        paddingVertical: 12,
-        marginTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-    },
-
-    showMoreText: {
-        color: appColors.primary,
         fontSize: 14,
-        fontWeight: '600',
+        color: '#6B7280',
     },
 
-    // Nút viết đánh giá
+    // Write Review Button
     writeReviewButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         padding: 16,
-        marginTop: 10,
-        marginBottom: 20,
         backgroundColor: '#F8FAFC',
         borderRadius: 12,
+        marginBottom: 16,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
 
     writeReviewText: {
-        color: '#1F2937',
-        fontSize: 16,
-        fontWeight: '500',
         flex: 1,
         marginLeft: 12,
+        fontSize: 16,
+        color: appColors.primary,
+        fontWeight: '500',
     },
 
-    // Empty state
+    // Show More Button
+    showMoreButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 12,
+        marginTop: 8,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+
+    showMoreText: {
+        fontSize: 14,
+        color: appColors.primary,
+        fontWeight: '500',
+        marginRight: 4,
+    },
+
+    // Empty State
     emptyState: {
         alignItems: 'center',
-        paddingVertical: 40,
+        paddingVertical: 32,
     },
 
     emptyText: {
-        color: '#1F2937',
         fontSize: 16,
         fontWeight: '600',
+        color: '#6B7280',
         marginTop: 12,
-        textAlign: 'center',
+        marginBottom: 4,
     },
 
     emptySubText: {
-        color: '#6B7280',
         fontSize: 14,
-        marginTop: 4,
+        color: '#9CA3AF',
         textAlign: 'center',
+    },
+
+    // Modal styles
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        justifyContent: 'center',
+    },
+
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 50,
+        paddingBottom: 20,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+
+    closeButton: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 22,
+    },
+
+    imageCounter: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
+    imageContainer: {
+        width: screenWidth,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    fullScreenImage: {
+        width: screenWidth,
+        height: '80%',
+    },
+
+    dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 20,
+        position: 'absolute',
+        bottom: 50,
+        left: 0,
+        right: 0,
+    },
+
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+        marginHorizontal: 4,
+    },
+
+    activeDot: {
+        backgroundColor: 'white',
+        width: 10,
+        height: 10,
+        borderRadius: 5,
     },
 });

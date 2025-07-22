@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Keyboa
 import React, { useCallback, useEffect, useState } from 'react';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Feather from 'react-native-vector-icons/Feather';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AxiosInstance } from '../../services';
 import { appColors } from '../../constants/appColors';
@@ -10,117 +11,194 @@ import LoadingModal from '../../modals/LoadingModal';
 import { useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 
-const Review = ({navigation,route}) => {
-    const {detailEventId} = route.params;
-    const [selectedTag, setSelectedTag] = useState('Đã tham gia');
+const Review = ({ navigation, route }) => {
+    const { detailEventId } = route.params;
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
-    const [image, setImage] = useState('');
-    const [isLoading, setIsLoading] = useState(false)
+    const [images, setImages] = useState([]); // Thay đổi từ image sang images array
+    const [isLoading, setIsLoading] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const userId = useSelector(state => state.auth.userId);
     const [name, setName] = useState('');
+    const [userAvatar, setUserAvatar] = useState('');
+
+    const MAX_IMAGES = 5;
 
     useFocusEffect(
         useCallback(() => {
-          const getUserInfo = async () => {
-            try {
-              if (userId) {
-                const response = await AxiosInstance().get(`users/getUser/${userId}`);
-                setName(response.data.username);
-                setImage(response.data.picUrl);
-              }
-            } catch (error) {
-              console.log('Lỗi khi lấy thông tin người dùng:', error);
-            }
-          };
-    
-          getUserInfo();
+            const getUserInfo = async () => {
+                try {
+                    if (userId) {
+                        const response = await AxiosInstance().get(`users/getUser/${userId}`);
+                        setName(response.data.username);
+                        setUserAvatar(response.data.picUrl || 'https://avatar.iran.liara.run/public');
+                    }
+                } catch (error) {
+                    console.log('Lỗi khi lấy thông tin người dùng:', error);
+                }
+            };
+
+            getUserInfo();
         }, [userId])
-      );
+    );
 
-    // Mở thư viện chọn ảnh
-  const pickImage = async () => {
-    try {
-      const image = await ImagePicker.openPicker({
-        width: 500,
-        height: 500,
-        cropping: true, // Cho phép crop ảnh
-        mediaType: 'photo',
-      });
-  
-      console.log('Ảnh đã chọn:', image.path);
-      uploadImage(image.path);
-    } catch (error) {
-      console.log('Người dùng đã hủy chọn ảnh hoặc lỗi:', error);
-    }
-  };
+    // Mở thư viện chọn nhiều ảnh
+    const pickMultipleImages = async () => {
+        if (images.length >= MAX_IMAGES) {
+            Alert.alert('Giới hạn ảnh', `Bạn chỉ có thể chọn tối đa ${MAX_IMAGES} ảnh`);
+            return;
+        }
 
-  // Kết nối Claudinary để tải ảnh lên
-  const uploadImage = async (imageUri) => {
-    let formData = new FormData();
-    formData.append('file', {
-      uri: imageUri,
-      type: 'image/jpeg',
-      name: 'upload.jpg',
-    });
-    formData.append('upload_preset', 'DATN2025'); // Thay bằng upload preset của bạn
-  
-    try {
-      let response = await fetch('https://api.cloudinary.com/v1_1/ddkqz5udn/image/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      let data = await response.json();
-      console.log('Cloudinary Response:', data);
-  
-      if (data.secure_url) {
-        setImage(data.secure_url);
-        console.log('URL Ảnh:', data.secure_url);
-      } else {
-        Alert.alert('Upload thất bại!', JSON.stringify(data));
-      }
-    } catch (error) {
-      console.log('Lỗi upload:', error);
-      Alert.alert('Lỗi!', 'Không thể tải ảnh lên.');
-    }
-  };
+        try {
+            const selectedImages = await ImagePicker.openPicker({
+                multiple: true,
+                maxFiles: MAX_IMAGES - images.length,
+                mediaType: 'photo',
+                cropping: false,
+                compressImageQuality: 0.8,
+            });
+
+            setIsUploadingImage(true);
+            const uploadPromises = selectedImages.map(image => uploadImage(image.path));
+            const uploadedUrls = await Promise.all(uploadPromises);
+
+            // Lọc bỏ các URL null/undefined
+            const validUrls = uploadedUrls.filter(url => url);
+            setImages(prevImages => [...prevImages, ...validUrls]);
+            setIsUploadingImage(false);
+        } catch (error) {
+            setIsUploadingImage(false);
+            if (error.code !== 'E_PICKER_CANCELLED') {
+                console.log('Lỗi khi chọn ảnh:', error);
+                Alert.alert('Lỗi', 'Không thể chọn ảnh');
+            }
+        }
+    };
+
+    // Chọn từ camera
+    const takePhoto = async () => {
+        if (images.length >= MAX_IMAGES) {
+            Alert.alert('Giới hạn ảnh', `Bạn chỉ có thể chọn tối đa ${MAX_IMAGES} ảnh`);
+            return;
+        }
+
+        try {
+            const image = await ImagePicker.openCamera({
+                width: 500,
+                height: 500,
+                cropping: true,
+                mediaType: 'photo',
+                compressImageQuality: 0.8,
+            });
+
+            setIsUploadingImage(true);
+            const uploadedUrl = await uploadImage(image.path);
+            if (uploadedUrl) {
+                setImages(prevImages => [...prevImages, uploadedUrl]);
+            }
+            setIsUploadingImage(false);
+        } catch (error) {
+            setIsUploadingImage(false);
+            if (error.code !== 'E_PICKER_CANCELLED') {
+                console.log('Lỗi khi chụp ảnh:', error);
+                Alert.alert('Lỗi', 'Không thể chụp ảnh');
+            }
+        }
+    };
+
+    // Show option chọn ảnh
+    const showImagePickerOptions = () => {
+        Alert.alert(
+            'Chọn ảnh',
+            'Bạn muốn chọn ảnh từ đâu?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                { text: 'Thư viện', onPress: pickMultipleImages },
+                { text: 'Camera', onPress: takePhoto },
+            ]
+        );
+    };
+
+    // Upload ảnh lên Cloudinary
+    const uploadImage = async (imageUri) => {
+        let formData = new FormData();
+        formData.append('file', {
+            uri: imageUri,
+            type: 'image/jpeg',
+            name: 'upload.jpg',
+        });
+        formData.append('upload_preset', 'DATN2025');
+
+        try {
+            let response = await fetch('https://api.cloudinary.com/v1_1/ddkqz5udn/image/upload', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            let data = await response.json();
+
+            if (data.secure_url) {
+                console.log('✅ Ảnh đã upload:', data.secure_url);
+                return data.secure_url;
+            } else {
+                Alert.alert('Upload thất bại!', JSON.stringify(data));
+                return null;
+            }
+        } catch (error) {
+            console.log('Lỗi upload:', error);
+            Alert.alert('Lỗi!', 'Không thể tải ảnh lên.');
+            return null;
+        }
+    };
+
+    // Xóa ảnh
+    const removeImage = (indexToRemove) => {
+        setImages(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
+    };
 
     const handlePostReview = async () => {
+        if (rating === 0) {
+            Alert.alert('Thiếu thông tin', 'Vui lòng chọn số sao đánh giá');
+            return;
+        }
+
+        if (images.length > MAX_IMAGES) {
+            Alert.alert('Quá số lượng ảnh cho phép', `Bạn chỉ được gửi tối đa ${MAX_IMAGES} ảnh`);
+            return;
+        }
+
         setIsLoading(true);
         try {
             const response = await AxiosInstance().post('preview/post', {
-                userId: userId, // Sử dụng userId từ Redux store thay vì userInfo.userId
+                userId: userId,
                 eventId: detailEventId,
                 comment: comment,
                 rating: rating,
-                image: image,
+                image: images, // Gửi mảng ảnh
             });
 
-            if(response.status) {
+            if (response.status) {
                 Alert.alert('Đánh giá thành công', 'Cảm ơn bạn đã đánh giá',
                     [
-                        {
-                          text: 'OK',
-                          onPress: () => navigation.goBack()
-                        }
-                      ]
+                        { text: 'OK', onPress: () => navigation.goBack() }
+                    ]
                 );
             }
-        } catch(e) {
+        } catch (e) {
             console.log(e);
-            setIsLoading(false)
+            Alert.alert('Lỗi', 'Không thể gửi đánh giá. Vui lòng thử lại.');
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
-    if(isLoading) {
-        return <LoadingModal />
+
+    if (isLoading) {
+        return <LoadingModal />;
     }
 
     return (
@@ -134,82 +212,115 @@ const Review = ({navigation,route}) => {
                     contentContainerStyle={styles.contentWrapper}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* info */}
+                    {/* User Info */}
                     <View style={styles.infoContainer}>
                         <View style={styles.avatarContainer}>
-                            <Image style = {styles.avatar} source={{uri: image}} />
+                            <Image style={styles.avatar} source={{ uri: userAvatar }} />
                         </View>
 
-                        {/* tên sự kiện, đánh giá trung bình */}
                         <View style={styles.detailInfoContainer}>
                             <Text style={styles.detailInfoName}>{name}</Text>
+                            <Text style={styles.detailInfoSubtitle}>Đang viết đánh giá...</Text>
                         </View>
                     </View>
 
-                    {/* trạng thái đánh giá */}
-                    <View style={styles.otherActionButtonsContainer}>
-                        {['Chưa tham gia', 'Sắp tham gia', 'Đã tham gia'].map((tag, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[
-                                    styles.otherActionButtons,
-                                    selectedTag === tag && styles.activeTag,
-                                ]}
-                                onPress={() => setSelectedTag(tag)}
-                            >
-                                <Text style={[
-                                    styles.tagText,
-                                    selectedTag === tag && styles.activeTagText,
-                                ]}>
-                                    {tag}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                    {/* Rating Section */}
+                    <View style={styles.ratingContainer}>
+                        <Text style={styles.sectionTitle}>Đánh giá của bạn *</Text>
+                        <View style={styles.starsContainer}>
+                            {[1, 2, 3, 4, 5].map((value, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    onPress={() => setRating(value)}
+                                    style={styles.stars}
+                                >
+                                    <AntDesign
+                                        name="star"
+                                        size={32}
+                                        color={value <= rating ? '#facc15' : '#E5E7EB'}
+                                    />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        {rating > 0 && (
+                            <Text style={styles.ratingText}>
+                                {rating === 1 ? 'Rất tệ' :
+                                    rating === 2 ? 'Tệ' :
+                                        rating === 3 ? 'Bình thường' :
+                                            rating === 4 ? 'Tốt' : 'Xuất sắc'}
+                            </Text>
+                        )}
                     </View>
 
-                    {/* đánh giá sao + comment */}
-                    <View style={styles.ratingContainer}>
-                        {/* Điều kiện: chỉ hiển thị nếu chọn "Đã tham gia" */}
-                        {selectedTag === 'Đã tham gia' && (
-                            <View>
-                                <Text>Đánh giá của bạn</Text>
-                                <View style={styles.starsContainer}>
-                                    {[1, 2, 3, 4, 5].map((value, index) => (
-                                        <TouchableOpacity
-                                            key={index}
-                                            onPress={() => setRating(value)}
-                                            style={styles.stars}
-                                        >
-                                            <AntDesign
-                                                name="star"
-                                                size={24}
-                                                color={value <= rating ? '#facc15' : 'grey'} // vàng khi được chọn
-                                            />
-                                        </TouchableOpacity>
-                                    ))}
+                    {/* Images Section */}
+                    <View style={styles.imagesSection}>
+                        <View style={styles.imagesSectionHeader}>
+                            <Text style={styles.sectionTitle}>Hình ảnh ({images.length}/{MAX_IMAGES})</Text>
+                            {images.length < MAX_IMAGES && (
+                                <TouchableOpacity
+                                    style={styles.addImageButton}
+                                    onPress={showImagePickerOptions}
+                                    disabled={isUploadingImage}
+                                >
+                                    <Feather name="plus" size={20} color={appColors.primary} />
+                                    <Text style={styles.addImageText}>Thêm ảnh</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {/* Images Grid */}
+                        <View style={styles.imagesGrid}>
+                            {images.map((imageUri, index) => (
+                                <View key={index} style={styles.imageContainer}>
+                                    <Image source={{ uri: imageUri }} style={styles.uploadedImage} />
+                                    <TouchableOpacity
+                                        style={styles.removeImageButton}
+                                        onPress={() => removeImage(index)}
+                                    >
+                                        <MaterialIcons name="close" size={18} color="white" />
+                                    </TouchableOpacity>
                                 </View>
+                            ))}
+                        </View>
+
+                        {isUploadingImage && (
+                            <View style={styles.uploadingContainer}>
+                                <Text style={styles.uploadingText}>Đang tải ảnh lên...</Text>
                             </View>
                         )}
+                    </View>
 
-                        {/* Luôn hiển thị phần chọn ảnh */}
-                        <TouchableOpacity style={styles.imageUploadButton} onPress={pickImage}>
-                            <Feather name="image" size={60} color="black" />
-                        </TouchableOpacity>
-
-                        {/* Luôn hiển thị ô comment */}
+                    {/* Comment Section */}
+                    <View style={styles.commentSection}>
+                        <Text style={styles.sectionTitle}>Nhận xét</Text>
                         <TextInput
                             style={styles.comment}
-                            placeholder='Đánh giá của bạn về sự kiện'
+                            placeholder="Chia sẻ trải nghiệm của bạn về sự kiện này..."
                             multiline
-                            onChangeText={(value) => setComment(value)}
+                            numberOfLines={4}
+                            value={comment}
+                            onChangeText={setComment}
+                            textAlignVertical="top"
                         />
                     </View>
                 </ScrollView>
 
-                {/* nút Submit */}
+                {/* Submit Button */}
                 <View style={styles.submitContainer}>
-                    <TouchableOpacity style={styles.submitButton} onPress={handlePostReview}>
-                        <Text style={{ fontWeight: 'bold', fontSize: 18, color: 'white' }}>Đánh giá</Text>
+                    <TouchableOpacity
+                        style={[
+                            styles.submitButton,
+                            rating === 0 && styles.submitButtonDisabled
+                        ]}
+                        onPress={handlePostReview}
+                        disabled={rating === 0}
+                    >
+                        <Text style={[
+                            styles.submitButtonText,
+                            rating === 0 && styles.submitButtonTextDisabled
+                        ]}>
+                            Gửi đánh giá
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -220,132 +331,191 @@ const Review = ({navigation,route}) => {
 export default Review;
 
 const styles = StyleSheet.create({
-    // View cha tổng chứa toàn bộ nội dung (flex layout)
     mainContentContainer: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingVertical: 30,
         backgroundColor: '#fff',
     },
 
-    // Gói phần nội dung cuộn (trừ nút Submit)
     contentWrapper: {
         flexGrow: 1,
-        paddingBottom: 20, // chừa khoảng dưới cho đẹp
+        padding: 20,
     },
 
-    // Hàng chứa avatar và thông tin người dùng
+    // User Info Section
     infoContainer: {
         flexDirection: 'row',
-        marginBottom: 15,
+        marginBottom: 24,
+        alignItems: 'center',
     },
 
-    // Khung ảnh đại diện (avatar)
     avatarContainer: {
-        flex: 3,
-        height: 80,
-        borderRadius: 10,
-        justifyContent:'center',
-        alignItems:'center',
+        marginRight: 12,
     },
 
     avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 40
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
     },
 
-    // Khung chứa thông tin chi tiết như tên, ngày, v.v.
     detailInfoContainer: {
-        flex: 8,
-        height: 80,
-        marginLeft: 10,
-        borderRadius: 10,
-        justifyContent: 'center',
+        flex: 1,
     },
 
-    // Tên sự kiện
     detailInfoName: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
+        color: '#1F2937',
+        marginBottom: 4,
     },
 
-    detailInfoRate: {
-        fontSize: 18,
+    detailInfoSubtitle: {
+        fontSize: 14,
+        color: '#6B7280',
     },
-    // Nhóm nút chọn trạng thái (chưa tham gia, đã tham gia, ...)
-    otherActionButtonsContainer: {
+
+    // Section Styles
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1F2937',
+        marginBottom: 12,
+    },
+
+    // Rating Section
+    ratingContainer: {
+        marginBottom: 24,
+    },
+
+    starsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+
+    stars: {
+        marginRight: 8,
+        padding: 4,
+    },
+
+    ratingText: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontStyle: 'italic',
+    },
+
+    // Images Section
+    imagesSection: {
+        marginBottom: 24,
+    },
+
+    imagesSectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+
+    addImageButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: appColors.primary,
+    },
+
+    addImageText: {
+        marginLeft: 6,
+        color: appColors.primary,
+        fontSize: 14,
+        fontWeight: '500',
+    },
+
+    imagesGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginBottom: 15,
+        gap: 12,
     },
 
-    // Style cho từng nút trạng thái
-    otherActionButtons: {
-        backgroundColor: '#E5E7EB',
-        padding: 10,
-        borderRadius: 10,
-        marginTop: 10,
-        marginRight: 15,
+    imageContainer: {
+        position: 'relative',
     },
 
-    // Phần chứa đánh giá sao và bình luận
-    ratingContainer: {
+    uploadedImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+    },
+
+    removeImageButton: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        backgroundColor: '#EF4444',
+        borderRadius: 12,
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    uploadingContainer: {
+        padding: 12,
+        alignItems: 'center',
+    },
+
+    uploadingText: {
+        color: '#6B7280',
+        fontSize: 14,
+    },
+
+    // Comment Section
+    commentSection: {
         marginBottom: 20,
     },
 
-    // Hàng chứa các icon ngôi sao
-    starsContainer: {
-        flexDirection: 'row',
-        marginTop: 10,
-    },
-
-    // Style cho mỗi ngôi sao
-    stars: {
-        marginRight: 10,
-    },
-
-    // Nút upload ảnh minh họa (nếu có)
-    imageUploadButton: {
-        width: 60,
-        height: 60,
-        marginVertical: 10,
-        borderRadius: 10,
-    },
-
-    // Ô nhập bình luận của người dùng
     comment: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
         minHeight: 100,
-        padding: 10,
-        textAlignVertical: 'top', // giúp text bắt đầu từ trên cùng
+        backgroundColor: '#FAFAFA',
     },
 
-    // View chứa nút submit nằm cuối màn hình
+    // Submit Section
     submitContainer: {
-        paddingVertical: 15,
-        alignItems: 'center',
+        padding: 20,
         borderTopWidth: 1,
-        borderColor: '#eee',
+        borderTopColor: '#E5E7EB',
         backgroundColor: '#fff',
     },
 
-    // Nút submit đánh giá
     submitButton: {
         backgroundColor: appColors.primary,
-        padding: 15,
-        borderRadius: 15,
-        width: '100%',
+        padding: 16,
+        borderRadius: 12,
         alignItems: 'center',
     },
-    activeTag: {
-        backgroundColor: appColors.primary, // màu nền tag khi chọn
+
+    submitButtonDisabled: {
+        backgroundColor: '#E5E7EB',
     },
 
-    activeTagText: {
-        color: '#fff',
+    submitButtonText: {
         fontWeight: 'bold',
+        fontSize: 16,
+        color: 'white',
     },
-    tagText: {
-        color: '#111827', // màu mặc định
+
+    submitButtonTextDisabled: {
+        color: '#9CA3AF',
     },
 });
