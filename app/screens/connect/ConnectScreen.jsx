@@ -96,7 +96,6 @@ const ConnectScreen = ({ navigation }) => {
       </TouchableOpacity>
     </View>
   );
-  console.log("My group: "+JSON.stringify(myGroups));
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#6C5CE7" />

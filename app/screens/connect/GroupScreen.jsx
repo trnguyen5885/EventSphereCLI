@@ -24,77 +24,39 @@ import LinearGradient from 'react-native-linear-gradient';
 import ListInviteComponent from '../explore/components/ListInviteComponent';
 import CustomLogoutDialog from '../../components/CustomLogoutDialog';
 import { getSocket } from '../../socket/socket';
+import { useLocationSharing } from './components/useLocationSharing';
 
 const { width, height } = Dimensions.get('window');
 
 const GroupScreen = ({ route, navigation }) => {
   const { groupId, userLocation, groupName, ownerId } = route?.params || {};
   const userId = useSelector(state => state.auth.userId);
-  const userEmail = useSelector(state => state.auth.userData?.email);
-
   const isOwner = String(userId) === String(ownerId?._id);
 
-  const [members, setMembers] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [inviteModal, setInviteModal] = useState(false);
-  const [searchEmail, setSearchEmail] = useState('');
-  const [searchResult, setSearchResult] = useState(null);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [invitedMembers, setInvitedMembers] = useState([]);
   const [isSharing, setIsSharing] = useState(false);
   const [myLocation, setMyLocation] = useState(userLocation || null);
   const [targetMember, setTargetMember] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
   const [distanceText, setDistanceText] = useState('');
-  const [animatedValue] = useState(new Animated.Value(0));
   const [showOptions, setShowOptions] = useState(false);
+  const [inviteModal, setInviteModal] = useState(false);
+  const [searchEmail, setSearchEmail] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [invitedMembers, setInvitedMembers] = useState([]);
   const [showConfirmLeaveSheet, setShowConfirmLeaveSheet] = useState(false);
   const [showConfirmDeleteSheet, setShowConfirmDeleteSheet] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
-  const [confirmType, setConfirmType] = useState(null); // 'leave' | 'delete'
+  const [confirmType, setConfirmType] = useState(null);
   const [targetMemberId, setTargetMemberId] = useState(null);
+  const [animatedValue] = useState(new Animated.Value(0));
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [membersData, locationsData] = await Promise.all([
-        getGroupMembers(groupId),
-        getGroupLocations(groupId),
-      ]);
-      setMembers(membersData);
-      setLocations(locationsData);
-    } catch (e) {
-      alert('Không thể tải dữ liệu nhóm');
-    } finally {
-      setLoading(false);
-    }
-  }, [groupId]);
-  
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
-
-  useEffect(() => {
-    let watchId;
-    if (isSharing) {
-      watchId = Geolocation.watchPosition(
-        async ({ coords }) => {
-          setMyLocation(coords);
-          await updateLocation(groupId, userId, coords.latitude, coords.longitude, true); // truyền isSharing: true
-        },
-        (err) => alert('Không lấy được vị trí: ' + err.message),
-        { enableHighAccuracy: true, distanceFilter: 10 }
-      );
-    } else {
-      setMyLocation(userLocation);
-      // Khi tắt chia sẻ, gửi isSharing: false
-      updateLocation(groupId, userId, null, null, false);
-    }
-    return () => watchId && Geolocation.clearWatch(watchId);
-  }, [isSharing, groupId, userId, userLocation]);
+  const {
+    members,
+    locations,
+    loading,
+    refetch
+  } = useLocationSharing({ groupId, userId, isSharing, userLocation });
 
   useEffect(() => {
     Animated.timing(animatedValue, {
@@ -103,26 +65,6 @@ const GroupScreen = ({ route, navigation }) => {
       useNativeDriver: true,
     }).start();
   }, []);
-
-  useEffect(() => {
-    const socket = getSocket();
-    let handleLocationUpdate;
-    if (socket && groupId) {
-      socket.emit('join', `group_${groupId}`);
-      handleLocationUpdate = (data) => {
-        fetchData();
-      };
-      socket.on('location:update', handleLocationUpdate);
-    }
-    return () => {
-      if (socket && groupId) {
-        socket.emit('leave', `group_${groupId}`);
-        if (handleLocationUpdate) {
-          socket.off('location:update', handleLocationUpdate);
-        }
-      }
-    };
-  }, [groupId, fetchData]);
 
   useEffect(() => {
     return () => {
@@ -172,6 +114,7 @@ const GroupScreen = ({ route, navigation }) => {
     if (!groupId || !searchResult) return;
     try {
       await inviteToGroup(groupId, searchResult.email);
+      refetch();
       setInvitedMembers([...invitedMembers, { email: searchResult.email }]);
       setSearchEmail('');
       setSearchResult(null);
@@ -377,7 +320,7 @@ const handleDeleteGroup = async () => {
                           <View style={styles.onlineIndicator} />
                         </View>
                         <View style={styles.memberInfo}>
-                          <Text style={styles.memberName}>{item.name}</Text>
+                          <Text style={styles.memberName}>{item.username}</Text>
                           <Text style={styles.memberEmail}>{item.email}</Text>
                           <Text style={styles.memberStatus}>🌍 Đang chia sẻ vị trí</Text>
                           {myLocation && hasLocation(item) && (
@@ -428,7 +371,7 @@ const handleDeleteGroup = async () => {
                           )}
                         </View>
                         <View style={styles.memberInfo}>
-                          <Text style={[styles.memberName, styles.memberNameOffline]}>{item.name}</Text>
+                          <Text style={[styles.memberName, styles.memberNameOffline]}>{item.username}</Text>
                           <Text style={styles.memberEmail}>{item.email}</Text>
                           <Text style={styles.memberStatusOffline}>📍 Chưa chia sẻ vị trí</Text>
                         </View>

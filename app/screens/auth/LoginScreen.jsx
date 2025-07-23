@@ -74,7 +74,7 @@ const LoginScreen = ({ navigation }) => {
           })
         );
 
-        if (Array.isArray(tags) && tags.length === 0) {
+        if (Array.isArray(tags) && tags.length === 0 && tags !== null) {
           navigation.reset({
             index: 0,
             routes: [{ name: 'FavoriteTag' }],
