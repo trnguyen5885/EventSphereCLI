@@ -81,7 +81,7 @@ const RegisterScreen = ({navigation}) => {
 
       if (res.status) {
         console.log(res.message);
-        navigation.navigate('OtpVerification', {email});
+        navigation.navigate('OtpVerification', { email, username, password });
       }
     } catch (error) {
       setErrors(prev => ({...prev, email: 'Email đã tồn tại'}));

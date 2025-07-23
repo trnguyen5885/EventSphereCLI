@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import { View, Dimensions, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import CustomMarkerUser from '../../map/CustomMarkerUser';
+import { useSelector } from 'react-redux';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import FloatingControls from '../../map/FloatingControls';
 
 const { width, height } = Dimensions.get('window');
 
@@ -16,23 +20,16 @@ const getDistanceInKm = (lat1, lon1, lat2, lon2) => {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
-// CustomMarker hiển thị avatar picUrl
-const CustomMarker = ({ picUrl, name }) => (
-  <View style={{
-    borderWidth: 2,
-    borderColor: '#fff',
-    borderRadius: 20,
-    overflow: 'hidden',
-    width: 40,
-    height: 40,
-    backgroundColor: '#eee',
-    alignItems: 'center',
-    justifyContent: 'center'
-  }}>
-    <Image
-      source={{ uri: picUrl }}
-      style={{ width: 36, height: 36, borderRadius: 18 }}
-    />
+// CustomMarker hiển thị avatar picUrl, nếu không có thì dùng avatar mặc định
+const CustomMarker = ({ picUrl, isSharing }) => (
+  <View style={[styles.markerWrapper]}>
+    <View style={[styles.markerBorder, { borderColor: isSharing ? '#4CAF50' : '#bdbdbd' }]}>
+      <Image
+        source={{ uri: picUrl ? picUrl : 'https://avatar.iran.liara.run/public' }}
+        style={styles.markerImage}
+      />
+    </View>
+    <View style={[styles.markerTail, { backgroundColor: isSharing ? '#4CAF50' : '#bdbdbd' }]} />
   </View>
 );
 
@@ -40,6 +37,7 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
   const [routeCoords, setRouteCoords] = useState([]);
   const [useStraightLine, setUseStraightLine] = useState(false);
   const mapRef = useRef(null);
+  const userId = useSelector(state => state.auth.userId);
 
   const targetMember = members.find(m => (m._id || m.id) === targetMemberId);
   const firstLocation = members.find(m => m.location?.coordinates?.length === 2);
@@ -132,6 +130,41 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
     });
   };
 
+  const zoomIn = () => {
+    if (!region || !mapRef.current) return;
+    const newRegion = {
+      ...region,
+      latitudeDelta: region.latitudeDelta * 0.6,
+      longitudeDelta: region.longitudeDelta * 0.6,
+    };
+    setRegion(newRegion);
+    mapRef.current.animateToRegion(newRegion, 300);
+  };
+
+  const zoomOut = () => {
+    if (!region || !mapRef.current) return;
+    const newRegion = {
+      ...region,
+      latitudeDelta: region.latitudeDelta * 1.4,
+      longitudeDelta: region.longitudeDelta * 1.4,
+    };
+    setRegion(newRegion);
+    mapRef.current.animateToRegion(newRegion, 300);
+  };
+
+  const centerToUser = () => {
+    if (myLocation && mapRef.current) {
+      mapRef.current.animateToRegion(
+        {
+          ...myLocation,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000,
+      );
+    }
+  };
+
   if (!myLocation && !firstLocation) {
     return (
       <View style={styles.mapContainer}>
@@ -142,28 +175,16 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
   
   return (
     <View style={styles.mapContainer}>
-      <View style={styles.zoomControl}>
-        <TouchableOpacity
-          style={styles.zoomButton}
-          onPress={() => setRegion(r => ({
-            ...r,
-            latitudeDelta: r.latitudeDelta / 2,
-            longitudeDelta: r.longitudeDelta / 2,
-          }))}
-        >
-          <Text style={styles.zoomText}>＋</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.zoomButton}
-          onPress={() => setRegion(r => ({
-            ...r,
-            latitudeDelta: r.latitudeDelta * 2,
-            longitudeDelta: r.longitudeDelta * 2,
-          }))}
-        >
-          <Text style={styles.zoomText}>－</Text>
-        </TouchableOpacity>
-      </View>
+      <FloatingControls
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onCenterUser={centerToUser}
+        centerUserIcon={require('../../../../assets/images/icon-LocationUser.png')}
+        centerUserButtonStyle={{width: 50, height: 50}}
+        zoomInButtonStyle={{width: 30, height: 30}}
+        zoomOutButtonStyle={{width: 30, height: 30}}
+        style={{top: 12, right: 12}}
+      />
 
       {/* Avatar nổi phía trên bản đồ khi chọn targetMember */}
       {targetMember && targetMember.picUrl && (
@@ -189,18 +210,15 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
         region={region}
         onRegionChangeComplete={handleRegionChangeComplete}
         showsUserLocation={!!myLocation}
+        showsMyLocationButton={false}
       >
         {members.map(member => {
           const isTarget = targetMember &&
             (member._id || member.id) === (targetMember._id || targetMember.id);
 
-          // Xác định marker của chính mình
-          const isMe = myLocation &&
-            Math.abs(member.latitude - myLocation.latitude) < 0.00001 &&
-            Math.abs(member.longitude - myLocation.longitude) < 0.00001;
-
-          // Lấy chữ cái đầu của username hoặc chữ 'Bạn' nếu là mình
-          const initial = isMe ? 'Tôi' : (member.username ? member.username.charAt(0).toUpperCase() : '?');
+          // Xác định marker của chính mình dựa trên userId
+          const isMe = String(member._id || member.id) === String(userId);
+          if (isMe) return null;
 
           return typeof member.latitude === 'number' && typeof member.longitude === 'number' && (
             <Marker
@@ -215,24 +233,15 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
                 }
               }}
             >
-              <View style={{
-                borderWidth: isTarget ? 3 : 2,
-                borderColor: isTarget ? '#FFD600' : '#fff',
-                borderRadius: 16,
-                overflow: 'hidden',
-                width: 32,
-                height: 32,
-                backgroundColor: isMe ? '#007bff' : '#eee',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Text style={{ fontSize: 15, fontWeight: 'bold', color: isMe ? '#fff' : '#333' }}>{initial}</Text>
-              </View>
+              <CustomMarker 
+                picUrl={member.picUrl} 
+                isSharing={true}
+              />
               <Callout tooltip>
                 <View style={styles.calloutBox}>
                   <Image
-                    source={{ uri: member.picUrl }}
-                    style={{ width: 40, height: 40, borderRadius: 20, marginBottom: 6 }}
+                    source={{ uri: member.picUrl ? member.picUrl : 'https://avatar.iran.liara.run/public' }}
+                    style={styles.calloutImage}
                   />
                   <Text style={styles.calloutEmail}>{member.email}</Text>
                   <Text style={styles.calloutDirection}>Nhấn để chỉ đường</Text>
@@ -245,19 +254,7 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
 
         {myLocation && (
           <Marker coordinate={myLocation}>
-            <View style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#007bff',
-              borderWidth: 2,
-              borderColor: '#fff',
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}>
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Tôi</Text>
-            </View>
-
+            <CustomMarkerUser />
             <Callout tooltip>
               <View style={styles.calloutBox}>
                 <Text style={[styles.calloutName, { color: '#28a745' }]}>Bạn</Text>
@@ -310,6 +307,10 @@ const styles = StyleSheet.create({
     minWidth: 130,
     elevation: 4
   },
+  calloutImage: {
+    width: 20,
+    height: 20
+  },
   calloutName: {
     fontWeight: 'bold',
     fontSize: 15,
@@ -329,23 +330,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  zoomControl: {
-    position: 'absolute',
-    right: 12,
-    top: 12,
-    zIndex: 10
+  markerWrapper: {
+    alignItems: 'center',
   },
-  zoomButton: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 30,
-    marginBottom: 10,
-    elevation: 3
+  markerBorder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  zoomText: {
-    fontSize: 20,
-    color: '#333'
-  }
+  markerImage: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
+  markerTail: {
+    width: 3,
+    height: 10,
+    marginTop: -3,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+  },
 });
 
 export default GroupMap;

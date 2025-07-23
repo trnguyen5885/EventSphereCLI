@@ -131,7 +131,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
       if (formData.paymentMethod === 'zalo') {
         const totalAmount = calculateTotal();
         const bodyPayment = {
-          amount: typeBase === 'none' ? totalAmount : quantity,
+          amount: typeBase === 'none' ? totalAmount : totalPrice,
           urlCalbackSuccess:
             'https://gamesphereapi.onrender.com/payments/callback',
           dataSave: 'save',
@@ -199,7 +199,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
           eventName: eventInfo?.name || 'Thanh toán vé',
           eventId: id,
           userId: userInfo?._id,
-          amount: typeBase === 'none' ? formData.tickets.normal : totalPrice,
+          amount: typeBase === 'none' ? formData.tickets.normal : quantity,
           bookingType: typeBase,
           bookingIds: typeBase === 'none' ? [] : bookingIds,
           totalPrice: typeBase === 'none' ? calculateTotal() : totalPrice,

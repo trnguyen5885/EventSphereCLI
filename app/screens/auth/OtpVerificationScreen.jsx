@@ -6,6 +6,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from 'react-native';
 import {
   CodeField,
@@ -28,7 +29,7 @@ import { AxiosInstance } from '../../services';
 const CELL_COUNT = 6; // Số ô nhập OTP
 
 const OtpVerificationScreen = ({ navigation, route }) => {
-  const { email } = route.params || {}; // Nhận email từ màn hình đăng ký
+  const { email, username, password } = route.params || {}; // Nhận email, username, password từ màn hình đăng ký
   const [value, setValue] = useState('');
   const [timer, setTimer] = useState(60); // Thời gian đếm ngược để gửi lại mã
   const [isLoading, setIsLoading] = useState(false);
@@ -62,19 +63,35 @@ const OtpVerificationScreen = ({ navigation, route }) => {
     return `${minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
   };
 
-  // Gửi lại mã OTP
+  // Gửi lại mã OTP - gọi lại API register với đầy đủ thông tin
   const handleResendOTP = async () => {
     try {
       setIsLoading(true);
-      // Gọi API để gửi lại mã OTP
-      const res = await AxiosInstance().post('users/resend-otp', { email }, 'post');
+      setError('');
+
+      // Gọi lại API register với đầy đủ username, email, password
+      const body = { username, email, password };
+      const res = await AxiosInstance().post('users/register', body, 'post');
 
       if (res.status) {
         setTimer(60); // Reset timer
+        setValue(''); // Xóa mã OTP cũ
         setError('');
+        console.log('Đã gửi lại mã OTP thành công');
+        Alert.alert(
+          'Thành công',
+          'Đã gửi lại mã OTP thành công!',
+          [
+            {
+              text: 'Ok',
+            },
+          ],
+          { cancelable: false }
+        );
       }
     } catch (error) {
       setError('Không thể gửi lại mã OTP. Vui lòng thử lại sau.');
+      console.error('Lỗi khi gửi lại OTP:', error);
     } finally {
       setIsLoading(false);
     }
@@ -88,20 +105,23 @@ const OtpVerificationScreen = ({ navigation, route }) => {
     }
 
     setIsLoading(true);
+    setError('');
+
     try {
       const body = {
         email,
         otp: value
       };
-      
+
       const res = await AxiosInstance().post('users/verify-otp', body, 'post');
-      
+
       if (res.status) {
         // Hiển thị modal thành công thay vì Alert
         setSuccessModalVisible(true);
       }
     } catch (error) {
       setError('Mã OTP không đúng hoặc đã hết hạn');
+      console.error('Lỗi xác thực OTP:', error);
     } finally {
       setIsLoading(false);
     }
@@ -120,11 +140,10 @@ const OtpVerificationScreen = ({ navigation, route }) => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ContainerComponent isImageBackground back>
           <SectionComponent>
-            <TextComponent size={24} title text="Verification" />
+            <TextComponent size={24} title text="Xác thực OTP" />
             <SpaceComponent height={10} />
-            <TextComponent
-              text={`Chúng tôi đã gửi mã xác nhận đến ${email}`}
-            />
+            <TextComponent text="Chúng tôi đã gửi mã xác nhận đến" />
+            <TextComponent text={email} fontWeight="bold" />
             <SpaceComponent height={30} />
 
             <CodeField
@@ -170,18 +189,27 @@ const OtpVerificationScreen = ({ navigation, route }) => {
             <SpaceComponent height={20} />
 
             <View style={styles.resendContainer}>
-              <TextComponent
-                text="Gửi lại mã trong "
-                style={styles.resendText}
-              />
-              <TouchableWithoutFeedback
-                onPress={timer === 0 ? handleResendOTP : null}>
-                <TextComponent
-                  text={formatTime(timer)}
-                  color={timer === 0 ? appColors.primary : appColors.gray}
-                  style={styles.timerText}
+              {timer > 0 ? (
+                <>
+                  <TextComponent
+                    text="Gửi lại mã trong "
+                    style={styles.resendText}
+                  />
+                  <TextComponent
+                    text={formatTime(timer)}
+                    color={appColors.gray}
+                    style={styles.timerText}
+                  />
+                </>
+              ) : (
+                <ButtonComponent
+                  onPress={handleResendOTP}
+                  text="GỬI LẠI MÃ"
+                  type="link"
+                  textColor={appColors.primary}
+                  style={styles.resendButton}
                 />
-              </TouchableWithoutFeedback>
+              )}
             </View>
           </SectionComponent>
 
@@ -247,6 +275,10 @@ const styles = StyleSheet.create({
   errorText: {
     marginTop: 10,
     textAlign: 'center',
+  },
+  resendButton: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
   }
 });
 

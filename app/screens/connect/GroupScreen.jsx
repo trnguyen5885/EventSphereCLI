@@ -23,75 +23,40 @@ import { appColors } from '../../constants/appColors';
 import LinearGradient from 'react-native-linear-gradient';
 import ListInviteComponent from '../explore/components/ListInviteComponent';
 import CustomLogoutDialog from '../../components/CustomLogoutDialog';
+import { getSocket } from '../../socket/socket';
+import { useLocationSharing } from './components/useLocationSharing';
 
 const { width, height } = Dimensions.get('window');
 
 const GroupScreen = ({ route, navigation }) => {
   const { groupId, userLocation, groupName, ownerId } = route?.params || {};
   const userId = useSelector(state => state.auth.userId);
-  const userEmail = useSelector(state => state.auth.userData?.email);
-
   const isOwner = String(userId) === String(ownerId?._id);
 
-  const [members, setMembers] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [inviteModal, setInviteModal] = useState(false);
-  const [searchEmail, setSearchEmail] = useState('');
-  const [searchResult, setSearchResult] = useState(null);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [invitedMembers, setInvitedMembers] = useState([]);
   const [isSharing, setIsSharing] = useState(false);
   const [myLocation, setMyLocation] = useState(userLocation || null);
   const [targetMember, setTargetMember] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
   const [distanceText, setDistanceText] = useState('');
-  const [animatedValue] = useState(new Animated.Value(0));
   const [showOptions, setShowOptions] = useState(false);
+  const [inviteModal, setInviteModal] = useState(false);
+  const [searchEmail, setSearchEmail] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [invitedMembers, setInvitedMembers] = useState([]);
   const [showConfirmLeaveSheet, setShowConfirmLeaveSheet] = useState(false);
   const [showConfirmDeleteSheet, setShowConfirmDeleteSheet] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
-  const [confirmType, setConfirmType] = useState(null); // 'leave' | 'delete'
+  const [confirmType, setConfirmType] = useState(null);
   const [targetMemberId, setTargetMemberId] = useState(null);
+  const [animatedValue] = useState(new Animated.Value(0));
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [membersData, locationsData] = await Promise.all([
-        getGroupMembers(groupId),
-        getGroupLocations(groupId),
-      ]);
-      setMembers(membersData);
-      setLocations(locationsData);
-    } catch (e) {
-      alert('Không thể tải dữ liệu nhóm');
-    } finally {
-      setLoading(false);
-    }
-  }, [groupId]);
-  
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
-
-  useEffect(() => {
-    let watchId;
-    if (isSharing) {
-      watchId = Geolocation.watchPosition(
-        async ({ coords }) => {
-          setMyLocation(coords);
-          await updateLocation(groupId, userId, coords.latitude, coords.longitude);
-        },
-        (err) => alert('Không lấy được vị trí: ' + err.message),
-        { enableHighAccuracy: true, distanceFilter: 10 }
-      );
-    } else {
-      setMyLocation(userLocation);
-    }
-    return () => watchId && Geolocation.clearWatch(watchId);
-  }, [isSharing, groupId, userId, userLocation]);
+  const {
+    members,
+    locations,
+    loading,
+    refetch
+  } = useLocationSharing({ groupId, userId, isSharing, userLocation });
 
   useEffect(() => {
     Animated.timing(animatedValue, {
@@ -99,6 +64,12 @@ const GroupScreen = ({ route, navigation }) => {
       duration: 800,
       useNativeDriver: true,
     }).start();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      setIsSharing(false); // Tắt chia sẻ khi rời màn hình
+    };
   }, []);
 
   const membersWithLocation = members.map(member => {
@@ -121,18 +92,36 @@ const GroupScreen = ({ route, navigation }) => {
   const handleSearch = async () => {
     if (!searchEmail) return;
     setSearchLoading(true);
-    const user = await searchUserByEmail(searchEmail);
-    const result = Array.isArray(user) ? user[0] : user?.data?.[0];
-    setSearchResult(result);
-    setSearchLoading(false);
+    try {
+      // Kiểm tra email đã tồn tại trong group
+      const isExistingMember = members.some(member => member.email.toLowerCase() === searchEmail.toLowerCase());
+      if (isExistingMember) {
+        setSearchResult({ email: searchEmail, isExisting: true });
+        return;
+      }
+
+      const user = await searchUserByEmail(searchEmail);
+      const result = Array.isArray(user) ? user[0] : user?.data?.[0];
+      setSearchResult(result ? { ...result, isExisting: false } : null);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể tìm thấy người dùng');
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
   const handleInvite = async () => {
     if (!groupId || !searchResult) return;
-    await inviteToGroup(groupId, searchResult.email);
-    setInvitedMembers([...invitedMembers, { email: searchResult.email }]);
-    setSearchEmail('');
-    setSearchResult(null);
+    try {
+      await inviteToGroup(groupId, searchResult.email);
+      refetch();
+      setInvitedMembers([...invitedMembers, { email: searchResult.email }]);
+      setSearchEmail('');
+      setSearchResult(null);
+      Alert.alert('Thành công', 'Đã gửi lời mời thành công');
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể gửi lời mời');
+    }
   };
 
   const handleLeaveGroup = async () => {
@@ -331,7 +320,7 @@ const handleDeleteGroup = async () => {
                           <View style={styles.onlineIndicator} />
                         </View>
                         <View style={styles.memberInfo}>
-                          <Text style={styles.memberName}>{item.name}</Text>
+                          <Text style={styles.memberName}>{item.username}</Text>
                           <Text style={styles.memberEmail}>{item.email}</Text>
                           <Text style={styles.memberStatus}>🌍 Đang chia sẻ vị trí</Text>
                           {myLocation && hasLocation(item) && (
@@ -382,7 +371,7 @@ const handleDeleteGroup = async () => {
                           )}
                         </View>
                         <View style={styles.memberInfo}>
-                          <Text style={[styles.memberName, styles.memberNameOffline]}>{item.name}</Text>
+                          <Text style={[styles.memberName, styles.memberNameOffline]}>{item.username}</Text>
                           <Text style={styles.memberEmail}>{item.email}</Text>
                           <Text style={styles.memberStatusOffline}>📍 Chưa chia sẻ vị trí</Text>
                         </View>
@@ -419,41 +408,64 @@ const handleDeleteGroup = async () => {
               <MaterialIcons name="email" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 value={searchEmail}
-                onChangeText={setSearchEmail}
+                onChangeText={(text) => {
+                  setSearchEmail(text);
+                  setSearchResult(null);
+                }}
                 placeholder="user@example.com"
                 style={styles.modalInput}
                 onSubmitEditing={handleSearch}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                onEndEditing={handleSearch}
               />
               <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
                 <MaterialIcons name="search" size={20} color="#6C5CE7" />
               </TouchableOpacity>
             </View>
+
             {searchLoading && (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator color="#6C5CE7" size="small" />
+                <ActivityIndicator color={appColors.primary} size="small" />
                 <Text style={styles.loadingText}>Đang tìm kiếm...</Text>
               </View>
             )}
+
             {searchResult && (
               <View style={styles.searchResultContainer}>
                 <View style={styles.searchResultContent}>
-                  <MaterialIcons name="person" size={24} color="#6C5CE7" />
+                  {searchResult.picUrl ? (
+                    <Image 
+                      source={{ uri: searchResult.picUrl }} 
+                      style={styles.searchResultAvatar} 
+                    />
+                  ) : (
+                    <View style={styles.searchResultAvatarPlaceholder}>
+                      <MaterialIcons name="person" size={24} color={appColors.primary} />
+                    </View>
+                  )}
                   <View style={styles.searchResultInfo}>
                     <Text style={styles.searchResultName}>{searchResult.username || searchResult.email}</Text>
                     <Text style={styles.searchResultEmail}>{searchResult.email}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.inviteButton} onPress={handleInvite}>
-                  <LinearGradient
-                    colors={['#00B894', '#00A085']}
-                    style={styles.inviteButtonGradient}
+                {searchResult.isExisting ? (
+                  <View style={[styles.inviteButton, {backgroundColor: '#ddd'}]}>
+                    <Text style={[styles.inviteButtonText, {color: '#666'}]}>Đã là thành viên nhóm</Text>
+                  </View>
+                ) : searchResult.email !== userEmail ? (
+                  <TouchableOpacity 
+                    style={[styles.inviteButton, {backgroundColor: appColors.primary}]} 
+                    onPress={handleInvite}
                   >
                     <MaterialIcons name="send" size={16} color="#fff" />
                     <Text style={styles.inviteButtonText}>Gửi lời mời</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={[styles.inviteButton, {backgroundColor: '#ddd'}]}>
+                    <Text style={[styles.inviteButtonText, {color: '#666'}]}>Không thể mời chính mình</Text>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -891,6 +903,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  searchResultAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  searchResultAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8E6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   searchResultInfo: {
     marginLeft: 15,
     flex: 1,
@@ -906,15 +931,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   inviteButton: {
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  inviteButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 20,
+    borderRadius: 10,
   },
   inviteButtonText: {
     color: '#fff',

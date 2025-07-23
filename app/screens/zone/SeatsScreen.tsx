@@ -22,6 +22,7 @@ import Animated, {
 import {getSocket} from '../../socket/socket';
 import RowComponent from '../../../app/components/RowComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import LoadingModal from '../../modals/LoadingModal';
 
 enum SeatStatus {
   NORMAL = 0, // vé thường chưa đặt
@@ -56,6 +57,7 @@ const SeatsScreen = ({navigation, route}: any) => {
 
   useEffect(() => {
     const socket = getSocket();
+    fetchSeatsFromApi();
     if (!socket) return;
 
     console.log('join room', `event_${id}_showtime_${showtimeId}`);
@@ -84,8 +86,6 @@ const SeatsScreen = ({navigation, route}: any) => {
     socket.on('periodicMessage', handlePeriodicMessage);
     socket.onAny(handleAnyEvent);
 
-    fetchSeatsFromApi();
-
     // Cleanup khi rời màn
     return () => {
       socket.off('seat_updated', handleSeatUpdated);
@@ -99,6 +99,7 @@ const SeatsScreen = ({navigation, route}: any) => {
   }, [id, showtimeId]);
 
   const fetchSeatsFromApi = async () => {
+    setIsLoading(true);
     try {
       const response = await AxiosInstance().get(
         `/events/getZone/${id}?showtimeId=${showtimeId}`,
@@ -138,8 +139,12 @@ const SeatsScreen = ({navigation, route}: any) => {
 
       setSeats(grouped);
       setZoneId(response.zones[0]._id);
+      setIsLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách ghế:', error);
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -173,7 +178,7 @@ const SeatsScreen = ({navigation, route}: any) => {
             text: 'Huỷ',
             onPress: async () => {
               try {
-                setIsLoading(true);
+                // setIsLoading(true);
                 // Gọi API huỷ vé
                 await AxiosInstance().post('/zones/reserveSeats', {
                   eventId: id,
@@ -194,7 +199,7 @@ const SeatsScreen = ({navigation, route}: any) => {
                   'Có lỗi xảy ra khi huỷ vé. Vui lòng thử lại.',
                 );
               } finally {
-                setIsLoading(false);
+                // setIsLoading(false);
               }
             },
           },
@@ -208,7 +213,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       return;
     } else {
       try {
-        setIsLoading(true);
+        // setIsLoading(true);
         // Thêm vào danh sách chọn
         const response = await AxiosInstance().post('/zones/reserveSeats', {
           eventId: id,
@@ -228,7 +233,10 @@ const SeatsScreen = ({navigation, route}: any) => {
           },
           action: 'select',
         });
-        bookingId.push(response.bookingId);
+        if (bookingId.length <= 0) {
+          bookingId.push(response.bookingId);
+        }
+
         if (response.message === 'Ghế đã được chọn trước đó.') {
           Alert.alert(
             'Lỗi',
@@ -237,7 +245,7 @@ const SeatsScreen = ({navigation, route}: any) => {
         } else {
           setSelectedSeats([...selectedSeats, seat]);
         }
-        setIsLoading(false);
+        // setIsLoading(false);
       } catch (error) {
         console.log(error);
         if (error.response?.status === 409) {
@@ -337,6 +345,10 @@ const SeatsScreen = ({navigation, route}: any) => {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{translateX: translateX.value}, {translateY: translateY.value}],
   }));
+
+  if (isLoading) {
+    return <LoadingModal visible={true} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
