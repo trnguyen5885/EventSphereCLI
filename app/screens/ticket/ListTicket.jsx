@@ -170,6 +170,17 @@ const SwipeTicketCard = ({ ticket, event, index, onSwipe, isTop }) => {
               Đưa mã này cho nhân viên soát vé{'\n'}
               để nhận vé vào sự kiện
             </Text>
+
+            {ticket.status === 'used' && (
+            <View style={styles.watermarkWrapper}>
+              <View style={styles.watermarkBackground} />
+              <View style={styles.watermarkContent}>
+               <Text style={styles.watermarkText}>VÉ ĐÃ SỬ DỤNG</Text>
+              </View>
+            </View>
+            )}
+
+            
           </View>
         </View>
       </Animated.View>
@@ -181,6 +192,8 @@ const ListTicket = ({ navigation, route }) => {
     const { event, user } = route.params;
     const tickets = event?.tickets || [];
     const [currentIndex, setCurrentIndex] = useState(0)
+
+    console.log(tickets)
 
     const handleNavigation = () => {
         navigation.goBack();
@@ -505,6 +518,49 @@ const styles = StyleSheet.create({
     holderBox: {
       marginVertical: 10
     },
+    watermarkWrapper: {
+  position: 'absolute',
+  bottom: 80,
+  left: '10%',
+
+  transform: [{ rotate: '-20deg' }],
+  zIndex: 10,
+  borderRadius: 15,
+  overflow: 'hidden',
+},
+
+watermarkBackground: {
+  ...StyleSheet.absoluteFillObject,
+
+  borderWidth: 3,
+  borderRadius: 10,
+  margin: 10,
+  borderColor: "#ffffff",
+  zIndex: 2
+  
+},
+
+watermarkContent: {
+  paddingVertical: 18,
+  paddingHorizontal: 20,
+  borderWidth: 18,
+  borderColor: 'rgba(255, 0, 0, 0.5)',
+  borderRadius: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: 'transparent', // không bị opacity mờ,
+  zIndex: 1,
+  opacity: 0.5
+},
+
+watermarkText: {
+  fontSize: 28,
+  fontWeight: 'bold',
+  color: 'rgba(255, 0, 0, 0.8)', // màu chữ rõ ràng
+  letterSpacing: 1,
+  opacity: 0.7
+},
+
 });
 
 export default ListTicket;
