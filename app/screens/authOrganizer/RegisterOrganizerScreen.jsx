@@ -82,7 +82,7 @@ const RegisterOrganizerScreen = ({navigation}) => {
 
       if (res.status) {
         console.log(res.message);
-        navigation.navigate('OtpOrganizerVerification', {email});
+        navigation.navigate('OtpOrganizerVerification', {username, email, password, role: 2});
       }
     } catch (error) {
       setErrors(prev => ({...prev, email: 'Email đã tồn tại'}));
