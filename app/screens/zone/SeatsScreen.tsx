@@ -41,6 +41,7 @@ interface Seat {
   price: number;
   area: string;
   status: SeatStatus;
+  color: string;
 }
 
 const SeatsScreen = ({navigation, route}: any) => {
@@ -49,6 +50,8 @@ const SeatsScreen = ({navigation, route}: any) => {
   const [zoneId, setZoneId] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [bookingId, setBookingId] = useState([]);
+  const [colorVIP, setColorVIP] = useState([]);
+  const [colorNomal, setColorNormal] = useState([]);
 
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const translateX = useSharedValue(0);
@@ -154,13 +157,14 @@ const SeatsScreen = ({navigation, route}: any) => {
         let status: SeatStatus;
         if (item.status === 'booked') {
           status = SeatStatus.BOOKED;
-        } else if (item.area === 'vip') {
+        } else if (item.area === 'Vip') {
           status = SeatStatus.VIP;
         } else if (item.status === 'reserved') {
           status = SeatStatus.RESERVED;
-        } else {
+        } else if (item.area !== 'none') {
           status = SeatStatus.NORMAL;
         }
+
         return {
           id: item.seatId,
           label: item.label,
@@ -168,6 +172,7 @@ const SeatsScreen = ({navigation, route}: any) => {
           col: item.col,
           price: item.price,
           area: item.area,
+          color: item.color,
           status,
         };
       });
@@ -182,6 +187,19 @@ const SeatsScreen = ({navigation, route}: any) => {
 
       setSeats(grouped);
       setZoneId(response.zones[0]._id);
+      const vipSeat = seatObjects.find(seat => seat.status === SeatStatus.VIP);
+      const normalSeat = seatObjects.find(
+        seat => seat.status === SeatStatus.NORMAL,
+      );
+
+      if (vipSeat) {
+        setColorVIP([vipSeat.color]);
+        console.log(vipSeat.color);
+      }
+      if (normalSeat) {
+        setColorNormal([normalSeat.color]);
+        console.log(normalSeat.color);
+      }
       // setIsLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách ghế:', error);
@@ -424,11 +442,11 @@ const SeatsScreen = ({navigation, route}: any) => {
                 } else if (isSelected) {
                   bgColor = appColors.primary;
                 } else if (seat.status === SeatStatus.VIP) {
-                  bgColor = '#7C89FF';
+                  bgColor = seat.color;
                 } else if (seat.status === SeatStatus.RESERVED) {
                   bgColor = '#000';
                 } else {
-                  bgColor = '#c9b6f3';
+                  bgColor = seat.color;
                 }
 
                 return (
@@ -495,11 +513,28 @@ const SeatsScreen = ({navigation, route}: any) => {
         <View style={styles.legend}>
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendIcon, styles.seatNormal]} />
+              <View
+                style={[
+                  styles.legendIcon,
+                  {
+                    backgroundColor: colorNomal[0] || '#c9b6f3',
+                    borderColor: colorNomal[0] || '#c9b6f3',
+                  },
+                ]}
+              />
               <Text style={styles.legendText}>Vé thường</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendIcon, styles.seatVip]} />
+              <View
+                style={[
+                  styles.legendIcon,
+                  // styles.seatVip,
+                  {
+                    backgroundColor: colorVIP[0] || '#7C89FF',
+                    borderColor: colorVIP[0] || '#7C89FF',
+                  },
+                ]}
+              />
               <Text style={styles.legendText}>Vé V.I.P</Text>
             </View>
           </View>

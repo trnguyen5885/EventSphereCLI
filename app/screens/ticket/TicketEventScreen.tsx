@@ -140,7 +140,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
         };
         const response = await AxiosInstance().post('/payments', bodyPayment);
         console.log(bodyPayment);
-        // ZaloPayModule.payOrder(response.data.zp_trans_token);
+        ZaloPayModule.payOrder(response.data.zp_trans_token);
 
         const bodyOrder = {
           eventId: id,
