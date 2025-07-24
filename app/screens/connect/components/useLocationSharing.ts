@@ -28,6 +28,8 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
       ]);
       setMembers(membersData);
       setLocations(locationsData);
+      console.log("Member: ", membersData);
+      console.log("Location: ", locationsData);
     } catch (err) {
       console.error('Lỗi tải dữ liệu nhóm:', err);
     } finally {
@@ -73,11 +75,20 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
     console.log('[SOCKET] 🔌 Joining room:', roomName);
     socket.emit('joinRoom', roomName);
   
-    const handleLocationUpdate = (data: any) => {
+    const handleLocationUpdate = (data) => {
       console.log('[SOCKET] 📍 location:update received:', data);
-      // Cập nhật lại danh sách vị trí nếu cần
-      // Ví dụ: setLocations(prev => update logic)
-    };
+      fetchAllData();
+      setLocations(prev => {
+        const index = prev.findIndex(loc => String(loc.userId) === String(data.userId));
+        if (index !== -1) {
+          const updated = [...prev];
+          updated[index] = data; // cập nhật vị trí mới
+          return updated;
+        } else {
+          return [...prev, data]; // thêm mới nếu chưa có
+        }
+      });
+    };    
   
     const handleAnySocket = (event: string, ...args: any[]) => {
       console.log(`[SOCKET][ANY] Event: ${event}`, ...args);

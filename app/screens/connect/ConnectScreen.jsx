@@ -293,6 +293,7 @@ const ConnectScreen = ({ navigation }) => {
                     )}
                     style={styles.eventsList}
                     showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
                   />
                 ) : (
                   <View style={styles.noEventsContainer}>
