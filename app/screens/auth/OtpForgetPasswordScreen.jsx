@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
+  Dimensions,
 } from 'react-native';
 import {
   CodeField,
@@ -27,6 +28,11 @@ import SuccessModal from '../../modals/SuccessModal';
 import { AxiosInstance } from '../../services';
 
 const CELL_COUNT = 6; // Số ô nhập OTP
+
+// Lấy kích thước màn hình
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const isSmallScreen = screenWidth < 350;
+const isTablet = screenWidth >= 768;
 
 const OtpForgetPasswordScreen = ({ navigation, route }) => {
   const { email } = route.params || {};
@@ -144,9 +150,8 @@ const OtpForgetPasswordScreen = ({ navigation, route }) => {
           <SectionComponent>
             <TextComponent size={24} title text="Xác thực OTP" />
             <SpaceComponent height={10} />
-            <TextComponent
-              text={`Chúng tôi đã gửi mã xác nhận đến ${email}`}
-            />
+            <TextComponent text="Chúng tôi đã gửi mã xác nhận đến" />
+            <TextComponent text={email} fontWeight="bold" />
             <SpaceComponent height={30} />
 
             <CodeField
@@ -233,41 +238,98 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  codeFieldRoot: {
-    marginTop: 20,
+  sectionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: isTablet ? 60 : 20,
+    minHeight: screenHeight * 0.6,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: isSmallScreen ? 10 : 20,
+  },
+  titleText: {
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  descriptionText: {
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  emailText: {
+    textAlign: 'center',
+  },
+  otpContainer: {
     width: '100%',
-    marginLeft: 'auto',
-    marginRight: 'auto',
+    alignItems: 'center',
+    paddingHorizontal: isSmallScreen ? 10 : 20,
+  },
+  codeFieldRoot: {
+    width: '100%',
+    maxWidth: isTablet ? 400 : isSmallScreen ? 280 : 320,
+    alignSelf: 'center',
   },
   cell: {
-    width: 48, // Giảm kích thước mỗi ô để vừa với 6 ô
-    height: 48, // Giảm kích thước mỗi ô để vừa với 6 ô
-    lineHeight: 38,
-    fontSize: 24,
-    borderWidth: 1,
-    borderColor: '#dddddd',
-    borderRadius: 8,
-    marginHorizontal: 5, // Giảm khoảng cách giữa các ô
+    width: isTablet ? 60 : isSmallScreen ? 40 : 45,
+    height: isTablet ? 60 : isSmallScreen ? 40 : 45,
+    borderWidth: 1.5,
+    borderColor: '#E0E0E0',
+    borderRadius: isTablet ? 12 : 8,
+    marginHorizontal: isTablet ? 8 : isSmallScreen ? 2 : 4,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
+    // Shadow cho iOS
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    // Shadow cho Android
+    elevation: 2,
   },
   focusCell: {
     borderColor: appColors.primary,
+    borderWidth: 2,
+    backgroundColor: '#F8F9FF',
+    transform: [{ scale: 1.05 }],
   },
   filledCell: {
     borderColor: appColors.primary,
     backgroundColor: '#F5F8FF',
+    borderWidth: 2,
   },
   cellText: {
     textAlign: 'center',
-    fontSize: 20, // Giảm kích thước font chữ để phù hợp với ô nhỏ hơn
+    fontWeight: '600',
+    color: '#333',
+  },
+  errorContainer: {
+    marginTop: 15,
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  buttonContainer: {
+    paddingHorizontal: isTablet ? 40 : 0,
+  },
+  continueButton: {
+    marginVertical: 5,
+    minHeight: isSmallScreen ? 45 : 50,
   },
   resendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'center',
+    minHeight: 30,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resendText: {
     textAlign: 'center',
@@ -275,13 +337,10 @@ const styles = StyleSheet.create({
   timerText: {
     fontWeight: 'bold',
   },
-  errorText: {
-    marginTop: 10,
-    textAlign: 'center',
-  },
   resendButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    minHeight: 35,
   }
 });
 

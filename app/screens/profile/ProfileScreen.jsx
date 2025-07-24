@@ -47,10 +47,10 @@ const ProfileScreen = ({ navigation }) => {
 
 
   useFocusEffect(
-  React.useCallback(() => {
-    getUserInfo();
-  }, [userId])
-);
+    React.useCallback(() => {
+      getUserInfo();
+    }, [userId])
+  );
 
 
   // Hàm hiển thị dialog đăng xuất
@@ -68,7 +68,7 @@ const ProfileScreen = ({ navigation }) => {
     try {
       // Đăng xuất Google để hiển thị lại hộp thoại chọn tài khoản lần sau
       await GoogleSignin.signOut();
-      
+
       // Xoá trong AsyncStorage
       await AsyncStorage.removeItem("userId");
       await AsyncStorage.removeItem("savedCredentials");

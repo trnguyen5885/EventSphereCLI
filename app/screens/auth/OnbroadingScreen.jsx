@@ -17,7 +17,7 @@ const OnboardingScreen = ({navigation}) => {
       swiperRef.current?.scrollBy(1);
     } else {
       // Ảnh cuối cùng, chuyển đến màn hình Welcome
-      navigation.navigate('FavoriteTag');
+      navigation.navigate('Welcome');
     }
   };
 

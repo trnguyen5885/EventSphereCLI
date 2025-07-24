@@ -667,10 +667,10 @@ const PayOSQRScreen = ({ route, navigation }) => {
           </Text>
           <TouchableOpacity
             style={styles.phoneContainer}
-            onPress={() => Linking.openURL('tel:0349535063')}
+            onPress={() => Linking.openURL('tel:1900 1234')}
           >
             <Ionicons name="call" size={16} color={appColors.primary} />
-            <Text style={styles.phoneNumber}>0349535063</Text>
+            <Text style={styles.phoneNumber}>1900 1234</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

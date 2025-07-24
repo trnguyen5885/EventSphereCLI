@@ -1,20 +1,21 @@
-// Tạo một component SuccessModal
 import React from 'react';
 import {
   Modal,
   View,
   StyleSheet,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import {
   TextComponent,
   SpaceComponent,
-  ButtonComponent,
 } from '../components';
 import { appColors } from '../constants/appColors';
-import {TickCircle} from 'iconsax-react-native';
+import { TickCircle } from 'iconsax-react-native';
 
-const SuccessModal = ({visible, message, onClose}) => {
+const { width } = Dimensions.get('window');
+
+const SuccessModal = ({ visible, message, onClose }) => {
   return (
     <Modal
       transparent
@@ -28,7 +29,7 @@ const SuccessModal = ({visible, message, onClose}) => {
           <TextComponent
             text={message}
             title
-            size={18}
+            size={16}
             style={styles.messageText}
           />
           <SpaceComponent height={30} />
@@ -39,7 +40,8 @@ const SuccessModal = ({visible, message, onClose}) => {
             <TextComponent
               text="OK"
               color={appColors.primary}
-              size={16}
+              size={15}
+              style={{ fontWeight: '600' }}
             />
           </TouchableOpacity>
         </View>
@@ -54,21 +56,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 20,
   },
   modalContent: {
-    width: '80%',
+    width: width * 0.85,
     backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
+    borderRadius: 12,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    elevation: 5,
+    elevation: 6,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   messageText: {
     textAlign: 'center',
+    lineHeight: 22,
+  },
+  okButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
   },
 });
 
