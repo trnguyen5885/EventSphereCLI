@@ -441,6 +441,7 @@ const SuggestedEventsScreen = ({
     setLoadingRecommend(true);
     try {
       const res = await AxiosInstance().get<any>('events/for-you');
+      console.log("recomemnt:"+JSON.stringify(res.events));
       setRecommentEvents(res.events || []);
     } catch (e) {
       console.log('Error fetching recommended events:', e);
