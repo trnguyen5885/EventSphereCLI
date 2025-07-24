@@ -260,7 +260,9 @@ const PayOSQRScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
       setCountdown(900); // Reset countdown
-      const result = await createPaymentQRCode(amount, eventName);
+      console.log('🔢 Số tiền truyền vào createPaymentQRCode:', totalPrice);
+
+      const result = await createPaymentQRCode(totalPrice, eventName);
 
       setLoading(false);
 
