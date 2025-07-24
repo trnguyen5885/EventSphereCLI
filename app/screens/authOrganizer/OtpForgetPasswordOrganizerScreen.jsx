@@ -144,9 +144,8 @@ const OtpForgetPasswordOrganizerScreen = ({ navigation, route }) => {
           <SectionComponent>
             <TextComponent size={24} title text="Xác thực OTP" />
             <SpaceComponent height={10} />
-            <TextComponent
-              text={`Chúng tôi đã gửi mã xác nhận đến ${email}`}
-            />
+            <TextComponent text="Chúng tôi đã gửi mã xác nhận đến" />
+            <TextComponent text={email} fontWeight="bold" />
             <SpaceComponent height={30} />
 
             <CodeField

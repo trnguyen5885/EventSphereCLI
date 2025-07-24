@@ -12,7 +12,7 @@ import { AxiosInstance } from '../../services';
 import { useSelector, useDispatch } from 'react-redux';
 import { appColors } from '../../constants/appColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { logout } from '../../redux/slices/authSlice';
 import CustomLogoutDialog from '../../components/CustomLogoutDialog'; // Import component dialog
 import { ToastAndroid, Alert } from 'react-native'
@@ -40,9 +40,11 @@ const ProfileOrganizerScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    getUserInfo();
-  }, [userId]);
+  useFocusEffect(
+    React.useCallback(() => {
+      getUserInfo();
+    }, [userId])
+  );
 
   // Hàm hiển thị dialog đăng xuất
   const showLogoutConfirmation = () => {
@@ -100,12 +102,12 @@ const ProfileOrganizerScreen = ({ navigation }) => {
   }, [userId]);
 
   const showLanguageToast = () => {
-  if (Platform.OS === 'android') {
-    ToastAndroid.show('Ngôn ngữ khác đang được phát triển', ToastAndroid.SHORT);
-  } else {
-    Alert.alert('Thông báo', 'Ngôn ngữ khác đang được phát triển');
-  }
-};
+    if (Platform.OS === 'android') {
+      ToastAndroid.show('Ngôn ngữ khác đang được phát triển', ToastAndroid.SHORT);
+    } else {
+      Alert.alert('Thông báo', 'Ngôn ngữ khác đang được phát triển');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -255,13 +257,13 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: appColors.primary, // Màu xanh lá như trong ảnh
     height: 120, // Chiều cao cố định cho header
-    
+
     position: 'relative',
   },
 
   headerBackground: {
     position: 'absolute',
-    
+
     width: '100%',
     height: '100%',
     zIndex: 1, // đẩy ảnh nền xuống dưới các thành phần khác
