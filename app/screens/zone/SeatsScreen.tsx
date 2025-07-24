@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Alert} from 'react-native';
@@ -98,8 +99,50 @@ const SeatsScreen = ({navigation, route}: any) => {
     };
   }, [id, showtimeId]);
 
+  useEffect(() => {
+    const onBackPress = () => {
+      if (selectedSeats.length === 0) {
+        return false; // xử lý back mặc định
+      }
+
+      Alert.alert(
+        'Xác nhận thoát',
+        'Bạn có chắc chắn muốn quay lại? Tất cả ghế đã chọn sẽ bị huỷ.',
+        [
+          {text: 'Hủy', style: 'cancel'},
+          {
+            text: 'Thoát',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                setIsLoading(true);
+                await AxiosInstance().post('/users/cancelAllReservedSeats');
+                setSelectedSeats([]);
+                navigation.goBack(); // thoát màn hình
+              } catch (error) {
+                Alert.alert('Lỗi', 'Không thể huỷ vé. Vui lòng thử lại.');
+              } finally {
+                setIsLoading(false);
+              }
+            },
+          },
+        ],
+        {cancelable: true},
+      );
+
+      return true; // chặn hành vi mặc định
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+
+    return () => backHandler.remove();
+  }, [selectedSeats]);
+
   const fetchSeatsFromApi = async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
       const response = await AxiosInstance().get(
         `/events/getZone/${id}?showtimeId=${showtimeId}`,
@@ -139,12 +182,10 @@ const SeatsScreen = ({navigation, route}: any) => {
 
       setSeats(grouped);
       setZoneId(response.zones[0]._id);
-      setIsLoading(false);
+      // setIsLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách ghế:', error);
-      setIsLoading(false);
-    } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
@@ -206,8 +247,9 @@ const SeatsScreen = ({navigation, route}: any) => {
         ],
         {cancelable: true},
       );
-    } else if (seat.status === SeatStatus.BOOKED);
-    else if (seat.status === SeatStatus.RESERVED) {
+    } else if (seat.status === SeatStatus.BOOKED) {
+      return;
+    } else if (seat.status === SeatStatus.RESERVED) {
       Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
 
       return;
