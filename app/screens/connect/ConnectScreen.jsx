@@ -10,6 +10,10 @@ import { useSelector } from 'react-redux';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import AxiosInstance from '../../services/api/AxiosInstance';
 import { appColors } from '../../constants/appColors';
+import Geolocation from '@react-native-community/geolocation';
+import { PermissionsAndroid, Platform } from 'react-native';
+import LocationServicesDialogBox from 'react-native-android-location-services-dialog-box';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -20,9 +24,68 @@ const ConnectScreen = ({ navigation }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const userId = useSelector(state => state.auth.userId);
-  const userLocation = useSelector(state => state.auth.location);
+  const [userLocation, setUserLocation] = useState(null);
   const [myGroups, setMyGroups] = useState([]);
   const isFocused = useIsFocused();
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Cấp quyền truy cập vị trí',
+            message: 'Ứng dụng cần quyền truy cập vị trí để tạo nhóm và định vị bạn bè.',
+            buttonNeutral: 'Hỏi lại sau',
+            buttonNegative: 'Từ chối',
+            buttonPositive: 'Đồng ý',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true; // iOS tự xử lý quyền qua Info.plist
+  };
+  
+  useEffect(() => {
+    const initLocation = async () => {
+      const granted = await requestLocationPermission();
+      if (granted) {
+        try {
+          await LocationServicesDialogBox.checkLocationServicesIsEnabled({
+            message: 'Bật GPS để tiếp tục sử dụng định vị.',
+            ok: 'Bật',
+            cancel: 'Thoát',
+          });
+          Geolocation.getCurrentPosition(
+            pos => {
+              const { latitude, longitude } = pos.coords;
+              console.log('Vị trí:', latitude, longitude);
+              setUserLocation({ latitude, longitude });
+            },
+            error => {
+              console.log('Lỗi khi lấy vị trí:', error);
+              if (error.code === 3) {
+                alert('Không lấy được vị trí. Thử lại ở nơi thoáng GPS hoặc chờ vài giây.');
+              }
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 10000,
+            },
+          );
+        } catch (err) {
+          console.log('GPS không được bật');
+        }
+      }
+    };
+  
+    initLocation();
+  }, []);
+  
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -60,7 +123,7 @@ const ConnectScreen = ({ navigation }) => {
       setSelectedEvent(null);
 
       if (res && res._id) {
-        navigation.navigate('GroupScreen', { groupId: res._id, groupName: groupName, userLocation });
+        navigation.navigate('GroupScreen', { groupId: res._id, groupName: groupName, userLocation: userLocation });
       } else {
         alert('Tạo nhóm thất bại!');
       }
