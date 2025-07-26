@@ -113,9 +113,9 @@ const GroupScreen = ({ route, navigation }) => {
   const handleInvite = async () => {
     if (!groupId || !searchResult) return;
     try {
-      await inviteToGroup(groupId, searchResult.email);
+      // await inviteToGroup(groupId, searchResul?.email);
       refetch();
-      setInvitedMembers([...invitedMembers, { email: searchResult.email }]);
+      setInvitedMembers([...invitedMembers, { email: searchResult?.email }]);
       setSearchEmail('');
       setSearchResult(null);
       Alert.alert('Thành công', 'Đã gửi lời mời thành công');
@@ -453,7 +453,7 @@ const handleDeleteGroup = async () => {
                   <View style={[styles.inviteButton, {backgroundColor: '#ddd'}]}>
                     <Text style={[styles.inviteButtonText, {color: '#666'}]}>Đã là thành viên nhóm</Text>
                   </View>
-                ) : searchResult.email !== userEmail ? (
+                ) : searchResult.email !== null ? (
                   <TouchableOpacity 
                     style={[styles.inviteButton, {backgroundColor: appColors.primary}]} 
                     onPress={handleInvite}
