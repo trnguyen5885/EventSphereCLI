@@ -328,9 +328,7 @@ const SeatsScreen = ({navigation, route}: any) => {
           <Text style={styles.headerTitle}>Chọn khu vực ghế</Text>
         </RowComponent>
 
-        <TouchableOpacity>
-          <Ionicons name="print-outline" size={24} color="white" />
-        </TouchableOpacity>
+        
       </View>
       <View style={styles.screenContainer}>
         <View style={styles.screen} />
@@ -492,7 +490,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },

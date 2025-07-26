@@ -316,12 +316,12 @@ const ExploreScreen = ({ navigation }: any) => {
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('Search')}>
-              <CircleComponent color="#524CE0" size={36}>
+              {/* <CircleComponent color="#524CE0" size={36}> */}
                 <View>
-                  <Ionicons name="search-outline" size={20} color="#fff" />
+                  <Ionicons name="search-outline" size={25} color="#fff" />
 
                 </View>
-              </CircleComponent>
+              {/* </CircleComponent> */}
             </TouchableOpacity>
           </RowComponent>
 

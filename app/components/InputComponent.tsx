@@ -9,12 +9,12 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import React, {ReactNode, useState} from 'react';
-import {EyeSlash} from 'iconsax-react-native';
-import {appColors} from '../constants/appColors';
+import React, { ReactNode, useState } from 'react';
+import { EyeSlash } from 'iconsax-react-native';
+import { appColors } from '../constants/appColors';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import {globalStyles} from '../constants/globalStyles';
+import { globalStyles } from '../constants/globalStyles';
 
 interface Props {
   value: string;
@@ -28,7 +28,10 @@ interface Props {
   customStyles?: StyleProp<ViewStyle>;
   onEnd?: () => void;
   editable?: boolean;
+  onBlur?: () => void; // 🆕 thêm
+  onSubmitEditing?: () => void; // 🆕 thêm
 }
+
 
 const InputComponent = (props: Props) => {
   const {
@@ -61,6 +64,8 @@ const InputComponent = (props: Props) => {
         autoCapitalize="none"
         onEndEditing={onEnd}
         editable={editable}
+        onBlur={props.onBlur} // 🆕 gắn vào đây
+        onSubmitEditing={props.onSubmitEditing} // 🆕 gắn vào đây
       />
       {suffix ?? suffix}
       <TouchableOpacity

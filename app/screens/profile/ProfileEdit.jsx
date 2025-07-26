@@ -9,15 +9,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
 import { ButtonComponent, InputComponent, RowComponent } from '../../components';
-import { Call, Lock, Personalcard, Sms, User } from 'iconsax-react-native';
+import { Call, Lock, Personalcard, Sms, User, Calendar } from 'iconsax-react-native';
 import { AxiosInstance } from '../../services';
 import LoadingModal from '../../modals/LoadingModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { loginSuccess } from '../../redux/slices/authSlice';
 import { Animated } from 'react-native';
-
-
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 const ProfileEdit = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -26,11 +25,12 @@ const ProfileEdit = ({ navigation }) => {
   const [name, setName] = useState(userData?.username || '');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
-  const [birthDate, setBirthDate] = useState(userData?.dateOfBirth || '01/01/2013');
+  const [birthDate, setBirthDate] = useState(new Date()); // Thay đổi thành Date object
+  const [birthDateString, setBirthDateString] = useState(''); // String để hiển thị
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [gender, setGender] = useState(
     typeof userData?.gender === 'number' ? userData.gender : 0
   );
-
 
   const [image, setImage] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -56,20 +56,37 @@ const ProfileEdit = ({ navigation }) => {
     outputRange: ['0deg', '360deg'],
   });
 
-
-
-
   console.log('User Data ne:', userData);
   console.log('Image URL:', image);
-
-
-
-
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [reNewPassword, setReNewPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Helper function để format date thành string
+  const formatDateToString = (date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Helper function để parse string thành date
+  const parseStringToDate = (dateString) => {
+    if (!dateString || dateString === '01/01/2013') {
+      return new Date(2000, 0, 1); // Default date
+    }
+    
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month, day);
+    }
+    return new Date(2000, 0, 1);
+  };
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -81,9 +98,14 @@ const ProfileEdit = ({ navigation }) => {
         setImage(user.picUrl || userData?.picUrl || '');
         setEmail(user.email);
         setPhoneNumber(user.phoneNumber || '');
-        setBirthDate(user.date || '01/01/2013');
+        
+        // Parse date string to Date object
+        const userBirthDate = user.date || userData?.dateOfBirth || '01/01/2013';
+        const parsedDate = parseStringToDate(userBirthDate);
+        setBirthDate(parsedDate);
+        setBirthDateString(formatDateToString(parsedDate));
+        
         setGender(parseInt(user.gender));
-
 
         console.log('Thông tin người dùng:', user);
       } catch (error) {
@@ -95,7 +117,6 @@ const ProfileEdit = ({ navigation }) => {
       fetchUserInfo();
     }
   }, [userId]);
-
 
   const handleNavigation = () => {
     navigation.goBack();
@@ -113,6 +134,20 @@ const ProfileEdit = ({ navigation }) => {
     }
   };
 
+  // Date picker functions
+  const showDatePicker = () => {
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleConfirmDate = (date) => {
+    setBirthDate(date);
+    setBirthDateString(formatDateToString(date));
+    hideDatePicker();
+  };
 
   const pickImage = async () => {
     try {
@@ -130,7 +165,7 @@ const ProfileEdit = ({ navigation }) => {
   };
 
   const uploadImage = async (imageUri) => {
-    setIsUploadingImage(true); // Bắt đầu loading
+    setIsUploadingImage(true);
 
     let formData = new FormData();
     formData.append('file', {
@@ -153,7 +188,39 @@ const ProfileEdit = ({ navigation }) => {
       const data = await response.json();
 
       if (data.secure_url) {
-        setImage(data.secure_url);
+        const imageUrl = data.secure_url;
+        setImage(imageUrl);
+
+        try {
+          await AxiosInstance().put('users/edit', {
+            id: userId,
+            username: name,
+            picUrl: imageUrl,
+            phoneNumber: phoneNumber,
+            date: birthDateString,
+            gender: gender.toString(),
+          });
+
+          const res = await AxiosInstance().get(`users/getUser/${userId}`);
+          const updatedUser = res.data;
+
+          dispatch(loginSuccess({
+            userId,
+            userData: updatedUser,
+            role: 3,
+          }));
+
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('Đã cập nhật ảnh đại diện thành công', ToastAndroid.SHORT);
+          } else {
+            Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện thành công');
+          }
+
+        } catch (updateError) {
+          console.log('Lỗi khi cập nhật ảnh đại diện:', updateError);
+          Alert.alert('Lỗi', 'Upload ảnh thành công nhưng không thể cập nhật thông tin. Vui lòng thử lại.');
+        }
+
       } else {
         Alert.alert('Upload thất bại', JSON.stringify(data));
       }
@@ -161,10 +228,9 @@ const ProfileEdit = ({ navigation }) => {
       console.log('Upload lỗi:', error);
       Alert.alert('Lỗi!', 'Không thể tải ảnh lên.');
     } finally {
-      setIsUploadingImage(false); // Kết thúc loading
+      setIsUploadingImage(false);
     }
   };
-
 
   const handleEditProfile = async () => {
     if (!name.trim()) {
@@ -173,11 +239,9 @@ const ProfileEdit = ({ navigation }) => {
     }
     if (!phoneNumber.trim()) {
       Alert.alert('Lỗi', 'Số điện thoại không được để trống');
-      setIsLoading(false);
       return;
     } else if (!/^(0[3|5|7|8|9])\d{8,9}$/.test(phoneNumber)) {
       Alert.alert('Lỗi', 'Số điện thoại không hợp lệ');
-      setIsLoading(false);
       return;
     }
 
@@ -189,9 +253,8 @@ const ProfileEdit = ({ navigation }) => {
         username: name,
         picUrl: image,
         phoneNumber: phoneNumber,
-        date: birthDate.toString(),
+        date: birthDateString, // Sử dụng formatted string
         gender: gender.toString(),
-
       });
 
       if (oldPassword && newPassword && reNewPassword) {
@@ -208,7 +271,6 @@ const ProfileEdit = ({ navigation }) => {
         });
       }
 
-      // 🔄 Fetch latest user data
       const res = await AxiosInstance().get(`users/getUser/${userId}`);
       const updatedUser = res.data;
 
@@ -228,7 +290,6 @@ const ProfileEdit = ({ navigation }) => {
       setIsLoading(false);
     }
   };
-
 
   const GenderSelector = () => (
     <View style={styles.genderContainer}>
@@ -252,7 +313,6 @@ const ProfileEdit = ({ navigation }) => {
       </View>
     </View>
   );
-
 
   return (
     <View style={styles.container}>
@@ -283,7 +343,6 @@ const ProfileEdit = ({ navigation }) => {
                 style={styles.avatar}
               />
 
-              {/* Hiển thị overlay loading nếu đang upload */}
               {isUploadingImage ? (
                 <View style={styles.cameraIcon}>
                   <Animated.View style={{ transform: [{ rotate: spin }] }}>
@@ -296,7 +355,6 @@ const ProfileEdit = ({ navigation }) => {
                 </View>
               )}
             </TouchableOpacity>
-
 
             <Text style={styles.avatarHint}>
               Cung cấp thông tin chính xác sẽ hỗ trợ bạn trong quá trình mua vé, hoặc khi cần xác thực về
@@ -358,26 +416,26 @@ const ProfileEdit = ({ navigation }) => {
               </View>
             </View>
 
-            {/* Birth Date Field */}
+            {/* Birth Date Field with Date Picker */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>
                 Ngày tháng năm sinh <Text style={styles.required}>*</Text>
               </Text>
-              <View style={styles.inputWrapper}>
+              <TouchableOpacity style={styles.inputWrapper} onPress={showDatePicker}>
                 <TextInput
-                  placeholder="DD/MM/YYYY"
-                  value={birthDate}
-                  onChangeText={(text) => setBirthDate(text)}
-                  style={styles.textInput}
+                  placeholder="Chọn ngày sinh"
+                  value={birthDateString}
+                  editable={false}
+                  style={[styles.textInput, { color: birthDateString ? '#333' : '#999' }]}
                 />
-              </View>
+                <View style={styles.suffixIcon}>
+                  <Calendar size={20} color={appColors.primary} />
+                </View>
+              </TouchableOpacity>
             </View>
 
             {/* Gender Selector */}
             <GenderSelector />
-
-            {/* Password Fields - Hidden by default, can be shown with toggle */}
-            {/* You can add a toggle button to show/hide password fields */}
 
           </View>
 
@@ -392,6 +450,22 @@ const ProfileEdit = ({ navigation }) => {
           </View>
 
         </ScrollView>
+        
+        {/* Date Time Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleConfirmDate}
+          onCancel={hideDatePicker}
+          maximumDate={new Date()} // Không cho chọn ngày tương lai
+          minimumDate={new Date(1950, 0, 1)} // Giới hạn từ năm 1950
+          locale="vi_VN" // Hiển thị tiếng Việt
+          confirmTextIOS="Xác nhận"
+          cancelTextIOS="Hủy"
+          headerTextIOS="Chọn ngày sinh"
+          date={birthDate}
+        />
+        
         <LoadingModal visible={isLoading} />
       </KeyboardAvoidingView>
     </View>
@@ -413,7 +487,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },

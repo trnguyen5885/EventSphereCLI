@@ -11,23 +11,34 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 // Skeleton Placeholder Component
 const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style, showIcon = false }) => {
     const animatedValue = useRef(new Animated.Value(0)).current;
+    const animationRef = useRef(null);
 
     useEffect(() => {
         const animate = () => {
-            Animated.sequence([
-                Animated.timing(animatedValue, {
-                    toValue: 1,
-                    duration: 1000,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(animatedValue, {
-                    toValue: 0,
-                    duration: 1000,
-                    useNativeDriver: false,
-                }),
-            ]).start(() => animate());
+            animationRef.current = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(animatedValue, {
+                        toValue: 1,
+                        duration: 800, // Giảm từ 1000ms xuống 800ms
+                        useNativeDriver: false,
+                    }),
+                    Animated.timing(animatedValue, {
+                        toValue: 0,
+                        duration: 800, // Giảm từ 1000ms xuống 800ms
+                        useNativeDriver: false,
+                    }),
+                ])
+            );
+            animationRef.current.start();
         };
         animate();
+
+        // Cleanup animation khi component unmount
+        return () => {
+            if (animationRef.current) {
+                animationRef.current.stop();
+            }
+        };
     }, []);
 
     const backgroundColor = animatedValue.interpolate({
@@ -120,7 +131,6 @@ const UserTicketsScreen = ({ navigation, route }) => {
             const eventsData = tickets.data.events;
             console.log("Tickets data:", tickets.data);
 
-
             const eventsWithDetails = await Promise.all(
                 eventsData.map(async (event) => {
                     try {
@@ -138,10 +148,18 @@ const UserTicketsScreen = ({ navigation, route }) => {
                 })
             );
 
+            // Update state ngay khi có data
             setEvents(eventsWithDetails);
+
+            // Set loading state ngay sau khi update data
+            if (isRefresh) {
+                setRefreshing(false);
+            } else {
+                setLoading(false);
+            }
         } catch (e) {
             console.log("Lấy vé thất bại: ", e);
-        } finally {
+            // Set loading state ngay khi có lỗi
             if (isRefresh) {
                 setRefreshing(false);
             } else {
@@ -317,7 +335,7 @@ const UserTicketsScreen = ({ navigation, route }) => {
                                     activeOpacity={0.8}
                                     onPress={() => navigation.navigate("ListTicket", { event: item, user: userData })}
                                 >
-                                    <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                                    <Text style={styles.detailButtonText}>Xem thông tin vé</Text>
                                 </TouchableOpacity>
                             </View>
                         );
@@ -384,7 +402,7 @@ const styles = StyleSheet.create({
     detailButton: {
         marginTop: 14,
         paddingVertical: 10,
-        backgroundColor: '#007BFF',
+        backgroundColor: '#5669FF',
         borderRadius: 6,
         alignItems: 'center',
         shadowColor: '#007BFF',
