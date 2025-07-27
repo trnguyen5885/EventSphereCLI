@@ -9,7 +9,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, forwardRef } from 'react';
 import { EyeSlash } from 'iconsax-react-native';
 import { appColors } from '../constants/appColors';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -28,12 +28,12 @@ interface Props {
   customStyles?: StyleProp<ViewStyle>;
   onEnd?: () => void;
   editable?: boolean;
-  onBlur?: () => void; // 🆕 thêm
-  onSubmitEditing?: () => void; // 🆕 thêm
+  onBlur?: () => void;
+  onSubmitEditing?: () => void;
+  onFocus?: () => void; // 🆕 thêm
 }
 
-
-const InputComponent = (props: Props) => {
+const InputComponent = forwardRef<TextInput, Props>((props, ref) => {
   const {
     value,
     onChange,
@@ -45,7 +45,10 @@ const InputComponent = (props: Props) => {
     type,
     customStyles,
     onEnd,
-    editable
+    editable,
+    onBlur,
+    onSubmitEditing,
+    onFocus // 🆕 thêm
   } = props;
 
   const [isShowPass, setIsShowPass] = useState(isPassword ?? false);
@@ -54,6 +57,7 @@ const InputComponent = (props: Props) => {
     <View style={[styles.inputContainer, customStyles]}>
       {affix ?? affix}
       <TextInput
+        ref={ref} // 🆕 thêm ref
         style={[styles.input, globalStyles.text]}
         value={value}
         placeholder={placeholder ?? ''}
@@ -64,8 +68,10 @@ const InputComponent = (props: Props) => {
         autoCapitalize="none"
         onEndEditing={onEnd}
         editable={editable}
-        onBlur={props.onBlur} // 🆕 gắn vào đây
-        onSubmitEditing={props.onSubmitEditing} // 🆕 gắn vào đây
+        onBlur={onBlur}
+        onSubmitEditing={onSubmitEditing}
+        onFocus={onFocus} // 🆕 thêm
+        returnKeyType="search" // 🆕 thêm để hiện nút Search
       />
       {suffix ?? suffix}
       <TouchableOpacity
@@ -87,7 +93,7 @@ const InputComponent = (props: Props) => {
       </TouchableOpacity>
     </View>
   );
-};
+});
 
 export default InputComponent;
 

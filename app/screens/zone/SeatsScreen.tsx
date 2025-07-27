@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Alert} from 'react-native';
@@ -40,6 +41,7 @@ interface Seat {
   price: number;
   area: string;
   status: SeatStatus;
+  color: string;
 }
 
 const SeatsScreen = ({navigation, route}: any) => {
@@ -48,6 +50,8 @@ const SeatsScreen = ({navigation, route}: any) => {
   const [zoneId, setZoneId] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [bookingId, setBookingId] = useState([]);
+  const [colorVIP, setColorVIP] = useState([]);
+  const [colorNomal, setColorNormal] = useState([]);
 
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const translateX = useSharedValue(0);
@@ -93,12 +97,55 @@ const SeatsScreen = ({navigation, route}: any) => {
       socket.off('periodicMessage', handlePeriodicMessage);
       socket.offAny(handleAnyEvent);
       socket.emit('leave', {room: `event_${id}_showtime_${showtimeId}`});
+      setSeats([]);
       setSelectedSeats([]);
     };
   }, [id, showtimeId]);
 
+  useEffect(() => {
+    const onBackPress = () => {
+      if (selectedSeats.length === 0) {
+        return false; // xử lý back mặc định
+      }
+
+      Alert.alert(
+        'Xác nhận thoát',
+        'Bạn có chắc chắn muốn quay lại? Tất cả ghế đã chọn sẽ bị huỷ.',
+        [
+          {text: 'Hủy', style: 'cancel'},
+          {
+            text: 'Thoát',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                setIsLoading(true);
+                await AxiosInstance().post('/users/cancelAllReservedSeats');
+                setSelectedSeats([]);
+                navigation.goBack(); // thoát màn hình
+              } catch (error) {
+                Alert.alert('Lỗi', 'Không thể huỷ vé. Vui lòng thử lại.');
+              } finally {
+                setIsLoading(false);
+              }
+            },
+          },
+        ],
+        {cancelable: true},
+      );
+
+      return true; // chặn hành vi mặc định
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+
+    return () => backHandler.remove();
+  }, [selectedSeats]);
+
   const fetchSeatsFromApi = async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
       const response = await AxiosInstance().get(
         `/events/getZone/${id}?showtimeId=${showtimeId}`,
@@ -110,13 +157,14 @@ const SeatsScreen = ({navigation, route}: any) => {
         let status: SeatStatus;
         if (item.status === 'booked') {
           status = SeatStatus.BOOKED;
-        } else if (item.area === 'vip') {
+        } else if (item.area === 'Vip') {
           status = SeatStatus.VIP;
         } else if (item.status === 'reserved') {
           status = SeatStatus.RESERVED;
-        } else {
+        } else if (item.area !== 'none') {
           status = SeatStatus.NORMAL;
         }
+
         return {
           id: item.seatId,
           label: item.label,
@@ -124,6 +172,7 @@ const SeatsScreen = ({navigation, route}: any) => {
           col: item.col,
           price: item.price,
           area: item.area,
+          color: item.color,
           status,
         };
       });
@@ -138,12 +187,23 @@ const SeatsScreen = ({navigation, route}: any) => {
 
       setSeats(grouped);
       setZoneId(response.zones[0]._id);
-      setIsLoading(false);
+      const vipSeat = seatObjects.find(seat => seat.status === SeatStatus.VIP);
+      const normalSeat = seatObjects.find(
+        seat => seat.status === SeatStatus.NORMAL,
+      );
+
+      if (vipSeat) {
+        setColorVIP([vipSeat.color]);
+        console.log(vipSeat.color);
+      }
+      if (normalSeat) {
+        setColorNormal([normalSeat.color]);
+        console.log(normalSeat.color);
+      }
+      // setIsLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách ghế:', error);
-      setIsLoading(false);
-    } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
@@ -205,9 +265,11 @@ const SeatsScreen = ({navigation, route}: any) => {
         ],
         {cancelable: true},
       );
-    } else if (seat.status === SeatStatus.BOOKED) return;
-    else if (seat.status === SeatStatus.RESERVED) {
+    } else if (seat.status === SeatStatus.BOOKED) {
+      return;
+    } else if (seat.status === SeatStatus.RESERVED) {
       Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
+
       return;
     } else {
       try {
@@ -256,6 +318,7 @@ const SeatsScreen = ({navigation, route}: any) => {
                 onPress: () => {
                   setSelectedSeats([]);
                   fetchSeatsFromApi();
+                  console.log(seat.status);
                 },
               },
             ],
@@ -290,7 +353,39 @@ const SeatsScreen = ({navigation, route}: any) => {
   };
 
   const handleGoback = () => {
-    navigation.goBack();
+    if (selectedSeats.length === 0) {
+      navigation.goBack();
+      return;
+    }
+
+    Alert.alert(
+      'Xác nhận thoát',
+      'Bạn có chắc chắn muốn quay lại? Tất cả ghế đã chọn sẽ bị huỷ.',
+      [
+        {text: 'Hủy', style: 'cancel'},
+        {
+          text: 'Thoát',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              const response = await AxiosInstance().post(
+                '/users/cancelAllReservedSeats',
+              );
+
+              setSelectedSeats([]);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Huỷ ghế thất bại:', error);
+              Alert.alert('Lỗi', 'Không thể huỷ vé. Vui lòng thử lại.');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ],
+      {cancelable: true},
+    );
   };
 
   const panGesture = Gesture.Pan()
@@ -320,9 +415,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
         <RowComponent onPress={handleGoback} styles={{columnGap: 25}}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chọn khu vực ghế</Text>
@@ -347,11 +440,11 @@ const SeatsScreen = ({navigation, route}: any) => {
                 } else if (isSelected) {
                   bgColor = appColors.primary;
                 } else if (seat.status === SeatStatus.VIP) {
-                  bgColor = '#7C89FF';
+                  bgColor = seat.color;
                 } else if (seat.status === SeatStatus.RESERVED) {
                   bgColor = '#000';
                 } else {
-                  bgColor = '#c9b6f3';
+                  bgColor = seat.color;
                 }
 
                 return (
@@ -418,11 +511,28 @@ const SeatsScreen = ({navigation, route}: any) => {
         <View style={styles.legend}>
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendIcon, styles.seatNormal]} />
+              <View
+                style={[
+                  styles.legendIcon,
+                  {
+                    backgroundColor: colorNomal[0] || '#c9b6f3',
+                    borderColor: colorNomal[0] || '#c9b6f3',
+                  },
+                ]}
+              />
               <Text style={styles.legendText}>Vé thường</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendIcon, styles.seatVip]} />
+              <View
+                style={[
+                  styles.legendIcon,
+                  // styles.seatVip,
+                  {
+                    backgroundColor: colorVIP[0] || '#7C89FF',
+                    borderColor: colorVIP[0] || '#7C89FF',
+                  },
+                ]}
+              />
               <Text style={styles.legendText}>Vé V.I.P</Text>
             </View>
           </View>
