@@ -420,8 +420,6 @@ const SeatsScreen = ({navigation, route}: any) => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chọn khu vực ghế</Text>
         </RowComponent>
-
-        
       </View>
       <View style={styles.screenContainer}>
         <View style={styles.screen} />

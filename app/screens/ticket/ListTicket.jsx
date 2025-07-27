@@ -140,7 +140,7 @@ const SwipeTicketCard = ({ ticket, event, index, onSwipe, isTop }) => {
                 <Text style={responsiveStyles.ticketType} numberOfLines={1}>
                   {event.typeBase === 'seat' 
                     ? `Ghế ${ticket.seat?.seatId || ticket.seat?._id || 'N/A'}`
-                    : `Khu vực ${ticket.zone?.zoneName || 'N/A'}`
+                    : event.typeBase === 'zone' ? `Khu vực ${ticket.zone?.zoneName || 'N/A'}` : ""
                   }
                 </Text>
                 <Text style={responsiveStyles.locationDetail} numberOfLines={1}>
@@ -277,11 +277,23 @@ const ListTicket = ({ navigation, route }) => {
                 </View>
 
                 {/* Swipe Instructions */}
-                <View style={responsiveStyles.instructionsContainer}>
+                {/* <View style={responsiveStyles.instructionsContainer}>
                     <Text style={responsiveStyles.instructionsText}>
                         Vuốt trái/phải để xem vé tiếp theo
                     </Text>
-                </View>
+                </View> */}
+                
+                <View style={responsiveStyles.dotsContainer}>
+                {tickets.length > 1 && tickets.map((_, idx) => (
+                  <View
+                    key={`dot-${idx}`}
+                    style={[
+                      responsiveStyles.dot,
+                      idx === currentIndex ? responsiveStyles.dotActive : null
+                    ]}
+                  />
+                ))}
+              </View>
             </View>
         </ScrollView>
     );
@@ -296,6 +308,7 @@ const getResponsiveStyles = () => {
         container: {
             flex: 1,
             backgroundColor: '#f5f5f5',
+            
         },
         header: {
             backgroundColor: appColors.primary,
@@ -497,7 +510,7 @@ const getResponsiveStyles = () => {
         watermarkContent: {
             paddingVertical: isSmallDevice ? 12 : 18,
             paddingHorizontal: isSmallDevice ? 15 : 20,
-            borderWidth: isSmallDevice ? 12 : 18,
+            borderWidth: isSmallDevice ? 10 : 18,
             borderColor: 'rgba(255, 0, 0, 0.5)',
             borderRadius: 10,
             alignItems: 'center',
@@ -513,6 +526,26 @@ const getResponsiveStyles = () => {
             letterSpacing: 1,
             opacity: 0.7,
         },
+        dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        rowGap: 10,
+        marginHorizontal: 20,
+      },
+    dot: {
+      width:  8,
+      height:  8,
+      borderRadius:  4,
+      backgroundColor: '#CCC',
+      marginHorizontal: 4,
+    },
+    dotActive: {
+      backgroundColor: appColors.primary,
+      width: 10,
+      height: 10,
+    },
     });
 };
 

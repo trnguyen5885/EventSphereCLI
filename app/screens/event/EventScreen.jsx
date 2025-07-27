@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useEffect, useRef } from 'react';
 import { AxiosInstance } from '../../services';
 import { InputComponent, TextComponent } from '../../components';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { appColors } from '../../constants/appColors';
 
 // Skeleton Placeholder Component
 const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style, showIcon = false }) => {
@@ -128,6 +129,7 @@ const UserTicketsScreen = ({ navigation, route }) => {
         try {
             const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
             setUserData(tickets.data.user);
+            console.log(tickets.data.user);
             const eventsData = tickets.data.events;
             console.log("Tickets data:", tickets.data);
 
@@ -402,7 +404,7 @@ const styles = StyleSheet.create({
     detailButton: {
         marginTop: 14,
         paddingVertical: 10,
-        backgroundColor: '#5669FF',
+        backgroundColor: appColors.primary,
         borderRadius: 6,
         alignItems: 'center',
         shadowColor: '#007BFF',
