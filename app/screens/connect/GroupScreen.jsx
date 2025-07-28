@@ -127,9 +127,9 @@ const GroupScreen = ({ route, navigation }) => {
   const handleInvite = async () => {
     if (!groupId || !searchResult) return;
     try {
-      await inviteToGroup(groupId, searchResult.email);
+      await inviteToGroup(groupId, searchResult?.email);
       refetch();
-      setInvitedMembers([...invitedMembers, { email: searchResult.email }]);
+      setInvitedMembers([...invitedMembers, { email: searchResult?.email }]);
       setSearchEmail('');
       setSearchResult(null);
       Alert.alert('Thành công', 'Đã gửi lời mời thành công');
