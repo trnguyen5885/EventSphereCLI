@@ -31,7 +31,7 @@ import FileViewer from 'react-native-file-viewer';
 const { width, height } = Dimensions.get('window');
 
 const PayOSQRScreen = ({ route, navigation }) => {
-  const { amount, eventName, userId, eventId, bookingType, bookingIds, totalPrice, showtimeId } = route.params;
+  const { amount, eventName, userId, eventId, bookingType, bookingIds, totalPrice, showtimeId, typeBase } = route.params;
   const [qrData, setQrData] = useState(null);
   const [orderCode, setOrderCode] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -315,12 +315,12 @@ const PayOSQRScreen = ({ route, navigation }) => {
   //           try {
   //             const bodyOrder = {
   //               eventId: eventId,
-  //               userId: userId,
-  //               amount: amount,
-  //               bookingType: bookingType ?? 'none',
-  //               ...(bookingType === 'zone' && bookingIds && { bookingIds: bookingIds }),
-  //               totalPrice: totalPrice,
-  //               showtimeId: showtimeId,
+  //         userId: userId,
+  //         bookingType: typeBase ?? 'none',
+  //         totalAmount: amount,
+  //         bookingIds: typeBase === 'none' ? [] : bookingIds,
+  //         totalPrice: totalPrice,
+  //         showtimeId: showtimeId,
   //             };
 
   //             const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
@@ -399,11 +399,9 @@ const PayOSQRScreen = ({ route, navigation }) => {
         const bodyOrder = {
           eventId: eventId,
           userId: userId,
-          amount: amount,
-          bookingType: bookingType ?? 'none',
-          ...(bookingType === 'zone' || bookingType === 'seat'
-            ? { bookingIds: bookingIds }
-            : {}),
+          bookingType: typeBase ?? 'none',
+          totalAmount: amount,
+          bookingIds: typeBase === 'none' ? [] : bookingIds,
           totalPrice: totalPrice,
           showtimeId: showtimeId,
         };
