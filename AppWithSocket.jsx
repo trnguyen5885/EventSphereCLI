@@ -72,6 +72,8 @@ import QRScanner from './app/screens/organizer/QRScanner';
 import ScanShowTime from './app/screens/organizer/ScanShowTime';
 import FavoriteTag from './app/screens/FavoriteTag';
 import ListByTag from './app/screens/explore/ListByTag';
+import PaymentSuccessScreen from './app/screens/payment/PaymentSuccessScreen';
+import NonesScreen from './app/screens/zone/NonesScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -195,6 +197,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="Drawer" component={DrawerNavigator} />
           <Stack.Screen name="Search" component={EventSearchScreen} />
           <Stack.Screen name="Detail" component={EventDetailScreen} />
+          <Stack.Screen  name='None' component={NonesScreen} />
           <Stack.Screen name="Seats" component={SeatsScreen} />
           <Stack.Screen name='Zone' component={ZonesScreen} />
           <Stack.Screen name="Ticket" component={TicketEventScreen} />
@@ -240,6 +243,8 @@ const AppWithSocket = () => {
           <Stack.Screen name="ScanShowTime" component={ScanShowTime} />
           <Stack.Screen name="FavoriteTag" component={FavoriteTag} />
           <Stack.Screen name="ListByTag" component={ListByTag} />
+          <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
+          
 
 
 

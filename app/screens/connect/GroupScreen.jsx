@@ -29,12 +29,12 @@ import { useLocationSharing } from './components/useLocationSharing';
 const { width, height } = Dimensions.get('window');
 
 const GroupScreen = ({ route, navigation }) => {
-  const { groupId, userLocation, groupName, ownerId } = route?.params || {};
+  const { groupId, userLocation: initialUserLocation, groupName, ownerId } = route?.params || {};
   const userId = useSelector(state => state.auth.userId);
   const isOwner = String(userId) === String(ownerId?._id);
 
   const [isSharing, setIsSharing] = useState(false);
-  const [myLocation, setMyLocation] = useState(userLocation || null);
+  const [myLocation, setMyLocation] = useState(initialUserLocation || null);
   const [targetMember, setTargetMember] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
   const [distanceText, setDistanceText] = useState('');
@@ -51,12 +51,26 @@ const GroupScreen = ({ route, navigation }) => {
   const [targetMemberId, setTargetMemberId] = useState(null);
   const [animatedValue] = useState(new Animated.Value(0));
 
+  console.log("My location groupscreen"+myLocation);
+
   const {
     members,
     locations,
     loading,
     refetch
-  } = useLocationSharing({ groupId, userId, isSharing, userLocation });
+  } = useLocationSharing({ groupId, userId, isSharing});
+
+  useEffect(() => {
+    const myLoc = locations.find(loc => String(loc.userId) === String(userId));
+    if (myLoc) {
+      if (typeof myLoc.latitude === 'number' && typeof myLoc.longitude === 'number') {
+        setMyLocation({ latitude: myLoc.latitude, longitude: myLoc.longitude });
+      } else if (myLoc.location?.coordinates?.length === 2) {
+        const [lon, lat] = myLoc.location.coordinates;
+        setMyLocation({ latitude: lat, longitude: lon });
+      }
+    }
+  }, [locations, userId]);
 
   useEffect(() => {
     Animated.timing(animatedValue, {
@@ -113,9 +127,9 @@ const GroupScreen = ({ route, navigation }) => {
   const handleInvite = async () => {
     if (!groupId || !searchResult) return;
     try {
-      await inviteToGroup(groupId, searchResult.email);
+      await inviteToGroup(groupId, searchResult?.email);
       refetch();
-      setInvitedMembers([...invitedMembers, { email: searchResult.email }]);
+      setInvitedMembers([...invitedMembers, { email: searchResult?.email }]);
       setSearchEmail('');
       setSearchResult(null);
       Alert.alert('Thành công', 'Đã gửi lời mời thành công');
@@ -453,7 +467,7 @@ const handleDeleteGroup = async () => {
                   <View style={[styles.inviteButton, {backgroundColor: '#ddd'}]}>
                     <Text style={[styles.inviteButtonText, {color: '#666'}]}>Đã là thành viên nhóm</Text>
                   </View>
-                ) : searchResult.email !== userEmail ? (
+                ) : searchResult.email !== null ? (
                   <TouchableOpacity 
                     style={[styles.inviteButton, {backgroundColor: appColors.primary}]} 
                     onPress={handleInvite}

@@ -90,23 +90,34 @@ const SkeletonPlaceholder = ({
   showIcon?: boolean;
 }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     const animate = () => {
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: false,
-        }),
-      ]).start(() => animate());
+      animationRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(animatedValue, {
+            toValue: 1,
+            duration: 800, // Giảm từ 1000ms xuống 800ms
+            useNativeDriver: false,
+          }),
+          Animated.timing(animatedValue, {
+            toValue: 0,
+            duration: 800, // Giảm từ 1000ms xuống 800ms
+            useNativeDriver: false,
+          }),
+        ])
+      );
+      animationRef.current.start();
     };
     animate();
+
+    // Cleanup animation khi component unmount
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
+    };
   }, []);
 
   const backgroundColor = animatedValue.interpolate({
@@ -186,6 +197,15 @@ const EventSection = ({
             showsHorizontalScrollIndicator={false}
             data={data}
             keyExtractor={item => item._id}
+            // Thêm các tối ưu performance
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={5}
+            windowSize={10}
+            getItemLayout={(data, index) => ({
+              length: 220, // Estimated item width
+              offset: 220 * index,
+              index,
+            })}
             renderItem={({ item }) => (
               <EventItem
                 onPress={() => onPressItem(item)}
@@ -368,10 +388,16 @@ const SuggestedEventsScreen = ({
     setLoadingTrending(true);
     try {
       const res = await AxiosInstance().get<EventModel[]>('events/home');
-      setEventsTrending(res.data.slice(0, 10));
+      const trendingData = res.data.slice(0, 10);
+
+      // Update state ngay khi có data
+      setEventsTrending(trendingData);
+
+      // Set loading false ngay sau khi update data
+      setLoadingTrending(false);
     } catch (e) {
       console.log('Error fetching trending events:', e);
-    } finally {
+      // Set loading false ngay khi có lỗi
       setLoadingTrending(false);
     }
   };
@@ -382,10 +408,14 @@ const SuggestedEventsScreen = ({
       const res = await AxiosInstance().get<EventModel[]>('events/home');
       const now = Date.now();
       const ongoing = res.data.filter(event => hasOngoingShowtimes(event, now));
+
+      // Update state ngay khi có data
       setEventsOngoing(ongoing);
+
+      // Set loading false ngay sau khi update data
+      setLoadingOngoing(false);
     } catch (e) {
       console.log('Error fetching ongoing events:', e);
-    } finally {
       setLoadingOngoing(false);
     }
   };
@@ -397,10 +427,14 @@ const SuggestedEventsScreen = ({
       const music = res.data.filter(event =>
         event.tags?.some(tag => tag.toLowerCase().includes('âm nhạc'))
       );
+
+      // Update state ngay khi có data
       setMusicEvents(music.slice(0, 4));
+
+      // Set loading false ngay sau khi update data
+      setLoadingMusic(false);
     } catch (e) {
       console.log('Error fetching music events:', e);
-    } finally {
       setLoadingMusic(false);
     }
   };
@@ -412,10 +446,14 @@ const SuggestedEventsScreen = ({
       const workshop = res.data.filter(event =>
         event.tags?.some(tag => tag.toLowerCase().includes('workshop'))
       );
+
+      // Update state ngay khi có data
       setWorkshopEvents(workshop.slice(0, 4));
+
+      // Set loading false ngay sau khi update data
+      setLoadingWorkshop(false);
     } catch (e) {
       console.log('Error fetching workshop events:', e);
-    } finally {
       setLoadingWorkshop(false);
     }
   };
@@ -429,10 +467,14 @@ const SuggestedEventsScreen = ({
           tag.toLowerCase().includes('âm nhạc') || tag.toLowerCase().includes('workshop')
         )
       );
+
+      // Update state ngay khi có data
       setOtherEvents(others.slice(0, 4));
+
+      // Set loading false ngay sau khi update data
+      setLoadingOthers(false);
     } catch (e) {
       console.log('Error fetching other events:', e);
-    } finally {
       setLoadingOthers(false);
     }
   };
@@ -441,11 +483,15 @@ const SuggestedEventsScreen = ({
     setLoadingRecommend(true);
     try {
       const res = await AxiosInstance().get<any>('events/for-you');
-      console.log("recomemnt:"+JSON.stringify(res.events));
+      console.log("recomemnt:" + JSON.stringify(res.events));
+
+      // Update state ngay khi có data
       setRecommentEvents(res.events || []);
+
+      // Set loading false ngay sau khi update data
+      setLoadingRecommend(false);
     } catch (e) {
       console.log('Error fetching recommended events:', e);
-    } finally {
       setLoadingRecommend(false);
     }
   };

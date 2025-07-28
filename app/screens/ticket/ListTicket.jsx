@@ -1,6 +1,7 @@
 import { RowComponent } from '../../components';
-import React, { useState, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, StatusBar, Platform, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { AxiosInstance } from '../../services';
+import { View, Text, Image, StyleSheet, ScrollView, StatusBar, Platform, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { appColors } from '../../constants/appColors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -139,8 +140,8 @@ const SwipeTicketCard = ({ ticket, event, index, onSwipe, isTop }) => {
               <View style={responsiveStyles.ticketDetails}>
                 <Text style={responsiveStyles.ticketType} numberOfLines={1}>
                   {event.typeBase === 'seat' 
-                    ? `Ghế ${ticket.seat?.seatId || ticket.seat?._id || 'N/A'}`
-                    : `Khu vực ${ticket.zone?.zoneName || 'N/A'}`
+                    ? `Ghế ${ticket?.seatId || ticket?.seatId || 'N/A'}`
+                    : event.typeBase === 'zone' ? `Khu vực: ${ticket?.zoneName || 'N/A'}` : ""
                   }
                 </Text>
                 <Text style={responsiveStyles.locationDetail} numberOfLines={1}>
@@ -208,12 +209,106 @@ const SwipeTicketCard = ({ ticket, event, index, onSwipe, isTop }) => {
 };
 
 const ListTicket = ({ navigation, route }) => {
-    const { event, user } = route.params;
-    const tickets = event?.tickets || [];
+    const { event, user, showtimeId, userId, eventId } = route.params;
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [ticketDetails, setTicketDetails] = useState(null);
+    const [processedEvent, setProcessedEvent] = useState(event);
+    const [processedTickets, setProcessedTickets] = useState([]);
     const dimensions = getResponsiveDimensions();
 
-    console.log(tickets);
+    // Fetch ticket details from new API
+    useEffect(() => {
+        const fetchTicketDetails = async () => {
+            try {
+                setLoading(true);
+                const response = await AxiosInstance().get(`/tickets/details/${userId}/${eventId}/${showtimeId}`);
+                console.log("Raw response:", response.data);
+                console.log("Response status:", response.data?.status);
+                console.log("Response data exists:", !!response.data?.data);
+                
+                let eventData, showtime, tickets, order, summary;
+                
+                // Handle both response formats
+                if (response.data && response.data.status && response.data.data) {
+                    // Wrapped response format: {status, message, data: {...}}
+                    console.log("Using wrapped response format");
+                    ({ event: eventData, showtime, tickets, order, summary } = response.data.data);
+                } else if (response.data && response.data.event && response.data.tickets) {
+                    // Direct response format: {event, showtime, tickets, ...}
+                    console.log("Using direct response format");
+                    ({ event: eventData, showtime, tickets, order, summary } = response.data);
+                } else {
+                    console.log("Invalid response format");
+                    eventData = null;
+                    tickets = [];
+                }
+                
+                if (eventData && Array.isArray(tickets)) {
+                    console.log("Processing tickets data");
+                    console.log("Event data:", eventData);
+                    console.log("Tickets from API:", tickets);
+                    
+                    // Process event data
+                    const processedEventData = {
+                        ...eventData,
+                        name: eventData.name,
+                        location: eventData.location,
+                        typeBase: eventData.typeBase
+                    };
+                    
+                    // Ensure tickets is an array before processing
+                    const ticketsArray = Array.isArray(tickets) ? tickets : [];
+                    
+                    // Process tickets with showtime data
+                    const processedTicketsList = ticketsArray.map((ticket, index) => ({
+                        ...ticket,
+                        _id: ticket._id,
+                        ticketId: ticket.ticketId,
+                        status: ticket.status,
+                        qrCode: ticket.qrCode,
+                        ticketNumber: ticket.ticketNumber,
+                        // Add showtime data to each ticket for compatibility
+                        showtimeId: {
+                            _id: showtime?._id,
+                            startTime: showtime?.startTime,
+                            endTime: showtime?.endTime
+                        },
+                        // Add seat info if available (for seat-based events)
+                        seat: ticket.seat || null,
+                        // Add zone info if available (for zone-based events)  
+                        zone: ticket.zone || null
+                    }));
+                    
+                    console.log("Processed tickets:", processedTicketsList);
+                    setTicketDetails({ event: eventData, showtime, tickets, order, summary });
+                    setProcessedEvent(processedEventData);
+                    setProcessedTickets(processedTicketsList);
+                } else {
+                    console.log("No ticket details found or invalid response structure");
+                    setProcessedTickets([]);
+                }
+                
+                setLoading(false);
+            } catch (error) {
+                console.log("Error fetching ticket details:", error);
+                // Fallback to original event data if API fails
+                const fallbackTickets = Array.isArray(event?.tickets) ? event.tickets : [];
+                setProcessedTickets(fallbackTickets);
+                setLoading(false);
+            }
+        };
+
+        if (userId && eventId && showtimeId) {
+            fetchTicketDetails();
+        } else {
+            // Fallback to original data structure
+            console.log("Missing navigation params, using fallback");
+            const fallbackTickets = Array.isArray(event?.tickets) ? event.tickets : [];
+            setProcessedTickets(fallbackTickets);
+            setLoading(false);
+        }
+    }, [userId, eventId, showtimeId]);
 
     const handleNavigation = () => {
         navigation.goBack();
@@ -231,8 +326,28 @@ const ListTicket = ({ navigation, route }) => {
         setCurrentIndex(0);
     }, []);
 
+    // Use processed tickets instead of original event tickets
+    const tickets = Array.isArray(processedTickets) ? processedTickets : [];
     const visibleTickets = tickets.slice(currentIndex, currentIndex + 3);
     const responsiveStyles = getResponsiveStyles();
+
+    // Debug logging
+    console.log("Debug ListTicket:");
+    console.log("- userId:", userId);
+    console.log("- eventId:", eventId); 
+    console.log("- showtimeId:", showtimeId);
+    console.log("- processedTickets:", processedTickets);
+    console.log("- tickets length:", tickets.length);
+    console.log("- loading:", loading);
+
+    if (loading) {
+        return (
+            <View style={[responsiveStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={appColors.primary} />
+                <Text style={{ marginTop: 10, fontSize: 16, color: '#666' }}>Đang tải thông tin vé...</Text>
+            </View>
+        );
+    }
 
     return (
         <ScrollView showsVerticalScrollIndicator={false} style={responsiveStyles.container}>
@@ -260,7 +375,7 @@ const ListTicket = ({ navigation, route }) => {
                         <SwipeTicketCard
                             key={`${ticket._id || ticket.ticketId}-${currentIndex}`}
                             ticket={ticket}
-                            event={event}
+                            event={processedEvent}
                             index={index}
                             onSwipe={onSwipe}
                             isTop={index === 0}
@@ -277,11 +392,23 @@ const ListTicket = ({ navigation, route }) => {
                 </View>
 
                 {/* Swipe Instructions */}
-                <View style={responsiveStyles.instructionsContainer}>
+                {/* <View style={responsiveStyles.instructionsContainer}>
                     <Text style={responsiveStyles.instructionsText}>
                         Vuốt trái/phải để xem vé tiếp theo
                     </Text>
-                </View>
+                </View> */}
+                
+                <View style={responsiveStyles.dotsContainer}>
+                {tickets.length > 1 && tickets.map((_, idx) => (
+                  <View
+                    key={`dot-${idx}`}
+                    style={[
+                      responsiveStyles.dot,
+                      idx === currentIndex ? responsiveStyles.dotActive : null
+                    ]}
+                  />
+                ))}
+              </View>
             </View>
         </ScrollView>
     );
@@ -296,6 +423,7 @@ const getResponsiveStyles = () => {
         container: {
             flex: 1,
             backgroundColor: '#f5f5f5',
+            
         },
         header: {
             backgroundColor: appColors.primary,
@@ -497,7 +625,7 @@ const getResponsiveStyles = () => {
         watermarkContent: {
             paddingVertical: isSmallDevice ? 12 : 18,
             paddingHorizontal: isSmallDevice ? 15 : 20,
-            borderWidth: isSmallDevice ? 12 : 18,
+            borderWidth: isSmallDevice ? 10 : 18,
             borderColor: 'rgba(255, 0, 0, 0.5)',
             borderRadius: 10,
             alignItems: 'center',
@@ -513,6 +641,26 @@ const getResponsiveStyles = () => {
             letterSpacing: 1,
             opacity: 0.7,
         },
+        dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        rowGap: 10,
+        marginHorizontal: 20,
+      },
+    dot: {
+      width:  8,
+      height:  8,
+      borderRadius:  4,
+      backgroundColor: '#CCC',
+      marginHorizontal: 4,
+    },
+    dotActive: {
+      backgroundColor: appColors.primary,
+      width: 10,
+      height: 10,
+    },
     });
 };
 

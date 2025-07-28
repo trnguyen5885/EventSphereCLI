@@ -12,7 +12,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import {CardComponent, RowComponent} from '../../components';
+import {RowComponent} from '../../components';
 import {appColors} from '../../constants/appColors';
 import {globalStyles} from '../../constants/globalStyles';
 import {AxiosInstance} from '../../services';
@@ -22,7 +22,6 @@ import LoadingModal from '../../modals/LoadingModal';
 import {UserModel} from '@/app/models/user/UserModel';
 import {EventModel} from '@/app/models';
 import {useSelector} from 'react-redux';
-import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const {ZaloPayModule} = NativeModules;
@@ -41,23 +40,23 @@ const TicketEventScreen = ({navigation, route}: any) => {
     fullName: '',
     phone: '',
     email: '',
-    tickets: {
-      normal: 0,
-      vip: 0,
-    },
+    // tickets: {
+    //   normal: 0,
+    //   vip: 0,
+    // },
     paymentMethod: '',
   });
 
-  const ticketTypes = {
-    normal: {
-      name: 'Vé Thường',
-      price: eventInfo ? eventInfo?.showtimes[0].ticketPrice : 0,
-    },
-    vip: {
-      name: 'Vé VIP',
-      price: eventInfo ? eventInfo?.showtimes[0].ticketPrice : 0,
-    },
-  };
+  // const ticketTypes = {
+  //   normal: {
+  //     name: 'Vé Thường',
+  //     price: eventInfo ? eventInfo?.showtimes[0].ticketPrice : 0,
+  //   },
+  //   vip: {
+  //     name: 'Vé VIP',
+  //     price: eventInfo ? eventInfo?.showtimes[0].ticketPrice : 0,
+  //   },
+  // };
 
   useEffect(() => {
     if (!userId || !id) return;
@@ -93,32 +92,32 @@ const TicketEventScreen = ({navigation, route}: any) => {
     return unsubscribe;
   }, [navigation]);
 
-  const updateTicketQuantity = (type: string, change: number) => {
-    const newQuantity = formData.tickets[type] + change;
-    if (newQuantity >= 0 && newQuantity <= 10) {
-      setFormData({
-        ...formData,
-        tickets: {
-          ...formData.tickets,
-          [type]: newQuantity,
-        },
-      });
-    }
-  };
+  // const updateTicketQuantity = (type: string, change: number) => {
+  //   const newQuantity = formData.tickets[type] + change;
+  //   if (newQuantity >= 0 && newQuantity <= 10) {
+  //     setFormData({
+  //       ...formData,
+  //       tickets: {
+  //         ...formData.tickets,
+  //         [type]: newQuantity,
+  //       },
+  //     });
+  //   }
+  // };
 
-  const calculateTotal = () => {
-    return (
-      formData.tickets.normal * ticketTypes.normal.price +
-      formData.tickets.vip * ticketTypes.vip.price
-    );
-  };
+  // const calculateTotal = () => {
+  //   return (
+  //     formData.tickets.normal * ticketTypes.normal.price +
+  //     formData.tickets.vip * ticketTypes.vip.price
+  //   );
+  // };
 
-  const isFormValid = () => {
-    return (
-      (formData.tickets.normal > 0 || formData.tickets.vip > 0) &&
-      formData.paymentMethod !== ''
-    );
-  };
+  // const isFormValid = () => {
+  //   return (
+  //     (formData.tickets.normal > 0 || formData.tickets.vip > 0) &&
+  //     formData.paymentMethod !== ''
+  //   );
+  // };
 
   const handleNavigation = () => {
     navigation.goBack();
@@ -129,9 +128,9 @@ const TicketEventScreen = ({navigation, route}: any) => {
 
     try {
       if (formData.paymentMethod === 'zalo') {
-        const totalAmount = calculateTotal();
+        // const totalAmount = calculateTotal();
         const bodyPayment = {
-          amount: typeBase === 'none' ? totalAmount : totalPrice,
+          amount: totalPrice,
           urlCalbackSuccess:
             'https://gamesphereapi.onrender.com/payments/callback',
           dataSave: 'save',
@@ -140,15 +139,15 @@ const TicketEventScreen = ({navigation, route}: any) => {
         };
         const response = await AxiosInstance().post('/payments', bodyPayment);
         console.log(bodyPayment);
-        ZaloPayModule.payOrder(response.data.zp_trans_token);
+        // ZaloPayModule.payOrder(response.data.zp_trans_token);
 
         const bodyOrder = {
           eventId: id,
           userId: userInfo?._id,
           bookingType: typeBase ?? 'none',
-          totalAmount: typeBase === 'none' ? formData.tickets.normal : quantity,
+          totalAmount: quantity,
           bookingIds: typeBase === 'none' ? [] : bookingIds,
-          totalPrice: typeBase === 'none' ? calculateTotal() : totalPrice,
+          totalPrice: totalPrice,
           showtimeId: showtimeId,
         };
 
@@ -193,16 +192,16 @@ const TicketEventScreen = ({navigation, route}: any) => {
 
       if (formData.paymentMethod === 'banking') {
         console.log('PayOS Showtime', showtimeId);
-        const totalAmount = calculateTotal();
+        // const totalAmount = calculateTotal();
         setIsLoading(false);
         navigation.navigate('PayOSQRScreen', {
           eventName: eventInfo?.name || 'Thanh toán vé',
           eventId: id,
           userId: userInfo?._id,
-          amount: typeBase === 'none' ? formData.tickets.normal : quantity,
+          amount: quantity,
           bookingType: typeBase,
           bookingIds: typeBase === 'none' ? [] : bookingIds,
-          totalPrice: typeBase === 'none' ? calculateTotal() : totalPrice,
+          totalPrice: totalPrice,
           showtimeId: showtimeId,
         });
       }
@@ -262,49 +261,6 @@ const TicketEventScreen = ({navigation, route}: any) => {
         </View>
 
         {/* Ticket Selection */}
-        {typeBase === 'none' && (
-          <View
-            style={{
-              marginHorizontal: 16,
-              marginTop: 16,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              padding: 20,
-              elevation: 3,
-              borderColor: '#E2E8F0',
-              borderWidth: 1,
-            }}>
-            <Text style={styles.sectionTitle}>Chọn số lượng vé</Text>
-
-            {/* Vé Phổ thông */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 12,
-              }}>
-              <Text style={{fontSize: 16, color: '#2D3748'}}>
-                {ticketTypes.normal.name}
-              </Text>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <TouchableOpacity
-                  onPress={() => updateTicketQuantity('normal', -1)}
-                  style={styles.quantityButton}>
-                  <Text style={styles.quantityButtonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={{marginHorizontal: 12, fontSize: 16}}>
-                  {formData.tickets.normal}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => updateTicketQuantity('normal', 1)}
-                  style={styles.quantityButton}>
-                  <Text style={styles.quantityButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Payment Methods */}
         <View style={styles.paymentMethodsContainer}>
@@ -362,9 +318,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Tổng tiền</Text>
           <Text style={styles.totalAmount}>
-            {typeBase === undefined || typeBase === null || typeBase === 'none'
-              ? calculateTotal().toLocaleString('vi-VN')
-              : totalPrice.toLocaleString('vi-VN')}{' '}
+            {totalPrice.toLocaleString('vi-VN')}
             VND
           </Text>
         </View>
@@ -414,7 +368,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
