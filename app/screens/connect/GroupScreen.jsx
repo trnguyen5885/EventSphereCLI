@@ -467,7 +467,7 @@ const handleDeleteGroup = async () => {
                   <View style={[styles.inviteButton, {backgroundColor: '#ddd'}]}>
                     <Text style={[styles.inviteButtonText, {color: '#666'}]}>Đã là thành viên nhóm</Text>
                   </View>
-                ) : searchResult.email !== userEmail ? (
+                ) : searchResult.email !== null ? (
                   <TouchableOpacity 
                     style={[styles.inviteButton, {backgroundColor: appColors.primary}]} 
                     onPress={handleInvite}

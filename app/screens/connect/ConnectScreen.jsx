@@ -67,9 +67,6 @@ const ConnectScreen = ({ navigation }) => {
             },
             error => {
               console.log('Lỗi khi lấy vị trí:', error);
-              if (error.code === 3) {
-                alert('Không lấy được vị trí. Thử lại ở nơi thoáng GPS hoặc chờ vài giây.');
-              }
             },
             {
               enableHighAccuracy: true,

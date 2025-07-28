@@ -4,30 +4,42 @@ import { useState } from 'react'
 import { useEffect, useRef } from 'react';
 import { AxiosInstance } from '../../services';
 import { InputComponent, TextComponent } from '../../components';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { appColors } from '../../constants/appColors';
 
 // Skeleton Placeholder Component
 const SkeletonPlaceholder = ({ width, height, borderRadius = 8, style, showIcon = false }) => {
     const animatedValue = useRef(new Animated.Value(0)).current;
+    const animationRef = useRef(null);
 
     useEffect(() => {
         const animate = () => {
-            Animated.sequence([
-                Animated.timing(animatedValue, {
-                    toValue: 1,
-                    duration: 1000,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(animatedValue, {
-                    toValue: 0,
-                    duration: 1000,
-                    useNativeDriver: false,
-                }),
-            ]).start(() => animate());
+            animationRef.current = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(animatedValue, {
+                        toValue: 1,
+                        duration: 800, // Giảm từ 1000ms xuống 800ms
+                        useNativeDriver: false,
+                    }),
+                    Animated.timing(animatedValue, {
+                        toValue: 0,
+                        duration: 800, // Giảm từ 1000ms xuống 800ms
+                        useNativeDriver: false,
+                    }),
+                ])
+            );
+            animationRef.current.start();
         };
         animate();
+
+        // Cleanup animation khi component unmount
+        return () => {
+            if (animationRef.current) {
+                animationRef.current.stop();
+            }
+        };
     }, []);
 
     const backgroundColor = animatedValue.interpolate({
@@ -104,8 +116,40 @@ const UserTicketsScreen = ({ navigation, route }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const userId = useSelector(state => state.auth.userId);
-    const [statusTab, setStatusTab] = useState('all');
+    const [statusTab, setStatusTab] = useState('upcoming');
     const [searchText, setSearchText] = useState('');
+    const [expandedOrders, setExpandedOrders] = useState({});
+
+    const toggleOrderInfo = (eventId) => {
+        setExpandedOrders(prev => ({
+            ...prev,
+            [eventId]: !prev[eventId]
+        }));
+    };
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getOrderStatusText = (status) => {
+        switch (status) {
+            case 'paid':
+                return { text: 'Đã thanh toán', color: '#4CAF50', backgroundColor: '#E8F5E8' };
+            case 'pending':
+                return { text: 'Chờ thanh toán', color: '#FFA500', backgroundColor: '#FFF3E0' };
+            case 'cancelled':
+                return { text: 'Đã hủy', color: '#F44336', backgroundColor: '#FFEBEE' };
+            default:
+                return { text: 'Không xác định', color: '#9E9E9E', backgroundColor: '#F5F5F5' };
+        }
+    };
 
     const fetchTickets = async (isRefresh = false) => {
         if (isRefresh) {
@@ -115,33 +159,51 @@ const UserTicketsScreen = ({ navigation, route }) => {
         }
 
         try {
-            const tickets = await AxiosInstance().get(`/tickets/getTicket/${userId}`);
-            setUserData(tickets.data.user);
-            const eventsData = tickets.data.events;
-            console.log("Tickets data:", tickets.data);
+            const response = await AxiosInstance().get(`/tickets/grouped/${userId}`);
+            
+            // Check if response.data is an array directly or wrapped in status/data
+            let dataArray = [];
+            
+            if (Array.isArray(response.data)) {
+                // API returns array directly
+                dataArray = response.data;
+            } else if (response.data.status && response.data.data && Array.isArray(response.data.data)) {
+                // API returns wrapped in status/data object
+                dataArray = response.data.data;
+            } else {
+                dataArray = [];
+            }
+            
+            if (dataArray.length > 0) {
+                // Process the grouped tickets data
+                const groupedEvents = dataArray.map(item => ({
+                    _id: item.eventId,
+                    name: item.eventName,
+                    avatar: item.eventAvatar,
+                    location: item.eventLocation,
+                    showtime: item.showtime,
+                    order: item.order,
+                    tickets: item.tickets,
+                    // For backward compatibility
+                    timeStart: item.showtime?.startTime,
+                    timeEnd: item.showtime?.endTime
+                }));
 
+                setEvents(groupedEvents);
+            } else {
+                setEvents([]);
+            }
 
-            const eventsWithDetails = await Promise.all(
-                eventsData.map(async (event) => {
-                    try {
-                        const eventDetail = await AxiosInstance().get(`/events/detail/${event._id}`);
-                        return {
-                            ...event,
-                            timeStart: eventDetail.data.timeStart,
-                            timeEnd: eventDetail.data.timeEnd,
-                            showtimes: eventDetail.data.showtimes || []
-                        };
-                    } catch (error) {
-                        console.log(`Lỗi khi lấy chi tiết sự kiện ${event._id}:`, error);
-                        return event;
-                    }
-                })
-            );
-
-            setEvents(eventsWithDetails);
+            // Set loading state after updating data
+            if (isRefresh) {
+                setRefreshing(false);
+            } else {
+                setLoading(false);
+            }
         } catch (e) {
             console.log("Lấy vé thất bại: ", e);
-        } finally {
+            setEvents([]);
+            // Set loading state when error occurs
             if (isRefresh) {
                 setRefreshing(false);
             } else {
@@ -158,11 +220,71 @@ const UserTicketsScreen = ({ navigation, route }) => {
         fetchTickets(true);
     };
 
-    const now = Date.now();
-    const filteredEvents = events.filter(event =>
-        (event.name || '').toLowerCase().includes((searchText || '').toLowerCase())
-    );
+    const getEventStatus = (event) => {
+        const now = Date.now();
 
+        // Only use showtime data for status determination
+        if (event.showtime && event.showtime.startTime && event.showtime.endTime) {
+            const startTime = typeof event.showtime.startTime === 'number' ? 
+                event.showtime.startTime : new Date(event.showtime.startTime).getTime();
+            const endTime = typeof event.showtime.endTime === 'number' ? 
+                event.showtime.endTime : new Date(event.showtime.endTime).getTime();
+
+            // Event hasn't started yet
+            if (now < startTime) {
+                return 'upcoming';
+            }
+            // Event is currently happening
+            else if (now >= startTime && now < endTime) {
+                return 'ongoing';
+            }
+            // Event has ended
+            else if (now >= endTime) {
+                return 'ended';
+            }
+        }
+
+        // If showtime data is incomplete or missing, return unknown
+        return 'unknown';
+    };
+
+    const getStatusBadge = (event) => {
+        const status = getEventStatus(event);
+        switch (status) {
+            case 'upcoming':
+                return { text: 'Sắp diễn ra', color: '#FFA500', backgroundColor: '#FFF3E0' };
+            case 'ongoing':
+                return { text: 'Đang diễn ra', color: '#4CAF50', backgroundColor: '#E8F5E8' };
+            case 'ended':
+                return { text: 'Đã kết thúc', color: '#9E9E9E', backgroundColor: '#F5F5F5' };
+            case 'unknown':
+            default:
+                return { text: 'Không xác định', color: '#FF6B6B', backgroundColor: '#FFEBEE' };
+        }
+    };
+
+    const filteredEvents = events.filter(event => {
+        // Filter by search text first
+        const matchesSearch = (event.name || '').toLowerCase().includes((searchText || '').toLowerCase());
+        
+        // Filter by status tab
+        const status = getEventStatus(event);
+        
+        let matchesStatus = false;
+        
+        if (statusTab === 'upcoming') {
+            matchesStatus = status === 'upcoming' || status === 'ongoing';
+        } else if (statusTab === 'ended') {
+            matchesStatus = status === 'ended';
+        }
+        
+        // If status is 'unknown', show it in 'upcoming' tab by default
+        if (status === 'unknown' && statusTab === 'upcoming') {
+            matchesStatus = true;
+        }
+        
+        return matchesSearch && matchesStatus;
+    });
 
 
     const EmptyState = () => (
@@ -183,55 +305,33 @@ const UserTicketsScreen = ({ navigation, route }) => {
         </View>
     );
 
-    const getEventStatus = (event) => {
-        const now = Date.now();
-
-        if (event.timeStart && event.timeEnd) {
-            const startTime = typeof event.timeStart === 'number' ? event.timeStart : new Date(event.timeStart).getTime();
-            const endTime = typeof event.timeEnd === 'number' ? event.timeEnd : new Date(event.timeEnd).getTime();
-
-            if (startTime > now) return 'upcoming';
-            if (startTime <= now && endTime > now) return 'ongoing';
-            if (endTime <= now) return 'ended';
-        } else if (event.showtimes && event.showtimes.length > 0) {
-            const hasUpcoming = event.showtimes.some(showtime => {
-                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
-                return startTime > now;
-            });
-
-            const hasOngoing = event.showtimes.some(showtime => {
-                const startTime = typeof showtime.startTime === 'number' ? showtime.startTime : new Date(showtime.startTime).getTime();
-                const endTime = typeof showtime.endTime === 'number' ? showtime.endTime : new Date(showtime.endTime).getTime();
-                return startTime <= now && endTime > now;
-            });
-
-            if (hasOngoing) return 'ongoing';
-            if (hasUpcoming) return 'upcoming';
-            return 'ended';
-        }
-
-        return 'unknown';
-    };
-
-    const getStatusBadge = (event) => {
-        const status = getEventStatus(event);
-        switch (status) {
-            case 'upcoming':
-                return { text: 'Sắp diễn ra', color: '#FFA500', backgroundColor: '#FFF3E0' };
-            case 'ongoing':
-                return { text: 'Đang diễn ra', color: '#4CAF50', backgroundColor: '#E8F5E8' };
-            case 'ended':
-                return { text: 'Đã kết thúc', color: '#9E9E9E', backgroundColor: '#F5F5F5' };
-            default:
-                return { text: 'Chưa xác định', color: '#757575', backgroundColor: '#EEEEEE' };
-        }
-    };
-
     return (
         <View style={{ flex: 1, padding: 0, backgroundColor: "#f5f5f5" }}>
             {/* Header */}
             <View style={{ backgroundColor: '#5669FF', paddingTop: 20, paddingBottom: 16, alignItems: 'center' }}>
                 <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>Vé của tôi</Text>
+            </View>
+
+            {/* Tab Selector - Right under header */}
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tabButton, statusTab === 'upcoming' && styles.activeTab]}
+                    onPress={() => setStatusTab('upcoming')}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.tabText, statusTab === 'upcoming' && styles.activeTabText]}>
+                        Sắp diễn ra
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tabButton, statusTab === 'ended' && styles.activeTab]}
+                    onPress={() => setStatusTab('ended')}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.tabText, statusTab === 'ended' && styles.activeTabText]}>
+                        Kết thúc
+                    </Text>
+                </TouchableOpacity>
             </View>
 
             <View style={{ paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#fff' }}>
@@ -267,25 +367,73 @@ const UserTicketsScreen = ({ navigation, route }) => {
                     }
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
-                        let eventDate = item.eventDate;
+                        let eventDate = '';
 
-                        if (!eventDate && item.timeStart) {
-                            const startTime = typeof item.timeStart === 'number' ? item.timeStart : new Date(item.timeStart).getTime();
+                        // Calculate event date from showtime
+                        if (item.showtime && item.showtime.startTime) {
+                            const startTime = typeof item.showtime.startTime === 'number' ? 
+                                item.showtime.startTime : new Date(item.showtime.startTime).getTime();
                             const date = new Date(startTime);
-                            eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                        }
-
-                        if (!eventDate && item.showtimes && item.showtimes.length > 0) {
-                            const firstShowtime = item.showtimes[0];
-                            const startTime = typeof firstShowtime.startTime === 'number' ? firstShowtime.startTime : new Date(firstShowtime.startTime).getTime();
-                            const date = new Date(startTime);
-                            eventDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                            eventDate = date.toLocaleDateString('vi-VN', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                year: 'numeric' 
+                            });
                         }
 
                         const statusBadge = getStatusBadge(item);
 
                         return (
                             <View style={styles.card}>
+                                {/* Order Information Section - At top */}
+                                {item.order && (
+                                    <View style={styles.orderInfoContainer}>
+                                        <TouchableOpacity
+                                            style={styles.orderInfoHeader}
+                                            onPress={() => toggleOrderInfo(item._id)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <View style={styles.orderInfoHeaderLeft}>
+                                                <Text style={styles.orderInfoTitle}>
+                                                    Thông tin đơn hàng
+                                                </Text>
+                                            </View>
+                                            <MaterialIcons
+                                                name={expandedOrders[item._id] ? "expand_less" : "expand_more"}
+                                                size={24}
+                                                color="#5669FF"
+                                            />
+                                        </TouchableOpacity>
+                                        {expandedOrders[item._id] && (
+                                            <View style={styles.orderInfoContent}>
+                                                <View style={styles.orderInfoRow}>
+                                                    <Text style={styles.orderInfoLabel}>Tổng tiền:</Text>
+                                                    <Text style={[styles.orderInfoValue, styles.priceText]}>
+                                                        {item.order.totalPrice.toLocaleString('vi-VN')} VNĐ
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.orderInfoRow}>
+                                                    <Text style={styles.orderInfoLabel}>Trạng thái:</Text>
+                                                    <View style={[styles.statusBadge, { 
+                                                        backgroundColor: getOrderStatusText(item.order.status).backgroundColor 
+                                                    }]}>
+                                                        <Text style={[styles.statusText, { 
+                                                            color: getOrderStatusText(item.order.status).color 
+                                                        }]}>
+                                                            {getOrderStatusText(item.order.status).text}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                                <View style={styles.orderInfoRow}>
+                                                    <Text style={styles.orderInfoLabel}>Ngày tạo:</Text>
+                                                    <Text style={styles.orderInfoValue}>{formatDate(item.order.createdAt)}</Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+
+                                {/* Event Information Section */}
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     {item.avatar && (
                                         <Image
@@ -303,21 +451,32 @@ const UserTicketsScreen = ({ navigation, route }) => {
                                                 {statusBadge.text}
                                             </Text>
                                         </View>
-                                        <Text style={styles.ticketCount}>🎟 Số vé: {item.tickets ? item.tickets.length : 0}</Text>
+                                        <Text style={styles.ticketCount}>
+                                            🎟 Số vé: {item.tickets ? item.tickets.quantity : 0}
+                                        </Text>
                                         {eventDate && (
                                             <Text style={styles.eventDate}>📅 {eventDate}</Text>
                                         )}
-                                        {item.showtimes && item.showtimes.length > 0 && (
-                                            <Text style={styles.showtimeCount}>⏰ Có {item.showtimes.length} suất chiếu</Text>
+                                        {item.location && (
+                                            <Text style={styles.eventLocation} numberOfLines={1}>
+                                                📍 {item.location}
+                                            </Text>
                                         )}
                                     </View>
                                 </View>
                                 <TouchableOpacity
                                     style={styles.detailButton}
                                     activeOpacity={0.8}
-                                    onPress={() => navigation.navigate("ListTicket", { event: item, user: userData })}
+                                    onPress={() => navigation.navigate("ListTicket", { 
+                                        event: item, 
+                                        user: userData,
+                                        groupedTicket: true,
+                                        userId: userId,
+                                        eventId: item._id,
+                                        showtimeId: item.showtime?.id,
+                                    })}
                                 >
-                                    <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                                    <Text style={styles.detailButtonText}>Xem thông tin vé</Text>
                                 </TouchableOpacity>
                             </View>
                         );
@@ -360,6 +519,17 @@ const styles = StyleSheet.create({
         color: '#666',
         marginBottom: 2,
     },
+    eventLocation: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 2,
+    },
+    orderInfo: {
+        fontSize: 14,
+        color: '#4CAF50',
+        fontWeight: '600',
+        marginBottom: 2,
+    },
     ticketCount: {
         fontSize: 14,
         color: '#888',
@@ -384,7 +554,7 @@ const styles = StyleSheet.create({
     detailButton: {
         marginTop: 14,
         paddingVertical: 10,
-        backgroundColor: '#007BFF',
+        backgroundColor: appColors.primary,
         borderRadius: 6,
         alignItems: 'center',
         shadowColor: '#007BFF',
@@ -435,5 +605,82 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'center',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        backgroundColor: '#5669FF',
+        paddingVertical: 12,
+        paddingHorizontal: 10,
+    },
+    tabButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
+        alignItems: 'center',
+    },
+    activeTab: {
+        borderBottomColor: '#fff',
+    },
+    tabText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.7)',
+    },
+    activeTabText: {
+        color: '#fff',
+    },
+    orderInfoContainer: {
+        marginBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        paddingBottom: 12,
+    },
+    orderInfoHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+    },
+    orderInfoHeaderLeft: {
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+    },
+    orderInfoTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 2,
+    },
+    orderPrice: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#5669FF',
+    },
+    orderInfoContent: {
+        paddingHorizontal: 4,
+        paddingBottom: 10,
+    },
+    orderInfoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    orderInfoLabel: {
+        fontSize: 13,
+        color: '#555',
+        fontWeight: '500',
+    },
+    orderInfoValue: {
+        fontSize: 13,
+        color: '#333',
+        fontWeight: '600',
+    },
+    priceText: {
+        color: '#5669FF',
     },
 })

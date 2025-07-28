@@ -188,9 +188,7 @@ const ZonesScreen = ({navigation, route}: any) => {
           <Text style={styles.headerTitle}>Khu vực vé</Text>
         </RowComponent>
 
-        <TouchableOpacity>
-          <Ionicons name="map-outline" size={24} color="white" />
-        </TouchableOpacity>
+        
       </View>
 
       <ScrollView style={{flex: 1}}>
@@ -288,7 +286,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
