@@ -24,7 +24,8 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="true"
-      android:supportsRtl="true">
+      android:supportsRtl="true"
+      android:networkSecurityConfig="@xml/network_security_config">
           <meta-data
         android:name="com.google.android.geo.API_KEY"
         android:value="AIzaSyAsytt_ZEzvtHTPgmhvcHdhnuhI2s8t_no"/>
