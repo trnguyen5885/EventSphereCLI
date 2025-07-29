@@ -140,16 +140,16 @@ const GroupScreen: React.FC<GroupScreenProps> = ({ route, navigation }) => {
       const newSharingState = !isSharing;
       setIsSharing(newSharingState);
       
-      // Delay để cho GPS time để initialize và fetch data
+      // Gọi fetchAllData ngay lập tức khi bật sharing
       if (newSharingState) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        refetch();
       }
     } catch (err) {
       handleError(err, 'toggle location sharing');
     } finally {
       setSharingLoading(false);
     }
-  }, [handleError, isSharing]);
+  }, [handleError, isSharing, refetch]);
 
   const handleTargetMember = useCallback((member: MemberWithLocation) => {
     const id = member._id || member.id;

@@ -147,7 +147,7 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation }:
   // Tải ban đầu + định kỳ mỗi 30s
   useEffect(() => {
     fetchAllData();
-    const interval = setInterval(fetchAllData, 5000);
+    const interval = setInterval(fetchAllData, 30000);
     return () => clearInterval(interval);
   }, [fetchAllData]);
 
