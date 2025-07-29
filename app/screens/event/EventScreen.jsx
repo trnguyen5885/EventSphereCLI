@@ -308,7 +308,7 @@ const UserTicketsScreen = ({ navigation, route }) => {
     return (
         <View style={{ flex: 1, padding: 0, backgroundColor: "#f5f5f5" }}>
             {/* Header */}
-            <View style={{ backgroundColor: '#5669FF', paddingTop: 20, paddingBottom: 16, alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#5669FF', paddingTop: 20, alignItems: 'center' }}>
                 <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>Vé của tôi</Text>
             </View>
 
@@ -399,7 +399,7 @@ const UserTicketsScreen = ({ navigation, route }) => {
                                                 </Text>
                                             </View>
                                             <MaterialIcons
-                                                name={expandedOrders[item._id] ? "expand_less" : "expand_more"}
+                                                name={expandedOrders[item._id] ? "expand-less" : "expand-more"}
                                                 size={24}
                                                 color="#5669FF"
                                             />
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 8,
+
         paddingHorizontal: 4,
     },
     orderInfoHeaderLeft: {

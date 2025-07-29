@@ -199,6 +199,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
           eventId: id,
           userId: userInfo?._id,
           amount: quantity,
+          typeBase: typeBase,
           bookingType: typeBase,
           bookingIds: typeBase === 'none' ? [] : bookingIds,
           totalPrice: totalPrice,
