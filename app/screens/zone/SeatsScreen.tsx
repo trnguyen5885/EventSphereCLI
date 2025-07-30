@@ -415,7 +415,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
         <RowComponent onPress={handleGoback} styles={{columnGap: 25}}>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity onPress={handleGoback} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chọn khu vực ghế</Text>
