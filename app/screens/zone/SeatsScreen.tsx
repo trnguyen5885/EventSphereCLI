@@ -54,6 +54,7 @@ const SeatsScreen = ({navigation, route}: any) => {
   const [colorNomal, setColorNormal] = useState([]);
 
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
+  const [pendingSeats, setPendingSeats] = useState<string[]>([]);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const offsetX = useSharedValue(0);
@@ -211,54 +212,45 @@ const SeatsScreen = ({navigation, route}: any) => {
     if (isLoading) return;
     const seat = seats[rowIndex][colIndex];
 
-    const existingIndex = selectedSeats.findIndex(s => {
-      console.log(
-        'So sánh s.id:',
-        s.id,
-        'với seat.id:',
-        seat.id,
-        '==',
-        s.id === seat.id,
-      );
-      return String(s.id) === String(seat.id);
-    });
-    console.log('existingIndex', existingIndex);
+    // Nếu ghế đang xử lý hoặc đã chọn => chặn spam
+    if (pendingSeats.includes(seat.id)) {
+      console.log('Ghế đang được xử lý, vui lòng đợi...');
+      return;
+    }
+
+    const existingIndex = selectedSeats.findIndex(
+      s => String(s.id) === String(seat.id),
+    );
+
     if (existingIndex !== -1) {
+      // Huỷ ghế đã chọn
       Alert.alert(
         'Xác nhận',
         `Bạn có chắc muốn huỷ vé ${seat.label}?`,
         [
-          {
-            text: 'Không',
-            style: 'cancel',
-            // không làm gì, chỉ đóng alert
-          },
+          {text: 'Không', style: 'cancel'},
           {
             text: 'Huỷ',
             onPress: async () => {
               try {
-                // setIsLoading(true);
-                // Gọi API huỷ vé
+                setPendingSeats(prev => [...prev, seat.id]);
                 await AxiosInstance().post('/zones/reserveSeats', {
                   eventId: id,
                   showtimeId: showtimeId,
-                  seat: {
-                    seatId: seat.id,
-                    zoneId: zoneId,
-                  },
+                  seat: {seatId: seat.id, zoneId: zoneId},
                   action: 'deselect',
                 });
-                // Cập nhật lại danh sách đã chọn
-                const newSelected = [...selectedSeats];
-                newSelected.splice(existingIndex, 1);
-                setSelectedSeats(newSelected);
+
+                setSelectedSeats(prev =>
+                  prev.filter((_, idx) => idx !== existingIndex),
+                );
               } catch (error) {
                 Alert.alert(
                   'Lỗi',
                   'Có lỗi xảy ra khi huỷ vé. Vui lòng thử lại.',
                 );
               } finally {
-                // setIsLoading(false);
+                setPendingSeats(prev => prev.filter(id => id !== seat.id));
               }
             },
           },
@@ -269,63 +261,37 @@ const SeatsScreen = ({navigation, route}: any) => {
       return;
     } else if (seat.status === SeatStatus.RESERVED) {
       Alert.alert('Thông báo', 'Ghế đang được giữ bởi người khác.');
-
       return;
     } else {
       try {
-        // setIsLoading(true);
-        // Thêm vào danh sách chọn
+        setPendingSeats(prev => [...prev, seat.id]);
+
         const response = await AxiosInstance().post('/zones/reserveSeats', {
           eventId: id,
           showtimeId: showtimeId,
-          seat: {
-            seatId: seat.id,
-            zoneId: zoneId,
-          },
+          seat: {seatId: seat.id, zoneId: zoneId},
           action: 'select',
         });
-        console.log({
-          eventId: id,
-          showtimeId: showtimeId,
-          seat: {
-            seatId: seat.id,
-            zoneId: zoneId,
-          },
-          action: 'select',
-        });
-        if (bookingId.length <= 0) {
-          bookingId.push(response.bookingId);
-        }
+
+        if (bookingId.length <= 0) bookingId.push(response.bookingId);
 
         if (response.message === 'Ghế đã được chọn trước đó.') {
           Alert.alert(
             'Lỗi',
-            'Bạn đang chọn ghế này trước đó vui lòng thử lại sau 1 phút',
+            'Bạn đã chọn ghế này trước đó, vui lòng thử lại sau 1 phút.',
           );
         } else {
-          setSelectedSeats([...selectedSeats, seat]);
+          setSelectedSeats(prev => [...prev, seat]);
         }
-        // setIsLoading(false);
-      } catch (error) {
-        console.log(error);
+      } catch (error: any) {
         if (error.response?.status === 409) {
-          Alert.alert(
-            'Ghế đã được đặt',
-            'Một số ghế bạn chọn đã được người khác đặt. Vui lòng chọn ghế khác.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  setSelectedSeats([]);
-                  fetchSeatsFromApi();
-                  console.log(seat.status);
-                },
-              },
-            ],
-          );
+          Alert.alert('Ghế đã được đặt', 'Ghế bạn chọn đã có người khác đặt.');
+          fetchSeatsFromApi();
         } else {
           Alert.alert('Lỗi', 'Có lỗi xảy ra khi đặt vé. Vui lòng thử lại.');
         }
+      } finally {
+        setPendingSeats(prev => prev.filter(id => id !== seat.id));
       }
     }
   };
@@ -415,7 +381,7 @@ const SeatsScreen = ({navigation, route}: any) => {
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
         <RowComponent onPress={handleGoback} styles={{columnGap: 25}}>
-          <TouchableOpacity onPress={handleGoback} style={styles.backButton}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoback}>
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chọn khu vực ghế</Text>
