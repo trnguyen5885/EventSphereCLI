@@ -8,7 +8,7 @@ export default function useDeepLinking(navigationRef) {
       console.log('Deep link received:', url);
       
       // Handle eventsphere.io.vn links
-      const eventMatch = url.match(/\/event\/(\d+)/);
+      const eventMatch = url.match(/\/event\/([a-fA-F0-9]{24}|\d+)/);
       if (eventMatch && navigationRef?.isReady()) {
         const eventId = eventMatch[1];
         console.log('Navigating to event detail with ID:', eventId);

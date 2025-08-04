@@ -13,7 +13,9 @@ import {
   Platform,
   useWindowDimensions,
   Animated,
+  Alert,
 } from 'react-native';
+import Share from 'react-native-share';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AxiosInstance } from '../../services';
 import { globalStyles } from '../../constants/globalStyles';
@@ -79,7 +81,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   const { id } = route.params;
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [userTicket, setUserTicket] = useState<Array<any>>([]);
-  const userId = useSelector(state => state.auth.userId);
+  const userId = useSelector((state: any) => state.auth.userId);
   console.log(detailEvent);
 
   const [organizer, setOrganizer] = useState<any>(null);
@@ -103,7 +105,75 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   console.log('Id Event: ', detailEvent?._id);
   console.log('Detail Event', detailEvent);
 
-  const formatTime = timestamp => {
+  // Hàm share sự kiện với dialog tùy chỉnh
+  const handleShareEvent = async () => {
+    if (!detailEvent) {
+      Alert.alert('Lỗi', 'Không thể chia sẻ sự kiện này');
+      return;
+    }
+
+    try {
+      const eventUrl = `https://eventsphere.io.vn/event/${detailEvent._id}`;
+      const eventDate = formatDate(validShowtime?.startTime || detailEvent.timeStart);
+      const eventLocation = detailEvent.location || 'Địa điểm sẽ được cập nhật';
+
+      // Nội dung mặc định
+      const defaultMessage = `🎉 ${detailEvent.name}
+
+📅 ${eventDate}
+📍 ${eventLocation}
+
+Tham gia cùng tôi tại EventSphere!
+${eventUrl}
+
+#EventSphere`;
+
+      // Nội dung cho Facebook
+      const facebookMessage = `🎉 Sự kiện không thể bỏ lỡ: ${detailEvent.name}
+
+📅 Thời gian: ${eventDate}
+📍 Địa điểm: ${eventLocation}
+
+🎫 Đặt vé ngay tại EventSphere!
+${eventUrl}
+
+#EventSphere #SuKien #${detailEvent.categories || 'Event'}`;
+
+      // Nội dung cho WhatsApp/Zalo (ngắn gọn)
+      const whatsappMessage = `🎉 ${detailEvent.name}
+📅 ${eventDate}
+📍 ${eventLocation}
+
+Tham gia ngay: ${eventUrl}`;
+
+      const shareOptions = {
+        title: detailEvent.name,
+        message: defaultMessage,
+        url: eventUrl,
+        subject: `Mời bạn tham gia sự kiện: ${detailEvent.name}`,
+        email: `${defaultMessage}
+
+---
+Gửi từ EventSphere App`,
+        filename: 'EventSphere',
+        excludedActivityTypes: [
+          // Có thể exclude một số activities không cần thiết
+        ],
+        failOnCancel: false,
+        showAppsToView: true,
+      };
+
+      const result = await Share.open(shareOptions);
+      console.log('Share result:', result);
+    } catch (error: any) {
+      if (error?.message !== 'User did not share') {
+        console.log('Error sharing event:', error);
+        Alert.alert('Lỗi', 'Không thể chia sẻ sự kiện này');
+      }
+    }
+  };
+
+  const formatTime = (timestamp: any) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('vi-VN', {
       hour: '2-digit',
@@ -281,7 +351,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
         </RowComponent>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleShareEvent}>
           <Ionicons name="share-social-outline" size={24} color="white" />
         </TouchableOpacity>
       </View>
