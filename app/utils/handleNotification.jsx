@@ -2,7 +2,6 @@ import { getMessaging, getToken, requestPermission } from '@react-native-firebas
 import { getApp } from '@react-native-firebase/app';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AxiosInstance } from '../services';
-import { appInfo } from '../constants/appInfos';
 import { getTokens } from '../token/authTokens';
 import { jwtDecode } from 'jwt-decode';
 
@@ -31,7 +30,36 @@ export class HandleNotification {
         console.log("Chưa đăng nhập - Không gửi FCM token");
         return;
       }
-      const userData = jwtDecode(tokenData.accessToken || tokenData); 
+      
+      // Debug: Log the actual token data structure (commented out)
+      // console.log('[DEBUG] tokenData type:', typeof tokenData);
+      // console.log('[DEBUG] tokenData keys:', Object.keys(tokenData));
+      // console.log('[DEBUG] tokenData:', JSON.stringify(tokenData, null, 2));
+      
+      // Validate and extract the token string
+      let tokenString = null;
+      if (typeof tokenData === 'string') {
+        tokenString = tokenData;
+      } else if (tokenData && typeof tokenData === 'object') {
+        // Try different property names that might contain the JWT
+        if (tokenData.accessToken && typeof tokenData.accessToken === 'string') {
+          tokenString = tokenData.accessToken;
+        } else if (tokenData.token && typeof tokenData.token === 'string') {
+          tokenString = tokenData.token;  
+        } else if (tokenData.authToken && typeof tokenData.authToken === 'string') {
+          tokenString = tokenData.authToken;
+        } else if (tokenData.jwt && typeof tokenData.jwt === 'string') {
+          tokenString = tokenData.jwt;
+        }
+      }
+      
+      if (!tokenString) {
+        console.error('[ERROR] getFcmToken: Invalid token format - must be a string');
+        console.error('[ERROR] Expected string or object with accessToken/token property');
+        return;
+      }
+      
+      const userData = jwtDecode(tokenString); 
       let currentToken = await AsyncStorage.getItem('fcmtoken');
 
       if (!currentToken) {
@@ -78,10 +106,18 @@ export class HandleNotification {
         if (!persistData) return;
 
         const parsedPersist = JSON.parse(persistData);
-        const userData = JSON.parse(parsedPersist.user);
-        const tokenData = JSON.parse(parsedPersist.token || 'null');
+        if (!parsedPersist.user) {
+          console.error('[ERROR] onTokenRefresh: No user data found');
+          return;
+        }
 
-        await this.updateTokenForUser(refreshedToken, userData.id, tokenData);
+        const userData = JSON.parse(parsedPersist.user);
+        if (!userData || !userData.id) {
+          console.error('[ERROR] onTokenRefresh: Invalid user data');
+          return;
+        }
+
+        await this.updateTokenForUser(refreshedToken, userData.id.toString());
         await AsyncStorage.setItem('fcmtoken', refreshedToken);
       } catch (error) {
         console.error('[ERROR] onTokenRefresh:', error);
