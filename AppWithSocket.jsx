@@ -74,6 +74,7 @@ import FavoriteTag from './app/screens/FavoriteTag';
 import ListByTag from './app/screens/explore/ListByTag';
 import PaymentSuccessScreen from './app/screens/payment/PaymentSuccessScreen';
 import NonesScreen from './app/screens/zone/NonesScreen';
+import useDeepLinking from './app/hooks/useDeepLinking';
 
 
 const Stack = createNativeStackNavigator();
@@ -83,6 +84,9 @@ const AppWithSocket = () => {
   const navigationRef = useNavigationContainerRef();
   const [token, setToken] = useState(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+
+  // Deep linking handler
+  useDeepLinking(navigationRef);
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -158,11 +162,19 @@ const AppWithSocket = () => {
   }, [token]);
 
   const linking = {
-    prefixes: ['demozpdk://'],
+    prefixes: [
+      'demozpdk://',
+      'https://eventsphere.io.vn'
+    ],
     config: {
       screens: {
         Home: '../screens/explore/ExploreScreen',
-        Detail: '../screens/explore/EventDetailScreen/:id',
+        Detail: {
+          path: '/event/:id',
+          parse: {
+            id: (id) => `${id}`,
+          },
+        },
       },
     },
   };

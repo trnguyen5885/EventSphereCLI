@@ -49,6 +49,14 @@
         <category android:name="android.intent.category.BROWSABLE" />
         <data android:scheme="demozpdk" android:host="app" />
     </intent-filter>
+
+    <!-- Intent-filter cho EventSphere web links với auto verify -->
+    <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="eventsphere.io.vn" android:pathPrefix="/event" />
+    </intent-filter>
 </activity>
 
     </application>
