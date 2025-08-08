@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -24,7 +25,8 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="true"
-      android:supportsRtl="true">
+      android:supportsRtl="true"
+      tools:replace="android:allowBackup">
           <meta-data
         android:name="com.google.android.geo.API_KEY"
         android:value="AIzaSyAsytt_ZEzvtHTPgmhvcHdhnuhI2s8t_no"/>
@@ -42,6 +44,22 @@
         <category android:name="android.intent.category.LAUNCHER" />
     </intent-filter>
 
+    <!-- Intent-filter cho EventSphere custom scheme -->
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="eventsphere" />
+    </intent-filter>
+
+    <!-- Intent-filter cho EventSphere với host -->
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="eventsphere" android:host="event" />
+    </intent-filter>
+
     <!-- Intent-filter dùng để xử lý deep link -->
     <intent-filter>
         <action android:name="android.intent.action.VIEW" />
@@ -50,12 +68,20 @@
         <data android:scheme="demozpdk" android:host="app" />
     </intent-filter>
 
-    <!-- Intent-filter cho EventSphere web links với auto verify -->
+    <!-- Intent-filter cho Airbridge Universal Links -->
     <intent-filter android:autoVerify="true">
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-        <data android:scheme="https" android:host="eventsphere.io.vn" android:pathPrefix="/event" />
+        <data android:scheme="https" android:host="eventsphere.airbridge.io" />
+    </intent-filter>
+
+    <!-- Intent-filter cho Airbridge short links -->
+    <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="eventsphere.abr.ge" />
     </intent-filter>
 </activity>
 

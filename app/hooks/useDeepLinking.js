@@ -1,26 +1,25 @@
 import { Linking } from 'react-native';
 import { useEffect } from 'react';
+import AirbridgeService from '../services/AirbridgeService';
 
 export default function useDeepLinking(navigationRef) {
   useEffect(() => {
+    // Initialize Airbridge with navigation reference
+    AirbridgeService.setNavigationRef(navigationRef);
+    AirbridgeService.initialize('eventsphere', 'ca5c168a34444c75af781b06635778d5');
+
     const handleLink = (event) => {
       const url = event.url;
       console.log('Deep link received:', url);
-      
-      // Handle eventsphere.io.vn links
-      const eventMatch = url.match(/\/event\/([a-fA-F0-9]{24}|\d+)/);
-      if (eventMatch && navigationRef?.isReady()) {
-        const eventId = eventMatch[1];
-        console.log('Navigating to event detail with ID:', eventId);
-        navigationRef.navigate('Detail', { id: eventId });
-      }
+      // Always delegate parsing and navigation to AirbridgeService
+      AirbridgeService.handleDeeplink(url);
     };
 
     // Handle app launch from deep link
     Linking.getInitialURL().then((url) => {
       if (url) {
         console.log('Initial URL:', url);
-        handleLink({ url });
+        AirbridgeService.handleDeeplink(url);
       }
     });
 

@@ -78,7 +78,10 @@ const hasValidShowtime = (showtimes: any[]) => {
 };
 
 const EventDetailScreen = ({ navigation, route }: any) => {
-  const { id } = route.params;
+  const { id } = route?.params || {};
+  console.log('🔍 EventDetailScreen - Route params:', route?.params);
+  console.log('🔍 EventDetailScreen - Event ID:', id);
+  
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [userTicket, setUserTicket] = useState<Array<any>>([]);
   const userId = useSelector((state: any) => state.auth.userId);
@@ -102,8 +105,17 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   // const ticketInfoAnimation = useRef(new Animated.Value(1)).current;
   // const locationAnimation = useRef(new Animated.Value(1)).current;
 
-  console.log('Id Event: ', detailEvent?._id);
-  console.log('Detail Event', detailEvent);
+  console.log('📝 Id Event from state:', detailEvent?._id);
+  console.log('📝 Detail Event from state:', detailEvent);
+  
+  // Early return or error handling if no ID is provided
+  useEffect(() => {
+    if (!id) {
+      console.error('❌ No event ID provided to EventDetailScreen');
+      // You might want to navigate back or show an error screen
+      return;
+    }
+  }, [id]);
 
   // Hàm share sự kiện với dialog tùy chỉnh
   const handleShareEvent = async () => {
@@ -113,7 +125,8 @@ const EventDetailScreen = ({ navigation, route }: any) => {
     }
 
     try {
-      const eventUrl = `https://eventsphere.io.vn/event/${detailEvent._id}`;
+      // Airbridge tracking link with smart fallback - works for both app and non-app users
+      const eventUrl = `https://abr.ge/@eventsphere/event?event_id=${detailEvent._id}&og_tag_id=205617036&routing_short_id=f32zsz&sub_id=share&tracking_template_id=21687cf7c4cfd6219ee9e5311acf807c&ad_type=click`;
       const eventDate = formatDate(validShowtime?.startTime || detailEvent.timeStart);
       const eventLocation = detailEvent.location || 'Địa điểm sẽ được cập nhật';
 
@@ -184,7 +197,13 @@ Gửi từ EventSphere App`,
 
   useEffect(() => {
     const getDetailEvent = async () => {
+      if (!id) {
+        console.error('❌ Cannot fetch event details: No ID provided');
+        return;
+      }
+      
       try {
+        console.log('🔄 Fetching event details for ID:', id);
         const response = await AxiosInstance().get(`events/detail/${id}`);
         const responseUserTicket = await AxiosInstance().get(
           `tickets/all-tickets/${id}`,
@@ -192,12 +211,13 @@ Gửi từ EventSphere App`,
 
         setDetailEvent(response.data);
         setUserTicket(responseUserTicket.data.soldTickets);
+        console.log('✅ Event details fetched successfully:', response.data);
 
         if (response.data?.userId) {
           getOrganizerInfo(response.data.userId);
         }
       } catch (e) {
-        console.log(e);
+        console.error('❌ Error fetching event details:', e);
       }
     };
 
@@ -217,7 +237,7 @@ Gửi từ EventSphere App`,
       setDetailEvent(null);
       setOrganizer(null);
     };
-  }, []);
+  }, [id]);
 
   const userIdBuyTicket = userTicket.find(ticket => ticket.userId === userId);
   console.log(userIdBuyTicket);

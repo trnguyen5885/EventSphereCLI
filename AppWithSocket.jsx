@@ -5,6 +5,7 @@ import {
   NavigationContainer,
   useNavigationContainerRef,
 } from '@react-navigation/native';
+import AirbridgeService from './app/services/AirbridgeService';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {
@@ -101,6 +102,10 @@ const AppWithSocket = () => {
       }
     };
     fetchToken();
+
+    // Initialize Airbridge
+    AirbridgeService.setNavigationRef(navigationRef);
+    AirbridgeService.initialize();
   }, []);
 
   console.log('Tokens: ' + JSON.stringify(token?.user?.id));
@@ -163,8 +168,11 @@ const AppWithSocket = () => {
 
   const linking = {
     prefixes: [
+      'eventsphere://',
       'demozpdk://',
-      'https://eventsphere.io.vn'
+      'https://eventsphere.io.vn',
+      'https://eventsphere.airbridge.io',
+      'https://eventsphere.abr.ge'
     ],
     config: {
       screens: {

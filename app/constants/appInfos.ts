@@ -5,6 +5,6 @@ export const appInfo = {
         WIDTH: Dimensions.get('window').width,
         HEIGTH: Dimensions.get('window').height,
     },
-    BASE_URL: 'http://api.eventsphere.io.vn/api',
-    BASE_URL_NOAPI: 'http://api.eventsphere.io.vn',
+    BASE_URL: 'https://api.eventsphere.io.vn/api',
+    BASE_URL_NOAPI: 'https://api.eventsphere.io.vn',
 };
