@@ -71,32 +71,33 @@ const ZonesScreen = ({navigation, route}: any) => {
           quantity: zoneQuantities[zone._id],
         }));
 
-      const requestData = {
-        eventId: id,
-        zones: zonesData,
-        showtimeId: showtimeId,
-        quantity: totalQuantity,
-      };
+      // const requestData = {
+      //   eventId: id,
+      //   zones: zonesData,
+      //   showtimeId: showtimeId,
+      //   quantity: totalQuantity,
+      // };
 
-      console.log('Request data:', requestData);
+      // console.log('Request data:', requestData);
 
       // Gọi API reserve tickets
-      const response = await AxiosInstance().post(
-        '/zones/reserveZoneTicket',
-        requestData,
-      );
+      // const response = await AxiosInstance().post(
+      //   '/zones/reserveZoneTicket',
+      //   requestData,
+      // );
 
-      console.log('API Response:', response);
+      // console.log('API Response:', response);
 
-      const reservations = response.reservations;
+      // const reservations = response.reservations;
 
       navigation.navigate('Ticket', {
         id: id,
         typeBase: typeBase,
         totalPrice: totalPrice,
         quantity: totalQuantity,
-        bookingIds: reservations.map((r: any) => r.bookingId),
+        // bookingIds: reservations.map((r: any) => r.bookingId),
         showtimeId: showtimeId,
+        zones: zonesData,
       });
     } catch (error) {
       console.error('Error in handleContinue:', error);
@@ -187,8 +188,6 @@ const ZonesScreen = ({navigation, route}: any) => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Khu vực vé</Text>
         </RowComponent>
-
-        
       </View>
 
       <ScrollView style={{flex: 1}}>
