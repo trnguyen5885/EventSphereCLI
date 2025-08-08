@@ -27,7 +27,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 const {ZaloPayModule} = NativeModules;
 
 const TicketEventScreen = ({navigation, route}: any) => {
-  const {id, typeBase, totalPrice, quantity, bookingIds, showtimeId} =
+  const {id, typeBase, totalPrice, quantity, bookingIds, showtimeId, zones} =
     route.params;
 
   const [userInfo, setUserInfo] = useState<UserModel | null>();
@@ -139,54 +139,76 @@ const TicketEventScreen = ({navigation, route}: any) => {
         };
         const response = await AxiosInstance().post('/payments', bodyPayment);
         console.log(bodyPayment);
-        ZaloPayModule.payOrder(response.data.zp_trans_token);
+        try {
+          // ✅ Đợi kết quả từ Native Module
+          const result = await ZaloPayModule.payOrder(
+            response.data.zp_trans_token,
+          );
 
-        const bodyOrder = {
-          eventId: id,
-          userId: userInfo?._id,
-          bookingType: typeBase ?? 'none',
-          totalAmount: quantity,
-          bookingIds: typeBase === 'none' ? [] : bookingIds,
-          totalPrice: totalPrice,
-          showtimeId: showtimeId,
-        };
+          if (result.status === 'success') {
+            // ===== Thanh toán thành công =====
+            let reservations = [];
+            if (typeBase === 'zone') {
+              const requestData = {
+                eventId: id,
+                zones,
+                showtimeId,
+                quantity,
+              };
+              const zoneRes = await AxiosInstance().post(
+                '/zones/reserveZoneTicket',
+                requestData,
+              );
+              reservations = zoneRes.reservations;
+            }
 
-        console.log(bodyOrder);
+            const bodyOrder = {
+              eventId: id,
+              userId: userInfo?._id,
+              bookingType: typeBase ?? 'none',
+              totalAmount: quantity,
+              bookingIds:
+                typeBase === 'zone'
+                  ? reservations.map((r: any) => r.bookingId)
+                  : bookingIds,
+              totalPrice,
+              showtimeId,
+            };
 
-        const responseOrder = await AxiosInstance().post(
-          '/orders/createOrder',
-          bodyOrder,
-        );
+            const responseOrder = await AxiosInstance().post(
+              '/orders/createOrder',
+              bodyOrder,
+            );
 
-        const bodyOrderTicket = {
-          orderId: responseOrder.data,
-          paymentId: response.data.zp_trans_token,
-        };
-        const responseOrderTicket = await AxiosInstance().post(
-          'orders/createTicket',
-          bodyOrderTicket,
-        );
+            const bodyOrderTicket = {
+              orderId: responseOrder.data,
+              paymentId: result.transToken, // dùng transToken từ ZaloPay
+            };
+            await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
 
-        if (responseOrder.data && responseOrderTicket.data) {
-          setTimeout(() => setIsLoading(false), 8000);
-          setTimeout(() => {
+            setIsLoading(false);
             Alert.alert('Thành công', 'Thanh toán đã được xử lý thành công!', [
               {
                 text: 'OK',
-                onPress: () => {
+                onPress: () =>
                   navigation.navigate('Drawer', {
                     screen: 'Home',
-                    params: {
-                      screen: 'Vé của tôi',
-                    },
-                  });
-                },
+                    params: {screen: 'Vé của tôi'},
+                  }),
               },
             ]);
-          }, 8000);
-        } else {
-          console.log('Thanh toán không thành công');
+          }
+        } catch (error: any) {
+          // ❌ Huỷ hoặc lỗi
           setIsLoading(false);
+          if (error.code === 'PAYMENT_CANCELLED') {
+            Alert.alert('Thanh toán bị hủy', 'Bạn đã huỷ thanh toán.');
+          } else if (error.code === 'PAYMENT_ERROR') {
+            Alert.alert('Thanh toán thất bại', 'Có lỗi khi xử lý thanh toán.');
+          } else {
+            Alert.alert('Lỗi', 'Không thể thực hiện thanh toán.');
+          }
+          console.log('Chi tiết lỗi ZaloPay:', error);
         }
       }
 
