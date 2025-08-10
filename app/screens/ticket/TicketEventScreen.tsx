@@ -226,6 +226,7 @@ const TicketEventScreen = ({navigation, route}: any) => {
           bookingIds: typeBase === 'none' ? [] : bookingIds,
           totalPrice: totalPrice,
           showtimeId: showtimeId,
+          zones: zones,
         });
       }
     } catch (error) {
