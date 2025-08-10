@@ -7,12 +7,13 @@ import {
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { InputComponent, RowComponent } from '../../components';
+import { InputComponent, RowComponent, SearchHistoryList } from '../../components';
 import EventItem from '../../components/EventItem';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
 import { AxiosInstance } from '../../services';
 import { EventModel } from '@/app/models';
+import { SearchHistoryService, SearchHistoryItem } from '../../services/searchHistoryService';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 40) / 2;
@@ -118,11 +119,11 @@ const EventCardSkeleton = React.memo(() => (
 ));
 
 // Tối ưu SkeletonList với useMemo
-const SkeletonList = React.memo(({ count = 6 }) => {
+const SkeletonList = React.memo(({ count = 6 }: { count?: number }) => {
   const skeletonData = useMemo(() => Array(count).fill(null), [count]);
   
   const renderSkeletonItem = useCallback(() => <EventCardSkeleton />, []);
-  const keyExtractor = useCallback((_, index) => `skeleton-${index}`, []);
+  const keyExtractor = useCallback((_: any, index: number) => `skeleton-${index}`, []);
   
   return (
     <FlatList
@@ -144,16 +145,19 @@ const EventSearch = ({ navigation }: any) => {
   const [events, setEvents] = useState<EventModel[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(true);
 
   // Tối ưu state management - sử dụng một state object thay vì nhiều state riêng biệt
   const [loadingState, setLoadingState] = useState({
     isInitialLoading: true,
     isSearching: false,
     isFetchingMore: false,
+    loadingHistory: true,
   });
 
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
-  const abortControllerRef = useRef<AbortController>();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Tối ưu fetchEvents với useCallback và cancel previous requests
   const fetchEvents = useCallback(async (q: string, pageNumber = 1, append = false) => {
@@ -185,11 +189,12 @@ const EventSearch = ({ navigation }: any) => {
       // Batch state updates để tránh multiple re-renders
       setEvents(prev => append ? [...prev, ...newData] : newData);
       setHasMore(newData.length >= limit);
-      setLoadingState({
+      setLoadingState(prev => ({
+        ...prev,
         isInitialLoading: false,
         isSearching: false,
         isFetchingMore: false,
-      });
+      }));
 
     } catch (e: any) {
       // Bỏ qua lỗi nếu request bị cancel
@@ -198,13 +203,75 @@ const EventSearch = ({ navigation }: any) => {
       console.log('❌ Search error:', e);
       
       if (!append) setEvents([]);
-      setLoadingState({
+      setLoadingState(prev => ({
+        ...prev,
         isInitialLoading: false,
         isSearching: false,
         isFetchingMore: false,
-      });
+      }));
     }
   }, [events.length]);
+
+  // Load search history on component mount
+  const loadSearchHistory = useCallback(async () => {
+    try {
+      setLoadingState(prev => ({ ...prev, loadingHistory: true }));
+      const history = await SearchHistoryService.getSearchHistory();
+      setSearchHistory(history);
+    } catch (error) {
+      console.error('Error loading search history:', error);
+    } finally {
+      setLoadingState(prev => ({ ...prev, loadingHistory: false }));
+    }
+  }, []);
+
+  // Save search to history
+  const saveToHistory = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      await SearchHistoryService.addToHistory(searchQuery);
+      // Reload history to get updated list
+      const updatedHistory = await SearchHistoryService.getSearchHistory();
+      setSearchHistory(updatedHistory);
+    } catch (error) {
+      console.error('Error saving to history:', error);
+    }
+  }, []);
+
+  // Handle selecting from search history
+  const handleSelectFromHistory = useCallback((selectedQuery: string) => {
+    setQuery(selectedQuery);
+    setShowHistory(false);
+    setPage(1);
+    fetchEvents(selectedQuery, 1);
+  }, [fetchEvents]);
+
+  // Handle removing individual history item
+  const handleRemoveFromHistory = useCallback(async (id: string) => {
+    try {
+      await SearchHistoryService.removeFromHistory(id);
+      const updatedHistory = await SearchHistoryService.getSearchHistory();
+      setSearchHistory(updatedHistory);
+    } catch (error) {
+      console.error('Error removing from history:', error);
+    }
+  }, []);
+
+  // Handle clearing all history
+  const handleClearHistory = useCallback(async () => {
+    try {
+      await SearchHistoryService.clearHistory();
+      setSearchHistory([]);
+    } catch (error) {
+      console.error('Error clearing history:', error);
+    }
+  }, []);
+
+  // Load search history on component mount
+  useEffect(() => {
+    loadSearchHistory();
+  }, [loadSearchHistory]);
 
   // Tối ưu debounce search
   useEffect(() => {
@@ -212,17 +279,31 @@ const EventSearch = ({ navigation }: any) => {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    searchTimeoutRef.current = setTimeout(() => {
-      setPage(1);
-      fetchEvents(query, 1);
-    }, 150); // Giảm từ 200ms xuống 150ms
+    if (query.trim()) {
+      searchTimeoutRef.current = setTimeout(() => {
+        setPage(1);
+        setShowHistory(false);
+        fetchEvents(query, 1);
+        // Save to history after successful search
+        saveToHistory(query);
+      }, 150); // Giảm từ 200ms xuống 150ms
+    } else {
+      // Show history when query is empty
+      setShowHistory(true);
+      setEvents([]);
+      setLoadingState(prev => ({
+        ...prev,
+        isInitialLoading: false,
+        isSearching: false,
+      }));
+    }
 
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [query, fetchEvents]);
+  }, [query, fetchEvents, saveToHistory]);
 
   // Cleanup khi component unmount
   useEffect(() => {
@@ -259,6 +340,11 @@ const EventSearch = ({ navigation }: any) => {
            (loadingState.isSearching && events.length === 0);
   }, [loadingState.isInitialLoading, loadingState.isSearching, events.length]);
 
+  // Determine what to show
+  const shouldShowHistory = useMemo(() => {
+    return showHistory && !query.trim() && !loadingState.isSearching;
+  }, [showHistory, query, loadingState.isSearching]);
+
   // Memoize empty state
   const EmptyState = useMemo(() => (
     <View style={styles.emptyState}>
@@ -271,11 +357,23 @@ const EventSearch = ({ navigation }: any) => {
   ), [query]);
 
   const renderContent = useMemo(() => {
+    if (shouldShowHistory) {
+      return (
+        <SearchHistoryList
+          searchHistory={searchHistory}
+          onSelectHistory={handleSelectFromHistory}
+          onRemoveHistory={handleRemoveFromHistory}
+          onClearHistory={handleClearHistory}
+          loading={loadingState.loadingHistory}
+        />
+      );
+    }
+
     if (shouldShowSkeleton) {
       return <SkeletonList />;
     }
 
-    if (events.length === 0) {
+    if (events.length === 0 && query.trim()) {
       return EmptyState;
     }
 
@@ -302,7 +400,22 @@ const EventSearch = ({ navigation }: any) => {
         })}
       />
     );
-  }, [shouldShowSkeleton, events, EmptyState, keyExtractor, renderEventItem, handleLoadMore, loadingState.isFetchingMore]);
+  }, [
+    shouldShowHistory,
+    searchHistory,
+    handleSelectFromHistory,
+    handleRemoveFromHistory,
+    handleClearHistory,
+    loadingState.loadingHistory,
+    shouldShowSkeleton,
+    events,
+    EmptyState,
+    keyExtractor,
+    renderEventItem,
+    handleLoadMore,
+    loadingState.isFetchingMore,
+    query
+  ]);
 
   const handleNavigation = useCallback(() => {
     navigation.goBack();
@@ -312,13 +425,19 @@ const EventSearch = ({ navigation }: any) => {
     navigation.goBack();
   }, [navigation]);
 
+  const handleInputFocus = useCallback(() => {
+    if (!query.trim()) {
+      setShowHistory(true);
+    }
+  }, [query]);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
         <RowComponent 
           onPress={handleNavigation} 
-          styles={styles.headerRow}
+          style={styles.headerRow}
         >
           <TouchableOpacity
             style={styles.backButton}
@@ -336,6 +455,7 @@ const EventSearch = ({ navigation }: any) => {
           allowClear
           customStyles={styles.searchInput}
           affix={<MaterialIcons name="search" size={24} color="rgba(0,0,0,0.5)" />}
+          onFocus={handleInputFocus}
         />
       </View>
 

@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,26 +13,28 @@ import {
   Platform,
   useWindowDimensions,
   Animated,
+  Alert,
 } from 'react-native';
+import Share from 'react-native-share';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {AxiosInstance} from '../../services';
-import {globalStyles} from '../../constants/globalStyles';
+import { AxiosInstance } from '../../services';
+import { globalStyles } from '../../constants/globalStyles';
 import {
   ButtonComponent,
   CircleComponent,
   RowComponent,
   TextComponent,
 } from '../../components';
-import {appColors} from '../../constants/appColors';
-import {formatDate} from '../../services/index';
+import { appColors } from '../../constants/appColors';
+import { formatDate } from '../../services/index';
 import RatingAndReview from '../review/RatingAndReview';
-import {EventModel} from '@/app/models';
+import { EventModel } from '@/app/models';
 import MapPreview from '../map/MapPreview';
-import {TypeBase} from '@/app/models/explore/ExploreModels';
+import { TypeBase } from '@/app/models/explore/ExploreModels';
 import RenderHtml from 'react-native-render-html';
-import {formatTimeRange} from '../../services/utils/time';
+import { formatTimeRange } from '../../services/utils/time';
 import LoadingModal from '../../modals/LoadingModal';
-import {useSelector} from 'react-redux';
+import { useSelector } from 'react-redux';
 
 const getValidShowtime = (showtimes: any[]) => {
   const now = new Date();
@@ -75,11 +77,14 @@ const hasValidShowtime = (showtimes: any[]) => {
   return showtimes.some(st => new Date(st.endTime) > now);
 };
 
-const EventDetailScreen = ({navigation, route}: any) => {
-  const {id} = route.params;
+const EventDetailScreen = ({ navigation, route }: any) => {
+  const { id } = route?.params || {};
+  console.log('🔍 EventDetailScreen - Route params:', route?.params);
+  console.log('🔍 EventDetailScreen - Event ID:', id);
+  
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [userTicket, setUserTicket] = useState<Array<any>>([]);
-  const userId = useSelector(state => state.auth.userId);
+  const userId = useSelector((state: any) => state.auth.userId);
   console.log(detailEvent);
 
   const [organizer, setOrganizer] = useState<any>(null);
@@ -100,10 +105,88 @@ const EventDetailScreen = ({navigation, route}: any) => {
   // const ticketInfoAnimation = useRef(new Animated.Value(1)).current;
   // const locationAnimation = useRef(new Animated.Value(1)).current;
 
-  console.log('Id Event: ', detailEvent?._id);
-  console.log('Detail Event', detailEvent);
+  console.log('📝 Id Event from state:', detailEvent?._id);
+  console.log('📝 Detail Event from state:', detailEvent);
+  
+  // Early return or error handling if no ID is provided
+  useEffect(() => {
+    if (!id) {
+      console.error('❌ No event ID provided to EventDetailScreen');
+      // You might want to navigate back or show an error screen
+      return;
+    }
+  }, [id]);
 
-  const formatTime = timestamp => {
+  // Hàm share sự kiện với dialog tùy chỉnh
+  const handleShareEvent = async () => {
+    if (!detailEvent) {
+      Alert.alert('Lỗi', 'Không thể chia sẻ sự kiện này');
+      return;
+    }
+
+    try {
+      // Airbridge tracking link with smart fallback - works for both app and non-app users
+      const eventUrl = `https://abr.ge/@eventsphere/event?event_id=${detailEvent._id}&og_tag_id=205617036&routing_short_id=f32zsz&sub_id=share&tracking_template_id=21687cf7c4cfd6219ee9e5311acf807c&ad_type=click`;
+      const eventDate = formatDate(validShowtime?.startTime || detailEvent.timeStart);
+      const eventLocation = detailEvent.location || 'Địa điểm sẽ được cập nhật';
+
+      // Nội dung mặc định
+      const defaultMessage = `🎉 ${detailEvent.name}
+
+📅 ${eventDate}
+📍 ${eventLocation}
+
+Tham gia cùng tôi tại EventSphere!
+${eventUrl}
+
+#EventSphere`;
+
+      // Nội dung cho Facebook
+      const facebookMessage = `🎉 Sự kiện không thể bỏ lỡ: ${detailEvent.name}
+
+📅 Thời gian: ${eventDate}
+📍 Địa điểm: ${eventLocation}
+
+🎫 Đặt vé ngay tại EventSphere!
+${eventUrl}
+
+#EventSphere #SuKien #${detailEvent.categories || 'Event'}`;
+
+      // Nội dung cho WhatsApp/Zalo (ngắn gọn)
+      const whatsappMessage = `🎉 ${detailEvent.name}
+📅 ${eventDate}
+📍 ${eventLocation}
+
+Tham gia ngay: ${eventUrl}`;
+
+      const shareOptions = {
+        title: detailEvent.name,
+        message: defaultMessage,
+        url: eventUrl,
+        subject: `Mời bạn tham gia sự kiện: ${detailEvent.name}`,
+        email: `${defaultMessage}
+
+---
+Gửi từ EventSphere App`,
+        filename: 'EventSphere',
+        excludedActivityTypes: [
+          // Có thể exclude một số activities không cần thiết
+        ],
+        failOnCancel: false,
+        showAppsToView: true,
+      };
+
+      const result = await Share.open(shareOptions);
+      console.log('Share result:', result);
+    } catch (error: any) {
+      if (error?.message !== 'User did not share') {
+        console.log('Error sharing event:', error);
+        Alert.alert('Lỗi', 'Không thể chia sẻ sự kiện này');
+      }
+    }
+  };
+
+  const formatTime = (timestamp: any) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('vi-VN', {
       hour: '2-digit',
@@ -114,7 +197,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
 
   useEffect(() => {
     const getDetailEvent = async () => {
+      if (!id) {
+        console.error('❌ Cannot fetch event details: No ID provided');
+        return;
+      }
+      
       try {
+        console.log('🔄 Fetching event details for ID:', id);
         const response = await AxiosInstance().get(`events/detail/${id}`);
         const responseUserTicket = await AxiosInstance().get(
           `tickets/all-tickets/${id}`,
@@ -122,12 +211,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
 
         setDetailEvent(response.data);
         setUserTicket(responseUserTicket.data.soldTickets);
+        console.log('✅ Event details fetched successfully:', response.data);
 
         if (response.data?.userId) {
           getOrganizerInfo(response.data.userId);
         }
       } catch (e) {
-        console.log(e);
+        console.error('❌ Error fetching event details:', e);
       }
     };
 
@@ -147,7 +237,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
       setDetailEvent(null);
       setOrganizer(null);
     };
-  }, []);
+  }, [id]);
 
   const userIdBuyTicket = userTicket.find(ticket => ticket.userId === userId);
   console.log(userIdBuyTicket);
@@ -191,7 +281,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
     navigation.goBack();
   };
 
-  const {width} = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   // Thêm state để quản lý việc mở rộng nội dung description
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -242,12 +332,20 @@ const EventDetailScreen = ({navigation, route}: any) => {
 
   // Hàm xử lý nút mua vé chính
   const handleMainBuyTicket = () => {
-    if (detailEvent?.showtimes.length === 1) {
-      return handleNavigation(
-        detailEvent?.typeBase,
-        detailEvent.showtimes[0]._id,
-      );
+    // Kiểm tra xem có suất chiếu hợp lệ không
+    if (!detailEvent?.showtimes || !hasValidShowtime(detailEvent.showtimes)) {
+      return; // Không làm gì nếu không có suất chiếu hợp lệ
     }
+
+    if (detailEvent?.showtimes.length === 1) {
+      // Kiểm tra thêm xem suất chiếu duy nhất có hết hạn không
+      const singleShowtime = detailEvent.showtimes[0];
+      if (isShowtimeExpired(singleShowtime.endTime)) {
+        return; // Không làm gì nếu suất chiếu đã hết hạn
+      }
+      return handleNavigation(detailEvent?.typeBase, singleShowtime._id);
+    }
+
     if (detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes)) {
       scrollRef.current?.scrollTo({
         y: ticketInfoPositionY - 15,
@@ -264,7 +362,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
     <View style={[globalStyles.container, styles.mainContainer]}>
       <View style={styles.header}>
         <StatusBar animated backgroundColor={appColors.primary} />
-        <RowComponent onPress={handleBackNavigation} styles={{columnGap: 25}}>
+        <RowComponent onPress={handleBackNavigation} styles={{ columnGap: 25 }}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
@@ -273,7 +371,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
           <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
         </RowComponent>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleShareEvent}>
           <Ionicons name="share-social-outline" size={24} color="white" />
         </TouchableOpacity>
       </View>
@@ -285,10 +383,10 @@ const EventDetailScreen = ({navigation, route}: any) => {
         <ImageBackground
           style={styles.imageBackground}
           blurRadius={8}
-          source={{uri: detailEvent?.avatar}}>
+          source={{ uri: detailEvent?.avatar }}>
           <View style={styles.containerEventDetail}>
             <Image
-              source={{uri: detailEvent?.avatar}}
+              source={{ uri: detailEvent?.avatar }}
               style={styles.imageEventDetail}
             />
             <View style={styles.containerEventDetailInfo}>
@@ -368,7 +466,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
             <TextComponent
               text="Giới thiệu"
               size={18}
-              styles={{fontWeight: 'bold', color: '#2D3748'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
           </View>
 
@@ -387,10 +485,10 @@ const EventDetailScreen = ({navigation, route}: any) => {
                     }}
                     enableCSSInlineProcessing={true}
                     tagsStyles={{
-                      strong: {fontWeight: 'bold', color: '#2D3748'},
-                      b: {fontWeight: 'bold', color: '#2D3748'},
-                      div: {marginBottom: 8},
-                      p: {color: '#4A5568', lineHeight: 20},
+                      strong: { fontWeight: 'bold', color: '#2D3748' },
+                      b: { fontWeight: 'bold', color: '#2D3748' },
+                      div: { marginBottom: 8 },
+                      p: { color: '#4A5568', lineHeight: 20 },
                     }}
                   />
 
@@ -431,7 +529,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
               <TextComponent
                 text="Thông tin vé"
                 size={18}
-                styles={{fontWeight: 'bold', color: '#2D3748'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
             </View>
 
@@ -471,14 +569,13 @@ const EventDetailScreen = ({navigation, route}: any) => {
                           style={[
                             styles.buyTicketSmallButton,
                             isExpired && styles.expiredButton,
+                            isExpired && styles.disabledTouchable, // Thêm style này
                           ]}
                           disabled={isExpired}
+                          activeOpacity={isExpired ? 1 : 0.7} // Không có hiệu ứng nhấn khi disabled
                           onPress={() =>
                             !isExpired &&
-                            handleNavigation(
-                              detailEvent?.typeBase,
-                              showTime._id,
-                            )
+                            handleNavigation(detailEvent?.typeBase, showTime._id)
                           }>
                           <Text
                             style={[
@@ -503,7 +600,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
             <TextComponent
               text="Vị trí sự kiện"
               size={18}
-              styles={{fontWeight: 'bold', color: '#2D3748'}}
+              styles={{ fontWeight: 'bold', color: '#2D3748' }}
             />
           </View>
 
@@ -534,7 +631,7 @@ const EventDetailScreen = ({navigation, route}: any) => {
               <TextComponent
                 text="Ban tổ chức"
                 size={18}
-                styles={{fontWeight: 'bold', color: '#2D3748'}}
+                styles={{ fontWeight: 'bold', color: '#2D3748' }}
               />
             </View>
 
@@ -578,17 +675,19 @@ const EventDetailScreen = ({navigation, route}: any) => {
           }
           styles={[
             styles.buyTicketButton,
-            !(
-              detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes)
-            ) && styles.expiredMainButton,
+            !(detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes)) &&
+            styles.expiredMainButton,
+            !(detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes)) &&
+            styles.disabledTouchable, // Thêm style này
           ]}
           type="primary"
           disabled={
             !(detailEvent?.showtimes && hasValidShowtime(detailEvent.showtimes))
           }
+          // Chỉ hiện icon khi chưa hết hạn
           icon={
             detailEvent?.showtimes &&
-            hasValidShowtime(detailEvent.showtimes) ? (
+              hasValidShowtime(detailEvent.showtimes) ? (
               <CircleComponent color={appColors.white}>
                 <Ionicons
                   name="arrow-forward"
@@ -816,13 +915,19 @@ const styles = StyleSheet.create({
   expiredButton: {
     backgroundColor: '#E2E8F0',
     borderColor: '#CBD5E0',
+    opacity: 0.6,
   },
   expiredButtonText: {
     color: '#718096',
+    fontWeight: 'normal',
+  },
+  disabledTouchable: {
+    opacity: 0.6,
   },
   expiredMainButton: {
     backgroundColor: '#E2E8F0',
     borderColor: '#CBD5E0',
+    opacity: 0.6,
   },
   showtimeText: {
     fontWeight: '600',

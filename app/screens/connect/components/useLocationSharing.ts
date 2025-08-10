@@ -1,19 +1,46 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import Geolocation from '@react-native-community/geolocation';
-import { throttle } from 'lodash';
-import { getGroupMembers, getGroupLocations, updateLocation } from '../services/connectApi'; // tuỳ theo cấu trúc của bạn
+import { getGroupMembers, getGroupLocations, updateLocation } from '../services/connectApi';
 import { getSocket } from '../../../socket/socket';
+import { Member, LocationData, LocationCoordinates } from '../types/GroupTypes';
 
-export const useLocationSharing = ({ groupId, userId, isSharing, userLocation }) => {
-  const [members, setMembers] = useState([]);
-  const [locations, setLocations] = useState([]);
+// Throttle function implementation
+const throttle = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  let lastExecTime = 0;
+  return (...args: any[]) => {
+    const currentTime = Date.now();
+    if (currentTime - lastExecTime > delay) {
+      func(...args);
+      lastExecTime = currentTime;
+    } else {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        func(...args);
+        lastExecTime = Date.now();
+      }, delay - (currentTime - lastExecTime));
+    }
+  };
+};
+
+interface UseLocationSharingProps {
+  groupId: string;
+  userId: string;
+  isSharing: boolean;
+  userLocation?: LocationCoordinates;
+}
+
+export const useLocationSharing = ({ groupId, userId, isSharing, userLocation }: UseLocationSharingProps) => {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [locations, setLocations] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(false);
-  const watchId = useRef(null);
-  const socketRef = useRef(null);
+  const [myLocation, setMyLocation] = useState<LocationCoordinates | null>(userLocation || null);
+  const watchId = useRef<number | null>(null);
+  const socketRef = useRef<any>(null);
 
   // Cập nhật vị trí (throttle 10s)
   const throttledUpdateLocation = useRef(
-    throttle(async (lat, lng) => {
+    throttle(async (lat: number, lng: number) => {
       await updateLocation(groupId, userId, lat, lng, true);
     }, 10000)
   ).current;
@@ -26,8 +53,8 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
         getGroupMembers(groupId),
         getGroupLocations(groupId),
       ]);
-      setMembers(membersData);
-      setLocations(locationsData);
+      setMembers(Array.isArray(membersData) ? membersData : membersData?.data || []);
+      setLocations(Array.isArray(locationsData) ? locationsData : locationsData?.data || []);
       console.log("Member: ", membersData);
       console.log("Location: ", locationsData);
     } catch (err) {
@@ -41,7 +68,7 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
   const fetchLocations = useCallback(async () => {
     try {
       const data = await getGroupLocations(groupId);
-      setLocations(data);
+      setLocations(Array.isArray(data) ? data : data?.data || []);
     } catch (err) {
       console.error('Lỗi tải vị trí:', err);
     }
@@ -50,8 +77,15 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
   // Theo dõi vị trí
   useEffect(() => {
     if (isSharing) {
+      // Fetch chỉ locations ngay khi bật sharing (faster)
+      console.log("Hi");
+      
+      fetchAllData();
+      
       watchId.current = Geolocation.watchPosition(
         ({ coords }) => {
+          const newLocation = { latitude: coords.latitude, longitude: coords.longitude };
+          setMyLocation(newLocation); // Update real-time location
           throttledUpdateLocation(coords.latitude, coords.longitude);
         },
         (err) => console.warn('Lỗi lấy vị trí:', err.message),
@@ -59,12 +93,13 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
       );
     } else {
       updateLocation(groupId, userId, null, null, false);
+      setMyLocation(null); // Clear location when not sharing
     }
 
     return () => {
       if (watchId.current) Geolocation.clearWatch(watchId.current);
     };
-  }, [isSharing, groupId, userId]);
+  }, [isSharing, groupId, userId, fetchAllData]);
 
   // Kết nối socket và lắng nghe update
   useEffect(() => {
@@ -75,9 +110,9 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
     console.log('[SOCKET] 🔌 Joining room:', roomName);
     socket.emit('joinRoom', roomName);
   
-    const handleLocationUpdate = (data) => {
+    const handleLocationUpdate = (data: LocationData) => {
       console.log('[SOCKET] 📍 location:update received:', data);
-      fetchAllData();
+      // Update local state immediately for faster UI response
       setLocations(prev => {
         const index = prev.findIndex(loc => String(loc.userId) === String(data.userId));
         if (index !== -1) {
@@ -88,6 +123,9 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
           return [...prev, data]; // thêm mới nếu chưa có
         }
       });
+      
+      // Fetch fresh locations để sync với server (throttled)
+      setTimeout(() => fetchLocations(), 500);
     };    
   
     const handleAnySocket = (event: string, ...args: any[]) => {
@@ -109,7 +147,7 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
   // Tải ban đầu + định kỳ mỗi 30s
   useEffect(() => {
     fetchAllData();
-    const interval = setInterval(fetchAllData, 30000);
+    const interval = setInterval(fetchAllData, 10000); // 10 giây thay vì 5 giây
     return () => clearInterval(interval);
   }, [fetchAllData]);
 
@@ -124,6 +162,7 @@ export const useLocationSharing = ({ groupId, userId, isSharing, userLocation })
     members,
     locations,
     loading,
+    myLocation, // Real-time GPS location
     refetch: fetchAllData,
   };
 };

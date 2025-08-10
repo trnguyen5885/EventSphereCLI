@@ -180,7 +180,7 @@ const NonesScreen = ({navigation, route}) => {
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.footerInfo}>
-          <Text style={styles.footerQuantity}>Tổng số vé: {totalQuantity}</Text>
+          <Text style={styles.footerQuantity}>Tổng số vé: {totalQuantity}/10</Text>
           <Text style={styles.footerTotal}>
             Tổng:{' '}
             <Text style={styles.totalAmount}>

@@ -8,6 +8,9 @@ import ContainerComponent from './ContainerComponent';
 import CircleComponent from './CircleComponent';
 import CardComponent from './CardComponent';
 import CategoriesList from './CategoriesList';
+import SearchHistoryItem from './SearchHistoryItem';
+import SearchHistoryList from './SearchHistoryList';
+import AirbridgeDemo from './AirbridgeDemo';
 
 
 export {
@@ -20,5 +23,8 @@ export {
     ContainerComponent,
     CircleComponent,
     CardComponent,
-    CategoriesList
+    CategoriesList,
+    SearchHistoryItem,
+    SearchHistoryList,
+    AirbridgeDemo
 }

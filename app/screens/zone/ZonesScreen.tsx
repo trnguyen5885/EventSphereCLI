@@ -59,6 +59,11 @@ const ZonesScreen = ({navigation, route}: any) => {
       return;
     }
 
+    if (totalQuantity > 10) {
+      Alert.alert('Thông báo', 'Chỉ được chọn tối đa 10 vé');
+      return;
+    }
+
     // Hiển thị loading
     setLoading(true);
 
@@ -124,9 +129,21 @@ const ZonesScreen = ({navigation, route}: any) => {
     maxQuantity: number,
   ) => {
     const clampedQuantity = Math.max(0, Math.min(newQuantity, maxQuantity));
+    
+    // Tính tổng số lượng hiện tại (không bao gồm zone đang được cập nhật)
+    const currentTotalExcludingThis = Object.entries(zoneQuantities).reduce(
+      (total, [id, qty]) => {
+        return id === zoneId ? total : total + qty;
+      },
+      0,
+    );
+    
+    // Kiểm tra xem có vượt quá giới hạn 10 vé không
+    const finalQuantity = Math.min(clampedQuantity, 10 - currentTotalExcludingThis);
+    
     setZoneQuantities(prev => ({
       ...prev,
-      [zoneId]: clampedQuantity,
+      [zoneId]: finalQuantity,
     }));
   };
 
@@ -163,9 +180,9 @@ const ZonesScreen = ({navigation, route}: any) => {
           }
           style={[
             styles.qtyButton,
-            currentQuantity >= zone.availableCount && styles.qtyButtonDisabled,
+            (currentQuantity >= zone.availableCount || totalQuantity >= 10) && styles.qtyButtonDisabled,
           ]}
-          disabled={currentQuantity >= zone.availableCount}>
+          disabled={currentQuantity >= zone.availableCount || totalQuantity >= 10}>
           <Text style={styles.qtyButtonText}>+</Text>
         </TouchableOpacity>
       </View>
@@ -236,7 +253,7 @@ const ZonesScreen = ({navigation, route}: any) => {
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.footerInfo}>
-          <Text style={styles.footerQuantity}>Tổng số vé: {totalQuantity}</Text>
+          <Text style={styles.footerQuantity}>Tổng số vé: {totalQuantity}/10</Text>
           <Text style={styles.footerTotal}>
             Tổng:{' '}
             <Text style={styles.totalAmount}>
