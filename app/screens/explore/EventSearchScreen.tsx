@@ -140,6 +140,25 @@ const SkeletonList = React.memo(({ count = 6 }: { count?: number }) => {
   );
 });
 
+// Hàm validate từ khóa tìm kiếm
+const isValidSearchQuery = (query: string): boolean => {
+  const trimmed = query.trim();
+  
+  // Kiểm tra độ dài tối thiểu
+  if (trimmed.length < 2) return false;
+  
+  // Kiểm tra không phải toàn ký tự đặc biệt hoặc số
+  if (/^[\s\d\W]+$/.test(trimmed)) return false;
+  
+  // Kiểm tra có ít nhất một chữ cái
+  if (!/[a-zA-ZÀ-ỹ]/.test(trimmed)) return false;
+  
+  // Kiểm tra không phải từ khóa vô nghĩa (single characters repeated)
+  if (/^(.)\1+$/.test(trimmed)) return false;
+  
+  return true;
+};
+
 const EventSearch = ({ navigation }: any) => {
   const [query, setQuery] = useState('');
   const [events, setEvents] = useState<EventModel[]>([]);
@@ -196,6 +215,11 @@ const EventSearch = ({ navigation }: any) => {
         isFetchingMore: false,
       }));
 
+      // Chỉ lưu vào lịch sử khi search thành công và có kết quả
+      if (pageNumber === 1 && !append && newData.length > 0 && isValidSearchQuery(q)) {
+        await saveToHistory(q);
+      }
+
     } catch (e: any) {
       // Bỏ qua lỗi nếu request bị cancel
       if (e.name === 'AbortError') return;
@@ -225,9 +249,9 @@ const EventSearch = ({ navigation }: any) => {
     }
   }, []);
 
-  // Save search to history
+  // Save search to history - chỉ lưu từ khóa hợp lệ
   const saveToHistory = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
+    if (!isValidSearchQuery(searchQuery)) return;
     
     try {
       await SearchHistoryService.addToHistory(searchQuery);
@@ -273,20 +297,27 @@ const EventSearch = ({ navigation }: any) => {
     loadSearchHistory();
   }, [loadSearchHistory]);
 
-  // Tối ưu debounce search
+  // Tối ưu debounce search - chỉ tìm kiếm khi từ khóa hợp lệ
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (query.trim()) {
+    if (query.trim() && isValidSearchQuery(query)) {
       searchTimeoutRef.current = setTimeout(() => {
         setPage(1);
         setShowHistory(false);
         fetchEvents(query, 1);
-        // Save to history after successful search
-        saveToHistory(query);
-      }, 150); // Giảm từ 200ms xuống 150ms
+      }, 300); // Tăng lên 300ms để tránh search quá nhanh với từ khóa vô nghĩa
+    } else if (query.trim() && !isValidSearchQuery(query)) {
+      // Nếu từ khóa không hợp lệ, chỉ ẩn history nhưng không search
+      setShowHistory(false);
+      setEvents([]);
+      setLoadingState(prev => ({
+        ...prev,
+        isInitialLoading: false,
+        isSearching: false,
+      }));
     } else {
       // Show history when query is empty
       setShowHistory(true);
@@ -303,7 +334,7 @@ const EventSearch = ({ navigation }: any) => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [query, fetchEvents, saveToHistory]);
+  }, [query, fetchEvents]);
 
   // Cleanup khi component unmount
   useEffect(() => {
@@ -345,16 +376,30 @@ const EventSearch = ({ navigation }: any) => {
     return showHistory && !query.trim() && !loadingState.isSearching;
   }, [showHistory, query, loadingState.isSearching]);
 
-  // Memoize empty state
-  const EmptyState = useMemo(() => (
-    <View style={styles.emptyState}>
-      <MaterialIcons name="event-busy" size={60} color="#ccc" />
-      <Text style={styles.emptyStateText}>Không tìm thấy sự kiện nào</Text>
-      <Text style={styles.emptyStateSubText}>
-        {query.trim() ? 'Thử từ khóa khác' : 'Hiện tại chưa có sự kiện nào'}
-      </Text>
-    </View>
-  ), [query]);
+  // Memoize empty state với thông báo phù hợp
+  const EmptyState = useMemo(() => {
+    if (query.trim() && !isValidSearchQuery(query)) {
+      return (
+        <View style={styles.emptyState}>
+          <MaterialIcons name="search-off" size={60} color="#ccc" />
+          <Text style={styles.emptyStateText}>Từ khóa không hợp lệ</Text>
+          <Text style={styles.emptyStateSubText}>
+            Vui lòng nhập từ khóa có ít nhất 2 ký tự và chứa chữ cái
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <MaterialIcons name="event-busy" size={60} color="#ccc" />
+        <Text style={styles.emptyStateText}>Không tìm thấy sự kiện nào</Text>
+        <Text style={styles.emptyStateSubText}>
+          {query.trim() ? 'Thử từ khóa khác' : 'Hiện tại chưa có sự kiện nào'}
+        </Text>
+      </View>
+    );
+  }, [query]);
 
   const renderContent = useMemo(() => {
     if (shouldShowHistory) {
