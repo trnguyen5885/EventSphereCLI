@@ -35,6 +35,7 @@ import RenderHtml from 'react-native-render-html';
 import { formatTimeRange } from '../../services/utils/time';
 import LoadingModal from '../../modals/LoadingModal';
 import { useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
 
 const getValidShowtime = (showtimes: any[]) => {
   const now = new Date();
@@ -81,7 +82,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   const { id } = route?.params || {};
   console.log('🔍 EventDetailScreen - Route params:', route?.params);
   console.log('🔍 EventDetailScreen - Event ID:', id);
-  
+
   const [detailEvent, setDetailEvent] = useState<EventModel | null>();
   const [userTicket, setUserTicket] = useState<Array<any>>([]);
   const userId = useSelector((state: any) => state.auth.userId);
@@ -107,7 +108,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
   console.log('📝 Id Event from state:', detailEvent?._id);
   console.log('📝 Detail Event from state:', detailEvent);
-  
+
   // Early return or error handling if no ID is provided
   useEffect(() => {
     if (!id) {
@@ -195,49 +196,51 @@ Gửi từ EventSphere App`,
     });
   };
 
-  useEffect(() => {
-    const getDetailEvent = async () => {
-      if (!id) {
-        console.error('❌ Cannot fetch event details: No ID provided');
-        return;
-      }
-      
-      try {
-        console.log('🔄 Fetching event details for ID:', id);
-        const response = await AxiosInstance().get(`events/detail/${id}`);
-        const responseUserTicket = await AxiosInstance().get(
-          `tickets/all-tickets/${id}`,
-        );
-
-        setDetailEvent(response.data);
-        setUserTicket(responseUserTicket.data.soldTickets);
-        console.log('✅ Event details fetched successfully:', response.data);
-
-        if (response.data?.userId) {
-          getOrganizerInfo(response.data.userId);
+  useFocusEffect(
+    React.useCallback(() => {
+      const getDetailEvent = async () => {
+        if (!id) {
+          console.error('❌ Cannot fetch event details: No ID provided');
+          return;
         }
-      } catch (e) {
-        console.error('❌ Error fetching event details:', e);
-      }
-    };
 
-    const getOrganizerInfo = async (userId: string) => {
-      try {
-        const response = await AxiosInstance().get(`users/getUser/${userId}`);
-        setOrganizer(response.data);
-        console.log('Organizer info: ', response.data);
-      } catch (e) {
-        console.log('Error getting organizer info: ', e);
-      }
-    };
+        try {
+          console.log('🔄 Fetching event details for ID:', id);
+          const response = await AxiosInstance().get(`events/detail/${id}`);
+          const responseUserTicket = await AxiosInstance().get(
+            `tickets/all-tickets/${id}`,
+          );
 
-    getDetailEvent();
+          setDetailEvent(response.data);
+          setUserTicket(responseUserTicket.data.soldTickets);
+          console.log('✅ Event details fetched successfully:', response.data);
 
-    return () => {
-      setDetailEvent(null);
-      setOrganizer(null);
-    };
-  }, [id]);
+          if (response.data?.userId) {
+            getOrganizerInfo(response.data.userId);
+          }
+        } catch (e) {
+          console.error('❌ Error fetching event details:', e);
+        }
+      };
+
+      const getOrganizerInfo = async (userId: string) => {
+        try {
+          const response = await AxiosInstance().get(`users/getUser/${userId}`);
+          setOrganizer(response.data);
+          console.log('Organizer info: ', response.data);
+        } catch (e) {
+          console.log('Error getting organizer info: ', e);
+        }
+      };
+
+      getDetailEvent();
+
+      // Cleanup function
+      return () => {
+        // Không cần cleanup gì đặc biệt ở đây
+      };
+    }, [id]) // Dependency array với id
+  );
 
   const userIdBuyTicket = userTicket.find(ticket => ticket.userId === userId);
   console.log(userIdBuyTicket);
@@ -615,11 +618,18 @@ Gửi từ EventSphere App`,
                   </Text>
                 </View>
               </View>
-              <MapPreview
-                latitude={detailEvent?.latitude}
-                longitude={detailEvent?.longitude}
-                location_map={detailEvent?.location_map}
-              />
+              {detailEvent?.latitude && detailEvent?.longitude ? (
+                <MapPreview
+                  key={`map-${detailEvent._id}-${Date.now()}`}
+                  latitude={detailEvent.latitude}
+                  longitude={detailEvent.longitude}
+                  location_map={detailEvent.location_map}
+                />
+              ) : (
+                <View style={{ height: 200, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
+                  <Text>Đang tải bản đồ...</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>

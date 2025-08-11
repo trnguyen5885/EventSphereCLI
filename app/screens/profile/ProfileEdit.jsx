@@ -419,7 +419,7 @@ const ProfileEdit = ({ navigation }) => {
             {/* Birth Date Field with Date Picker */}
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>
-                Ngày tháng năm sinh <Text style={styles.required}>*</Text>
+                Ngày tháng năm sinh
               </Text>
               <TouchableOpacity style={styles.inputWrapper} onPress={showDatePicker}>
                 <TextInput

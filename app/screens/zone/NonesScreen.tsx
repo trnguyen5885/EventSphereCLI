@@ -53,13 +53,21 @@ const NonesScreen = ({navigation, route}) => {
   };
 
   const handleChangeQuantity = (type, value) => {
-    setFormData(prev => ({
-      ...prev,
-      tickets: {
-        ...prev.tickets,
-        [type]: Math.max(0, prev.tickets[type] + value),
-      },
-    }));
+    setFormData(prev => {
+      const currentQty = prev.tickets[type];
+      const newQty = currentQty + value;
+
+      // Không cho giảm dưới 0 hoặc tăng quá 10
+      if (newQty < 0 || newQty > 10) return prev;
+
+      return {
+        ...prev,
+        tickets: {
+          ...prev.tickets,
+          [type]: newQty,
+        },
+      };
+    });
   };
 
   const calculateTotal = () => {
@@ -93,20 +101,25 @@ const NonesScreen = ({navigation, route}) => {
 
     return (
       <View style={styles.quantityContainer}>
+        {/* Nút giảm */}
         <TouchableOpacity
           onPress={() => handleChangeQuantity(type, -1)}
-          style={[
-            styles.qtyButton,
-            quantity === 0 && styles.qtyButtonDisabled,
-          ]}>
+          style={[styles.qtyButton, quantity === 0 && styles.qtyButtonDisabled]}
+          disabled={quantity === 0}>
           <Text style={styles.qtyButtonText}>-</Text>
         </TouchableOpacity>
 
+        {/* Hiển thị số lượng */}
         <Text style={styles.qtyText}>{quantity}</Text>
 
+        {/* Nút tăng */}
         <TouchableOpacity
           onPress={() => handleChangeQuantity(type, 1)}
-          style={styles.qtyButton}>
+          style={[
+            styles.qtyButton,
+            quantity === 10 && styles.qtyButtonDisabled,
+          ]}
+          disabled={quantity === 10}>
           <Text style={styles.qtyButtonText}>+</Text>
         </TouchableOpacity>
       </View>
@@ -167,7 +180,7 @@ const NonesScreen = ({navigation, route}) => {
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.footerInfo}>
-          <Text style={styles.footerQuantity}>Tổng số vé: {totalQuantity}</Text>
+          <Text style={styles.footerQuantity}>Tổng số vé: {totalQuantity}/10</Text>
           <Text style={styles.footerTotal}>
             Tổng:{' '}
             <Text style={styles.totalAmount}>

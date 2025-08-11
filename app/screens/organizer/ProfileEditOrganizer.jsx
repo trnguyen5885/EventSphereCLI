@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 
 import Clipboard from '@react-native-clipboard/clipboard';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { globalStyles } from '../../constants/globalStyles';
 import { appColors } from '../../constants/appColors';
@@ -15,7 +15,7 @@ import LoadingModal from '../../modals/LoadingModal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-crop-picker';
 import { loginSuccess } from '../../redux/slices/authSlice';
-
+import { Animated } from 'react-native';
 
 const ProfileEditOrganizer = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -24,10 +24,33 @@ const ProfileEditOrganizer = ({ navigation }) => {
   const [name, setName] = useState(userData?.username || '');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(userData?.phoneNumber || '');
-  const [birthDate, setBirthDate] = useState('01/01/2013');
-  const [gender, setGender] = useState('Nam');
 
-  const [image, setImage] = useState(userData?.picUrl || '');
+  const [image, setImage] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const spinValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isUploadingImage) {
+      Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinValue.stopAnimation();
+      spinValue.setValue(0);
+    }
+  }, [isUploadingImage]);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  console.log('User Data ne:', userData);
+  console.log('Image URL:', image);
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -39,10 +62,13 @@ const ProfileEditOrganizer = ({ navigation }) => {
       try {
         const res = await AxiosInstance().get(`users/getUser/${userId}`);
         const user = res.data;
+
         setName(user.username);
-        setImage(user.picUrl);
+        setImage(user.picUrl || userData?.picUrl || '');
         setEmail(user.email);
         setPhoneNumber(user.phoneNumber || '');
+
+        console.log('Thông tin người dùng:', user);
       } catch (error) {
         console.log('Lỗi khi lấy thông tin người dùng:', error);
       }
@@ -69,7 +95,6 @@ const ProfileEditOrganizer = ({ navigation }) => {
     }
   };
 
-
   const pickImage = async () => {
     try {
       const image = await ImagePicker.openPicker({
@@ -86,6 +111,8 @@ const ProfileEditOrganizer = ({ navigation }) => {
   };
 
   const uploadImage = async (imageUri) => {
+    setIsUploadingImage(true);
+
     let formData = new FormData();
     formData.append('file', {
       uri: imageUri,
@@ -107,13 +134,45 @@ const ProfileEditOrganizer = ({ navigation }) => {
       const data = await response.json();
 
       if (data.secure_url) {
-        setImage(data.secure_url);
+        const imageUrl = data.secure_url;
+        setImage(imageUrl);
+
+        try {
+          await AxiosInstance().put('users/edit', {
+            id: userId,
+            username: name,
+            picUrl: imageUrl,
+            phoneNumber: phoneNumber,
+          });
+
+          const res = await AxiosInstance().get(`users/getUser/${userId}`);
+          const updatedUser = res.data;
+
+          dispatch(loginSuccess({
+            userId,
+            userData: updatedUser,
+            role: 3,
+          }));
+
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('Đã cập nhật ảnh đại diện thành công', ToastAndroid.SHORT);
+          } else {
+            Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện thành công');
+          }
+
+        } catch (updateError) {
+          console.log('Lỗi khi cập nhật ảnh đại diện:', updateError);
+          Alert.alert('Lỗi', 'Upload ảnh thành công nhưng không thể cập nhật thông tin. Vui lòng thử lại.');
+        }
+
       } else {
         Alert.alert('Upload thất bại', JSON.stringify(data));
       }
     } catch (error) {
       console.log('Upload lỗi:', error);
       Alert.alert('Lỗi!', 'Không thể tải ảnh lên.');
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -124,18 +183,15 @@ const ProfileEditOrganizer = ({ navigation }) => {
     }
     if (!phoneNumber.trim()) {
       Alert.alert('Lỗi', 'Số điện thoại không được để trống');
-      setIsLoading(false);
       return;
     } else if (!/^(0[3|5|7|8|9])\d{8,9}$/.test(phoneNumber)) {
       Alert.alert('Lỗi', 'Số điện thoại không hợp lệ');
-      setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Cập nhật thông tin cơ bản
       await AxiosInstance().put('users/edit', {
         id: userId,
         username: name,
@@ -143,7 +199,6 @@ const ProfileEditOrganizer = ({ navigation }) => {
         phoneNumber: phoneNumber,
       });
 
-      // Nếu người dùng đổi mật khẩu
       if (oldPassword && newPassword && reNewPassword) {
         if (newPassword !== reNewPassword) {
           Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
@@ -158,16 +213,13 @@ const ProfileEditOrganizer = ({ navigation }) => {
         });
       }
 
-      // Cập nhật Redux
+      const res = await AxiosInstance().get(`users/getUser/${userId}`);
+      const updatedUser = res.data;
+
       dispatch(loginSuccess({
         userId,
-        userData: {
-          ...userData,
-          username: name,
-          picUrl: image,
-          phoneNumber: phoneNumber,
-        },
-        role: 2,
+        userData: updatedUser,
+        role: 3,
       }));
 
       Alert.alert('Thành công', 'Thông tin đã được cập nhật', [
@@ -181,45 +233,22 @@ const ProfileEditOrganizer = ({ navigation }) => {
     }
   };
 
-  const GenderSelector = () => (
-    <View style={styles.genderContainer}>
-      <Text style={styles.genderLabel}>Giới tính</Text>
-      <View style={styles.genderOptions}>
-        {['Nam', 'Nữ', 'Khác'].map((option) => (
-          <TouchableOpacity
-            key={option}
-            style={styles.genderOption}
-            onPress={() => setGender(option)}
-          >
-            <View style={[
-              styles.radioButton,
-              gender === option && styles.radioButtonSelected
-            ]}>
-              {gender === option && <View style={styles.radioButtonInner} />}
-            </View>
-            <Text style={styles.genderText}>{option}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={appColors.primary} barStyle="light-content" />
 
       {/* Header */}
       <View style={styles.header}>
-        <RowComponent onPress={handleNavigation} styles={styles.headerRow}>
+        <View style={[styles.headerRow, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleNavigation}
           >
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Thông tin tài khoản</Text>
-          <View style={{ width: 26 }} /> {/* Placeholder for alignment */}
-        </RowComponent>
+          <View style={{ width: 26 }} />
+        </View>
       </View>
 
       <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -227,18 +256,27 @@ const ProfileEditOrganizer = ({ navigation }) => {
 
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
-            <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
+            <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={isUploadingImage}>
               <Image
-                source={{ uri: image || 'https://via.placeholder.com/150' }}
+                source={{ uri: image || 'https://avatar.iran.liara.run/public' }}
                 style={styles.avatar}
               />
-              <View style={styles.cameraIcon}>
-                <Ionicons name="camera" size={25} color="white" />
-              </View>
+
+              {isUploadingImage ? (
+                <View style={styles.cameraIcon}>
+                  <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                    <Ionicons name="refresh" size={30} color="white" />
+                  </Animated.View>
+                </View>
+              ) : (
+                <View style={styles.cameraIcon}>
+                  <Ionicons name="camera" size={25} color="white" />
+                </View>
+              )}
             </TouchableOpacity>
 
             <Text style={styles.avatarHint}>
-              Cung cấp thông tin chính xác sẽ hỗ trợ bạn trong quá trình mua vé, hoặc khi cần xác thực về
+              Cung cấp thông tin chính xác sẽ hỗ trợ bạn trong quá trình quản lý sự kiện và xác thực tài khoản
             </Text>
           </View>
 
@@ -297,27 +335,6 @@ const ProfileEditOrganizer = ({ navigation }) => {
               </View>
             </View>
 
-            {/* Birth Date Field */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>
-                Ngày tháng năm sinh <Text style={styles.required}>*</Text>
-              </Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  placeholder="DD/MM/YYYY"
-                  value={birthDate}
-                  onChangeText={(text) => setBirthDate(text)}
-                  style={styles.textInput}
-                />
-              </View>
-            </View>
-
-            {/* Gender Selector */}
-            <GenderSelector />
-
-            {/* Password Fields - Hidden by default, can be shown with toggle */}
-            {/* You can add a toggle button to show/hide password fields */}
-
           </View>
 
           {/* Save Button */}
@@ -331,6 +348,7 @@ const ProfileEditOrganizer = ({ navigation }) => {
           </View>
 
         </ScrollView>
+        
         <LoadingModal visible={isLoading} />
       </KeyboardAvoidingView>
     </View>
@@ -344,7 +362,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: appColors.primary,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingTop: Platform.OS === 'ios' ? 30 : 10,
     paddingBottom: 15,
     paddingHorizontal: 16,
   },
@@ -352,7 +370,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -485,48 +503,6 @@ const styles = StyleSheet.create({
   copyIcon: {
     padding: 5,
   },
-  genderContainer: {
-    marginBottom: 25,
-  },
-  genderLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 15,
-  },
-  genderOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  genderOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  radioButtonSelected: {
-    borderColor: appColors.primary,
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: appColors.primary,
-  },
-  genderText: {
-    fontSize: 16,
-    color: '#333',
-  },
   buttonContainer: {
     padding: 20,
     backgroundColor: 'white',
@@ -536,6 +512,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 15,
   },
+  loadingSpinner: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });
 
 export default ProfileEditOrganizer;

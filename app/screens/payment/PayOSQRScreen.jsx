@@ -31,7 +31,7 @@ import FileViewer from 'react-native-file-viewer';
 const { width, height } = Dimensions.get('window');
 
 const PayOSQRScreen = ({ route, navigation }) => {
-  const { amount, eventName, userId, eventId, bookingType, bookingIds, totalPrice, showtimeId, typeBase } = route.params;
+  const { amount, eventName, userId, eventId, bookingType, bookingIds, totalPrice, showtimeId, typeBase, zones } = route.params;
   const [qrData, setQrData] = useState(null);
   const [orderCode, setOrderCode] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -313,14 +313,28 @@ const PayOSQRScreen = ({ route, navigation }) => {
 
             // Tạo đơn hàng và vé sau khi thanh toán thành công
             try {
+              let reservations = [];
+              if (typeBase === 'zone') {
+              const requestData = {
+                eventId: eventId,
+                zones,
+                showtimeId,
+                amount,
+              };
+              const zoneRes = await AxiosInstance().post(
+                '/zones/reserveZoneTicket',
+                requestData,
+              );
+              reservations = zoneRes.reservations;
+            }
               const bodyOrder = {
                 eventId: eventId,
-          userId: userId,
-          bookingType: typeBase ?? 'none',
-          totalAmount: amount,
-          bookingIds: typeBase === 'none' ? [] : bookingIds,
-          totalPrice: totalPrice,
-          showtimeId: showtimeId,
+                userId: userId,
+                bookingType: typeBase ?? 'none',
+                totalAmount: amount,
+                bookingIds: typeBase === 'zone' ? reservations.map((r: any) => r.bookingId) : bookingIds,
+                totalPrice: totalPrice,
+                showtimeId: showtimeId,
               };
 
               const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
@@ -395,16 +409,29 @@ const PayOSQRScreen = ({ route, navigation }) => {
   //         setIntervalRef(null);
   //       }
 
-  //       // Tạo đơn hàng
-  //       const bodyOrder = {
-  //         eventId: eventId,
-  //         userId: userId,
-  //         bookingType: typeBase ?? 'none',
-  //         totalAmount: amount,
-  //         bookingIds: typeBase === 'none' ? [] : bookingIds,
-  //         totalPrice: totalPrice,
-  //         showtimeId: showtimeId,
-  //       };
+  //       let reservations = [];
+  //       if (typeBase === 'zone') {
+  //          const requestData = {
+  //           eventId: eventId,
+  //           zones,
+  //           showtimeId,
+  //           amount,
+  //           };
+  //       const zoneRes = await AxiosInstance().post(
+  //               '/zones/reserveZoneTicket',
+  //               requestData,
+  //             );
+  //       reservations = zoneRes.reservations;
+  //       }
+  //             const bodyOrder = {
+  //               eventId: eventId,
+  //               userId: userId,
+  //               bookingType: typeBase ?? 'none',
+  //               totalAmount: amount,
+  //               bookingIds: typeBase === 'zone' ? reservations.map((r: any) => r.bookingId) : bookingIds,
+  //               totalPrice: totalPrice,
+  //               showtimeId: showtimeId,
+  //             };
 
   //       console.log("BookingIds: " + bookingIds);
   //       console.log("Body: " + JSON.stringify(bodyOrder));

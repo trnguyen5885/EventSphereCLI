@@ -165,7 +165,7 @@ const ProfileOrganizerScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => navigation.navigate('ProfileEdit')}
+            onPress={() => navigation.navigate('ProfileEditOrganizer')}
           >
             <View style={styles.menuItemContent}>
               <TextComponent text="Thông tin tài khoản" styles={styles.menuText} />
