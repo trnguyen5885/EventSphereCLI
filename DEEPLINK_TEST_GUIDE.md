@@ -26,6 +26,13 @@ adb shell am start -W -a android.intent.action.VIEW -d "eventsphere://event/1234
 adb shell am force-stop com.eventspherecli
 adb shell am start -W -a android.intent.action.VIEW -d "eventsphere://profile" com.eventspherecli
 
+# Test deeplink tới trang lời mời
+adb shell am start -W -a android.intent.action.VIEW -d "eventsphere://invite" com.eventspherecli
+adb shell am start -W -a android.intent.action.VIEW -d "eventsphere://invitation" com.eventspherecli
+
+# Test Airbridge tracking URL cho invite (giống như share trong EventDetailScreen)
+adb shell am start -W -a android.intent.action.VIEW -d "https://abr.ge/@eventsphere/invite?route=invite&sub_id=invite&og_tag_id=205617036&routing_short_id=f32zsz&tracking_template_id=21687cf7c4cfd6219ee9e5311acf807c&ad_type=click" com.eventspherecli
+
 # Test với data phức tạp
 adb shell am start -W -a android.intent.action.VIEW -d "eventsphere://event/507f1f77bcf86cd799439011" com.eventspherecli
 ```
@@ -76,6 +83,9 @@ adb logcat | grep -E "(Airbridge|deeplink|Navigation)"
 adb logcat -c
 # Run deeplink test
 adb logcat | grep -i airbridge
+
+# Debug invite deeplink specifically
+npx react-native log-android | grep -E "(🔍 Invite URL Debug|📨 Navigating to invite|invite)"
 ```
 
 ## ✅ Success Indicators
@@ -89,6 +99,16 @@ Khi deeplink hoạt động, bạn sẽ thấy:
 🔗 Airbridge deeplink received: eventsphere://event/123456
 📝 Processing deeplink: eventsphere://event/123456
 🎯 Navigating to event detail with ID: 123456
+
+# Cho invite deeplink:
+🔗 Airbridge deeplink received: eventsphere://invite
+📝 Processing deeplink: eventsphere://invite
+📨 Navigating to invite screen
+
+# Cho Airbridge tracking URL:
+🔗 Airbridge deeplink received: https://abr.ge/@eventsphere/invite?route=invite&sub_id=invite
+📝 Processing deeplink: https://abr.ge/@eventsphere/invite?route=invite&sub_id=invite
+📨 Navigating to invite screen
 ```
 
 ### App Behavior:
@@ -117,17 +137,31 @@ adb shell dumpsys package com.eventspherecli | grep -A 10 -B 10 "android.intent.
 - Verify scheme name đúng
 - Test với scheme khác: `adb shell am start -W -a android.intent.action.VIEW -d "https://eventsphere.io.vn/event/123" com.eventspherecli`
 
+### Issue: Airbridge URL dẫn đến Google Play thay vì app
+**Nguyên nhân:**
+- URL format không đúng (phải dùng `https://abr.ge/@eventsphere/` giống EventDetailScreen)
+- App chưa được cài đặt
+- Thiếu các parameters tracking cần thiết
+
+**Giải pháp:**
+- Sử dụng URL đúng format: `https://abr.ge/@eventsphere/invite?route=invite&sub_id=invite&og_tag_id=205617036&routing_short_id=f32zsz&tracking_template_id=21687cf7c4cfd6219ee9e5311acf807c&ad_type=click`
+- Kiểm tra app đã cài đặt: `adb shell pm list packages | grep eventspherecli`
+- Test custom scheme trước: `eventsphere://invite`
+
 ## 🎯 Test Cases
 
 ### Basic Tests:
 - `eventsphere://` (mở home screen)
 - `eventsphere://event/123456` (mở event detail)  
 - `eventsphere://profile` (mở profile)
+- `eventsphere://invite` (mở trang lời mời nhóm)
+- `eventsphere://invitation` (mở trang lời mời nhóm)
 
 ### Advanced Tests:
 - `eventsphere://event/507f1f77bcf86cd799439011` (MongoDB ObjectId)
 - `eventsphere://search?q=music` (với query parameters)
 - `https://eventsphere.io.vn/event/123` (Universal links)
+- `https://abr.ge/@eventsphere/invite?route=invite&sub_id=invite` (Airbridge tracking URL cho invite)
 
 ### Edge Cases:
 - App chưa cài đặt (sẽ mở Play Store)

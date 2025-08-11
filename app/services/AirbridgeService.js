@@ -120,6 +120,28 @@ class AirbridgeService {
       }
 
       const path = urlObj?.pathname || '';
+      
+      // CHECK INVITE PARAMETERS FIRST (before nested deeplink processing)
+      const hasInvitePath = path.includes('/invite') || path.includes('/invitation');
+      const hasInviteRoute = /(?:\?|&)route=invite/.test(rawUrl);
+      const hasInviteSubId = /(?:\?|&)sub_id=invite/.test(rawUrl);
+      const hasInviteScreen = /(?:\?|#)(?:route|screen)=invite/.test(rawUrl) || /(?:\?|#)(?:route|screen)=invitation/.test(rawUrl);
+      
+      console.log('🔍 Invite URL Debug (EARLY CHECK):', {
+        rawUrl,
+        path,
+        hasInvitePath,
+        hasInviteRoute,
+        hasInviteSubId,
+        hasInviteScreen
+      });
+      
+      if (hasInvitePath || hasInviteRoute || hasInviteSubId || hasInviteScreen) {
+        console.log('📨 Navigating to invite screen (EARLY CHECK)');
+        this.navigationRef.navigate('InviteScreen');
+        return;
+      }
+      
       // Accept any non-separator token as ID to be flexible with backend IDs
       const pathMatch = path.match(/\/(?:event|events)\/([^\/?#]+)/);
       if (pathMatch && navigateToEvent(pathMatch[1])) return;
@@ -160,6 +182,8 @@ class AirbridgeService {
         this.navigationRef.navigate('ProfileScreen');
         return;
       }
+
+
 
       console.log('ℹ️ No matching route or event id. Navigating to home');
       this.navigationRef.navigate('Drawer');
