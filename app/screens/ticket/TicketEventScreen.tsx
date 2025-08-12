@@ -184,19 +184,37 @@ const TicketEventScreen = ({navigation, route}: any) => {
               orderId: responseOrder.data,
               paymentId: result.transToken, // dùng transToken từ ZaloPay
             };
-            await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
+            const responseOrderTicket = await AxiosInstance().post(
+              'orders/createTicket',
+              bodyOrderTicket,
+            );
 
             setIsLoading(false);
-            Alert.alert('Thành công', 'Thanh toán đã được xử lý thành công!', [
-              {
-                text: 'OK',
-                onPress: () =>
-                  navigation.navigate('Drawer', {
-                    screen: 'Home',
-                    params: {screen: 'Vé của tôi'},
-                  }),
-              },
-            ]);
+            // Alert.alert('Thành công', 'Thanh toán đã được xử lý thành công!', [
+            //   {
+            //     text: 'OK',
+            //     onPress: () =>
+            //       navigation.navigate('Drawer', {
+            //         screen: 'Home',
+            //         params: {screen: 'Vé của tôi'},
+            //       }),
+            //   },
+            // ]);
+            setTimeout(() => {
+              navigation.navigate('PaymentSuccess', {
+                amount: totalPrice,
+                eventName: eventInfo?.name,
+                orderCode: responseOrder.data,
+                transactionId: response.data.zp_trans_token || null,
+                paymentMethod: 'Zalo Pay',
+                timestamp: Date.now(),
+                orderId: responseOrder.data,
+                ticketId: responseOrderTicket.data,
+                totalPrice: totalPrice,
+                bookingType: typeBase,
+                showtimeId: showtimeId,
+              });
+            }, 500);
           }
         } catch (error: any) {
           // ❌ Huỷ hoặc lỗi
