@@ -176,7 +176,7 @@ const ProfileOrganizerScreen = ({ navigation }) => {
         </View>
 
         {/* Phần Cài đặt ứng dụng */}
-        <View style={styles.sectionContainer}>
+        {/* <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <MaterialIcons name="settings" size={20} color="#333" />
             <TextComponent text="Cài đặt ứng dụng" styles={styles.sectionTitle} />
@@ -198,7 +198,7 @@ const ProfileOrganizerScreen = ({ navigation }) => {
               </View>
             </View>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Menu khác */}
         <View style={styles.sectionContainer}>

@@ -27,11 +27,12 @@ const SupportScreen = ({ navigation }) => {
     { id: 4, title: 'Chính sách bảo mật thông tin', icon: 'security' },
     { id: 5, title: 'Cơ chế giải quyết tranh chấp/khiếu nại', icon: 'gavel' },
     { id: 6, title: 'Chính sách bảo mật thanh toán', icon: 'payment' },
-    { id: 7, title: 'Chính sách đổi trả và kiểm hàng', icon: 'swap-horiz' },
+    { id: 7, title: 'Chính sách đổi trả và hoàn tiền', icon: 'swap-horiz' },
     { id: 8, title: 'Điều kiện vận chuyển và giao nhận', icon: 'local-shipping' },
     { id: 9, title: 'Điều khoản sử dụng cho khách hàng', icon: 'person' },
     { id: 10, title: 'Điều khoản sử dụng cho ban tổ chức', icon: 'business' },
-    { id: 11, title: 'Phương thức thanh toán', icon: 'credit-card' }
+    { id: 11, title: 'Phương thức thanh toán', icon: 'credit-card' },
+    { id: 12, title: 'Miễn trừ trách nhiệm', icon: 'warning' },
   ];
 
   // Xử lý nhấn vào mục hỗ trợ

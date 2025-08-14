@@ -76,6 +76,7 @@ import ListByTag from './app/screens/explore/ListByTag';
 import PaymentSuccessScreen from './app/screens/payment/PaymentSuccessScreen';
 import NonesScreen from './app/screens/zone/NonesScreen';
 import useDeepLinking from './app/hooks/useDeepLinking';
+import TransactionHistory from './app/screens/profile/TransactionHistoryScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -264,6 +265,7 @@ const AppWithSocket = () => {
           <Stack.Screen name="FavoriteTag" component={FavoriteTag} />
           <Stack.Screen name="ListByTag" component={ListByTag} />
           <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
+          <Stack.Screen name="TransactionHistory" component={TransactionHistory} />
           
 
 

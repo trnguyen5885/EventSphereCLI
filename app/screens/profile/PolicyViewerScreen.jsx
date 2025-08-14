@@ -8,7 +8,7 @@ const PolicyViewerScreen = ({ route, navigation }) => {
     const { title, content } = route.params;
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -20,7 +20,9 @@ const PolicyViewerScreen = ({ route, navigation }) => {
             {/* Content */}
             <ScrollView contentContainerStyle={styles.content}>
                 {content.map((line, index) => (
-                    <Text key={index} style={styles.contentText}>{line}</Text>
+                    <Text key={index} style={styles.contentText}>
+                        {line}
+                    </Text>
                 ))}
             </ScrollView>
         </View>
@@ -28,40 +30,42 @@ const PolicyViewerScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF', // Nền trắng như trang giấy
+    },
     header: {
         backgroundColor: appColors.primary,
         height: 60,
         flexDirection: 'row',
         alignItems: 'center',
-
         paddingHorizontal: 16,
     },
-
     backButton: {
         width: 30,
         height: 30,
         borderRadius: 20,
-        // backgroundColor: 'rgba(255, 255, 255, 0.2)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-
     headerTitle: {
         flex: 1,
         textAlign: 'center',
         fontSize: 18,
         fontWeight: 'bold',
         color: 'white',
-        marginRight: 40, // Để cân bằng với back button
+        marginRight: 40,
     },
-
     content: {
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
     },
     contentText: {
-        fontSize: 14,
-        lineHeight: 22,
-        marginBottom: 8,
+        fontSize: 16,
+        lineHeight: 26,
+        textAlign: 'justify', // Căn đều hai bên
+        color: '#000000',
+        marginBottom: 10,
     },
 });
 
