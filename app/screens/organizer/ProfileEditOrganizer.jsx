@@ -285,10 +285,10 @@ const ProfileEditOrganizer = ({ navigation }) => {
 
             {/* Name Field */}
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Họ và tên</Text>
+              <Text style={styles.fieldLabel}>Tên nhà tổ chức</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
-                  placeholder="Nhập họ và tên"
+                  placeholder="Nhập tên nhà tổ chức sự kiện"
                   value={name}
                   onChangeText={(text) => setName(text)}
                   style={styles.textInput}
