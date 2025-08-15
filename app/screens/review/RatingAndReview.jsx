@@ -11,7 +11,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const RatingAndReview = ({ detailEventId }) => {
+const RatingAndReview = ({ detailEventId, userIdBuyTicket }) => {
     const navigation = useNavigation();
     const [listReview, setListReivew] = useState([]);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -20,6 +20,10 @@ const RatingAndReview = ({ detailEventId }) => {
     const [isImageModalVisible, setIsImageModalVisible] = useState(false);
     const socketRef = useRef(null);
 
+    // Kiểm tra xem người dùng đã mua vé chưa
+    const hasUserBoughtTicket = !!userIdBuyTicket;
+
+    console.log('User bought ticket:', hasUserBoughtTicket);
     console.log(listReview);
 
     useEffect(() => {
@@ -178,20 +182,30 @@ const RatingAndReview = ({ detailEventId }) => {
             {isExpanded && (
                 <View style={styles.sectionContent}>
                     <View style={styles.contentWrapper}>
-                        {/* Nút đánh giá của bạn */}
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => navigation.navigate('Review', {
-                                detailEventId: detailEventId,
-                            })}
-                            style={styles.writeReviewButton}
-                        >
-                            <Ionicons name="create-outline" size={20} color={appColors.primary} />
-                            <Text style={styles.writeReviewText}>Viết đánh giá của bạn</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#6B7280" />
-                        </TouchableOpacity>
+                        {/* Nút đánh giá - Chỉ hiển thị nếu người dùng đã mua vé */}
+                        {hasUserBoughtTicket ? (
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() => navigation.navigate('Review', {
+                                    detailEventId: detailEventId,
+                                })}
+                                style={styles.writeReviewButton}
+                            >
+                                <Ionicons name="create-outline" size={20} color={appColors.primary} />
+                                <Text style={styles.writeReviewText}>Viết đánh giá của bạn</Text>
+                                <Ionicons name="chevron-forward" size={16} color="#6B7280" />
+                            </TouchableOpacity>
+                        ) : (
+                            // Hiển thị thông báo cho người chưa mua vé
+                            <View style={styles.notEligibleContainer}>
+                                <Ionicons name="ticket-outline" size={20} color="#9CA3AF" />
+                                <Text style={styles.notEligibleText}>
+                                    Bạn cần mua vé để có thể viết đánh giá
+                                </Text>
+                            </View>
+                        )}
 
-                        {/* Danh sách bình luận */}
+                        {/* Danh sách bình luận - Luôn hiển thị */}
                         {displayedReviews.length > 0 ? (
                             displayedReviews.map((item, index) => (
                                 <View key={item._id} style={[
@@ -231,15 +245,18 @@ const RatingAndReview = ({ detailEventId }) => {
                                             {item.comment}
                                         </Text>
                                     )}
-
-                                    
                                 </View>
                             ))
                         ) : (
                             <View style={styles.emptyState}>
                                 <Ionicons name="chatbubble-outline" size={48} color="#9CA3AF" />
                                 <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
-                                <Text style={styles.emptySubText}>Hãy là người đầu tiên đánh giá sự kiện này</Text>
+                                <Text style={styles.emptySubText}>
+                                    {hasUserBoughtTicket 
+                                        ? "Hãy là người đầu tiên đánh giá sự kiện này" 
+                                        : "Hãy mua vé để có thể đánh giá sự kiện này"
+                                    }
+                                </Text>
                             </View>
                         )}
 
@@ -503,25 +520,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
 
-    // Action Buttons
-    actionButtonContainer: {
-        flexDirection: 'row',
-        gap: 16,
-    },
-
-    actionButtons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-    },
-
-    actionButtonText: {
-        fontSize: 14,
-        color: '#6B7280',
-    },
-
     // Write Review Button
     writeReviewButton: {
         flexDirection: 'row',
@@ -539,6 +537,26 @@ const styles = StyleSheet.create({
         marginLeft: 12,
         fontSize: 16,
         color: appColors.primary,
+        fontWeight: '500',
+    },
+
+    // Thông báo cho người chưa mua vé
+    notEligibleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+
+    notEligibleText: {
+        flex: 1,
+        marginLeft: 12,
+        fontSize: 14,
+        color: '#6B7280',
         fontWeight: '500',
     },
 

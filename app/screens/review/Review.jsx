@@ -220,7 +220,7 @@ const Review = ({ navigation, route }) => {
 
                         <View style={styles.detailInfoContainer}>
                             <Text style={styles.detailInfoName}>{name}</Text>
-                            <Text style={styles.detailInfoSubtitle}>Đang viết đánh giá...</Text>
+                            <Text style={styles.detailInfoSubtitle}>Viết cảm nhận về sự kiện của bạn...</Text>
                         </View>
                     </View>
 

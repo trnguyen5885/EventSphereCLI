@@ -670,9 +670,10 @@ Gửi từ EventSphere App`,
           </View>
         )}
 
-        {!!userIdBuyTicket && (
-          <RatingAndReview detailEventId={detailEvent?._id} />
-        )}
+        <RatingAndReview
+          detailEventId={detailEvent?._id}
+          userIdBuyTicket={userIdBuyTicket} // Truyền thông tin người dùng đã mua vé
+        />
       </ScrollView>
 
       <View style={styles.bottomButtonContainer}>
