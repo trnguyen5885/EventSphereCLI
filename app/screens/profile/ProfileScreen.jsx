@@ -189,22 +189,18 @@ const ProfileScreen = ({ navigation }) => {
         {/* Phần Cài đặt ứng dụng */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="settings" size={20} color="#333" />
-            <TextComponent text="Cài đặt ứng dụng" styles={styles.sectionTitle} />
+            <MaterialIcons name="history" size={20} color="#333" />
+            <TextComponent text="Lịch sử" styles={styles.sectionTitle} />
           </View>
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={showLanguageToast}
+            onPress={() => navigation.navigate('TransactionHistory')}
           >
             <View style={styles.menuItemContent}>
-              <TextComponent text="Thay đổi ngôn ngữ" styles={styles.menuText} />
+              <TextComponent text="Lịch sử giao dịch" styles={styles.menuText} />
               <View style={styles.languageContainer}>
-                <Image
-                  source={{ uri: 'https://flagcdn.com/w20/vn.png' }}
-                  style={styles.flagIcon}
-                />
-                <TextComponent text="Vie" styles={styles.languageText} />
+                
                 <MaterialCommunityIcons name="chevron-right" size={20} color="#999" />
               </View>
             </View>
