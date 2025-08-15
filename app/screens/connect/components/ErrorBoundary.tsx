@@ -1,12 +1,10 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { Component, ReactNode } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { appColors } from '../../../constants/appColors';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -17,52 +15,61 @@ interface State {
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = {
+      hasError: false,
+      error: null,
+    };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return {
+      hasError: true,
+      error,
+    };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    this.props.onError?.(error, errorInfo);
+    
+    // Log specific map-related errors
+    if (error.message.includes('MapView') || error.message.includes('Google Play Services')) {
+      console.error('Map-related error detected:', error.message);
+    }
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({
+      hasError: false,
+      error: null,
+    });
   };
 
   render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
+      const isMapError = this.state.error?.message?.includes('MapView') || 
+                        this.state.error?.message?.includes('Google Play Services');
 
       return (
-        <View style={styles.container}>
-          <View style={styles.iconContainer}>
-            <MaterialIcons name="error-outline" size={64} color="#E53935" />
-          </View>
-          
-          <Text style={styles.title}>Đã xảy ra lỗi</Text>
-          <Text style={styles.message}>
-            Ứng dụng gặp lỗi không mong muốn. Vui lòng thử lại hoặc khởi động lại ứng dụng.
-          </Text>
-          
-          {__DEV__ && this.state.error && (
-            <View style={styles.errorDetails}>
-              <Text style={styles.errorText}>
-                {this.state.error.message}
-              </Text>
-            </View>
-          )}
-          
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={styles.retryButton} 
-              onPress={this.handleRetry}
-            >
+        <View style={styles.errorContainer}>
+          <View style={styles.errorContent}>
+            <MaterialIcons 
+              name={isMapError ? "map" : "error-outline"} 
+              size={48} 
+              color={appColors.primary} 
+            />
+            
+            <Text style={styles.errorTitle}>
+              {isMapError ? 'Lỗi bản đồ' : 'Đã xảy ra lỗi'}
+            </Text>
+            
+            <Text style={styles.errorMessage}>
+              {isMapError 
+                ? 'Không thể tải bản đồ. Vui lòng kiểm tra kết nối mạng và thử lại.'
+                : 'Có lỗi xảy ra khi tải nội dung. Vui lòng thử lại.'
+              }
+            </Text>
+
+            <TouchableOpacity style={styles.retryButton} onPress={this.handleRetry}>
               <MaterialIcons name="refresh" size={20} color="#fff" />
               <Text style={styles.retryButtonText}>Thử lại</Text>
             </TouchableOpacity>
@@ -76,65 +83,49 @@ class ErrorBoundary extends Component<Props, State> {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
     backgroundColor: '#F8F9FA',
+    padding: 20,
   },
-  iconContainer: {
-    marginBottom: 20,
+  errorContent: {
+    alignItems: 'center',
+    maxWidth: 300,
   },
-  title: {
-    fontSize: 24,
+  errorTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    marginTop: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  message: {
-    fontSize: 16,
+  errorMessage: {
+    fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 30,
-  },
-  errorDetails: {
-    backgroundColor: '#FFF3E0',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-    width: '100%',
-    maxHeight: 150,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#E65100',
-    fontFamily: 'monospace',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 12,
+    lineHeight: 20,
+    marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: appColors.primary,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    backgroundColor: appColors.primary,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 25,
+    borderRadius: 8,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   retryButtonText: {
     color: '#fff',
-    fontSize: 16,
     fontWeight: '600',
+    fontSize: 16,
     marginLeft: 8,
   },
 });

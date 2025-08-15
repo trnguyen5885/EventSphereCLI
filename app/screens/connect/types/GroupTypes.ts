@@ -63,6 +63,7 @@ export interface Member {
         ownerId?: {
           _id: string;
         };
+        showtimeId?: string;
       };
     };
     navigation: any;

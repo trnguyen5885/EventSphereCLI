@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
-import { View, Dimensions, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Dimensions, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import CustomMarkerUser from '../../map/CustomMarkerUser';
 import { useSelector } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -36,7 +36,9 @@ const CustomMarker = ({ picUrl, isSharing }) => (
 const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) => {
   const [routeCoords, setRouteCoords] = useState([]);
   const [useStraightLine, setUseStraightLine] = useState(false);
+  const [mapError, setMapError] = useState(false);
   const mapRef = useRef(null);
+  const isMountedRef = useRef(true);
   const userId = useSelector(state => state.auth.userId);
 
   const targetMember = members.find(m => (m._id || m.id) === targetMemberId);
@@ -44,16 +46,47 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
   const firstLocationLat = firstLocation?.location?.coordinates[1] || 0;
   const firstLocationLng = firstLocation?.location?.coordinates[0] || 0;
 
-  const [region, setRegion] = useState(() => ({
-    latitude: myLocation?.latitude || firstLocationLat,
-    longitude: myLocation?.longitude || firstLocationLng,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  }));
+  const [region, setRegion] = useState(() => {
+    // Fallback coordinates nếu không có vị trí
+    const fallbackLat = 21.0285;
+    const fallbackLng = 105.8542;
+    
+    return {
+      latitude: myLocation?.latitude || firstLocationLat || fallbackLat,
+      longitude: myLocation?.longitude || firstLocationLng || fallbackLng,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+  });
+
+  // Cleanup function để tránh memory leaks
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Cleanup khi component unmount
+      if (mapRef.current) {
+        try {
+          mapRef.current = null;
+        } catch (error) {
+          console.log('Map cleanup error:', error);
+        }
+      }
+      // Reset target member khi unmount để tránh lỗi polyline
+      if (setTargetMemberId) {
+        setTargetMemberId(null);
+      }
+    };
+  }, [setTargetMemberId]);
 
   useEffect(() => {
-    const lat = myLocation?.latitude || firstLocationLat;
-    const lng = myLocation?.longitude || firstLocationLng;
+    // Fallback coordinates nếu không có vị trí
+    const fallbackLat = 10.853865242278005;
+    const fallbackLng = 106.62619691164939;
+    
+    const lat = myLocation?.latitude || firstLocationLat || fallbackLat;
+    const lng = myLocation?.longitude || firstLocationLng || fallbackLng;
+    
     setRegion(r => {
       if (r.latitude === lat && r.longitude === lng) return r;
       return { ...r, latitude: lat, longitude: lng };
@@ -62,11 +95,16 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
 
   useEffect(() => {
     const getWalkingRoute = async (start, end) => {
+      // Kiểm tra component còn mount không
+      if (!isMountedRef.current) return;
+      
       const distance = getDistanceInKm(start.latitude, start.longitude, end.latitude, end.longitude);
 
       if (distance < 1) {
-        setUseStraightLine(true);
-        setRouteCoords([]);
+        if (isMountedRef.current) {
+          setUseStraightLine(true);
+          setRouteCoords([]);
+        }
       } else {
         try {
           const response = await fetch('https://api.openrouteservice.org/v2/directions/foot-walking/geojson', {
@@ -88,22 +126,33 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
             latitude: coord[1],
             longitude: coord[0],
           }));
-          setUseStraightLine(false);
-          setRouteCoords(coords);
+          
+          // Kiểm tra component còn mount không trước khi set state
+          if (isMountedRef.current) {
+            setUseStraightLine(false);
+            setRouteCoords(coords);
+          }
         } catch (error) {
           console.error('Failed to fetch route:', error);
-          setUseStraightLine(true);
-          setRouteCoords([]);
+          if (isMountedRef.current) {
+            setUseStraightLine(true);
+            setRouteCoords([]);
+          }
         }
       }
 
-      if (mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: end.latitude,
-          longitude: end.longitude,
-          latitudeDelta: 0.002,
-          longitudeDelta: 0.002
-        }, 800);
+      // Kiểm tra component còn mount và mapRef còn tồn tại không
+      if (isMountedRef.current && mapRef.current) {
+        try {
+          mapRef.current.animateToRegion({
+            latitude: end.latitude,
+            longitude: end.longitude,
+            latitudeDelta: 0.002,
+            longitudeDelta: 0.002
+          }, 800);
+        } catch (error) {
+          console.log('Map animation error:', error);
+        }
       }
     };
 
@@ -114,11 +163,14 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
     ) {
       getWalkingRoute(myLocation, targetMember);
     } else {
-      setRouteCoords([]);
+      if (isMountedRef.current) {
+        setRouteCoords([]);
+      }
     }
   }, [myLocation, targetMember]);
   
   const handleRegionChangeComplete = (newRegion) => {
+    if (!isMountedRef.current) return;
     setRegion(r => {
       if (
         r.latitude === newRegion.latitude &&
@@ -131,158 +183,206 @@ const GroupMap = ({ members, myLocation, targetMemberId, setTargetMemberId }) =>
   };
 
   const zoomIn = () => {
-    if (!region || !mapRef.current) return;
+    if (!region || !mapRef.current || !isMountedRef.current) return;
     const newRegion = {
       ...region,
       latitudeDelta: region.latitudeDelta * 0.6,
       longitudeDelta: region.longitudeDelta * 0.6,
     };
     setRegion(newRegion);
-    mapRef.current.animateToRegion(newRegion, 300);
+    try {
+      mapRef.current.animateToRegion(newRegion, 300);
+    } catch (error) {
+      console.log('Zoom in error:', error);
+    }
   };
 
   const zoomOut = () => {
-    if (!region || !mapRef.current) return;
+    if (!region || !mapRef.current || !isMountedRef.current) return;
     const newRegion = {
       ...region,
       latitudeDelta: region.latitudeDelta * 1.4,
       longitudeDelta: region.longitudeDelta * 1.4,
     };
     setRegion(newRegion);
-    mapRef.current.animateToRegion(newRegion, 300);
-  };
-
-  const centerToUser = () => {
-    if (myLocation && mapRef.current) {
-      mapRef.current.animateToRegion(
-        {
-          ...myLocation,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        },
-        1000,
-      );
+    try {
+      mapRef.current.animateToRegion(newRegion, 300);
+    } catch (error) {
+      console.log('Zoom out error:', error);
     }
   };
 
-  if (!myLocation && !firstLocation) {
+  const centerToUser = () => {
+    if (myLocation && mapRef.current && isMountedRef.current) {
+      try {
+        mapRef.current.animateToRegion(
+          {
+            ...myLocation,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          },
+          1000,
+        );
+      } catch (error) {
+        console.log('Center to user error:', error);
+      }
+    }
+  };
+
+  // Luôn hiển thị map với fallback coordinates nếu không có vị trí
+  const hasValidLocation = myLocation || firstLocation;
+  
+  if (!hasValidLocation) {
     return (
       <View style={styles.mapContainer}>
-        <View style={styles.noMap}><Text>Chưa có vị trí để hiển thị bản đồ</Text></View>
+        <View style={styles.noMap}>
+          <Text style={{ color: '#666', textAlign: 'center' }}>
+            Đang tải vị trí...{'\n'}
+            Sử dụng vị trí mặc định
+          </Text>
+        </View>
       </View>
     );
   }
   
   return (
     <View style={styles.mapContainer}>
-      <FloatingControls
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        onCenterUser={centerToUser}
-        centerUserIcon={require('../../../../assets/images/icon-LocationUser.png')}
-        centerUserButtonStyle={{width: 50, height: 50}}
-        zoomInButtonStyle={{width: 30, height: 30}}
-        zoomOutButtonStyle={{width: 30, height: 30}}
-        style={{top: 12, right: 12}}
-      />
-
-      {/* Avatar nổi phía trên bản đồ khi chọn targetMember */}
-      {targetMember && targetMember.picUrl && (
-        <View style={{
-          position: 'absolute',
-          top: 10,
-          left: width / 2 - 30,
-          zIndex: 100,
-          alignItems: 'center',
-        }}>
-          <Image
-            source={{ uri: targetMember.picUrl }}
-            style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 3, borderColor: '#fff' }}
-          />
-          <Text style={{ color: '#333', fontWeight: 'bold', marginTop: 4 }}>{targetMember.name}</Text>
+      {mapError ? (
+        <View style={styles.noMap}>
+          <Ionicons name="map-outline" size={48} color="#666" />
+          <Text style={{ color: '#666', marginTop: 10, textAlign: 'center' }}>
+            Không thể tải bản đồ{'\n'}
+            Vui lòng kiểm tra kết nối mạng
+          </Text>
+          <TouchableOpacity 
+            style={{ 
+              backgroundColor: '#007AFF', 
+              padding: 10, 
+              borderRadius: 8, 
+              marginTop: 15 
+            }}
+            onPress={() => setMapError(false)}
+          >
+            <Text style={{ color: '#fff' }}>Thử lại</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      ) : (
+        <>
+          <FloatingControls
+            mapRef={mapRef}
+            zoomInButtonStyle={{width: 30, height: 30}}
+            zoomOutButtonStyle={{width: 30, height: 30}}
+            style={{top: 12, right: 12}}
+          />
 
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        region={region}
-        onRegionChangeComplete={handleRegionChangeComplete}
-        showsUserLocation={!!myLocation}
-        showsMyLocationButton={false}
-      >
-        {members.map(member => {
-          const isTarget = targetMember &&
-            (member._id || member.id) === (targetMember._id || targetMember.id);
-
-          // Xác định marker của chính mình dựa trên userId
-          const isMe = String(member._id || member.id) === String(userId);
-          if (isMe) return null;
-
-          return typeof member.latitude === 'number' && typeof member.longitude === 'number' && (
-            <Marker
-              key={member._id || member.id}
-              coordinate={{
-                latitude: member.latitude,
-                longitude: member.longitude
-              }}
-              onPress={() => {
-                if (!isTarget) {
-                  setTargetMemberId(member._id || member.id);
-                }
-              }}
-            >
-              <CustomMarker 
-                picUrl={member.picUrl} 
-                isSharing={true}
+          {/* Avatar nổi phía trên bản đồ khi chọn targetMember */}
+          {targetMember && targetMember.picUrl && (
+            <View style={{
+              position: 'absolute',
+              top: 10,
+              left: width / 2 - 30,
+              zIndex: 100,
+              alignItems: 'center',
+            }}>
+              <Image
+                source={{ uri: targetMember.picUrl }}
+                style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 3, borderColor: '#fff' }}
               />
-              <Callout tooltip>
-                <View style={styles.calloutBox}>
-                  <Image
-                    source={{ uri: member.picUrl ? member.picUrl : 'https://avatar.iran.liara.run/public' }}
-                    style={styles.calloutImage}
+              <Text style={{ color: '#333', fontWeight: 'bold', marginTop: 4 }}>{targetMember.name}</Text>
+            </View>
+          )}
+
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            provider={PROVIDER_GOOGLE}
+            region={region}
+            onRegionChangeComplete={handleRegionChangeComplete}
+            showsUserLocation={!!myLocation}
+            showsMyLocationButton={false}
+            onError={(error) => {
+              console.error('MapView error:', error);
+              setMapError(true);
+            }}
+            onMapReady={() => {
+              setMapError(false);
+            }}
+          >
+            {members.map(member => {
+              const isTarget = targetMember &&
+                (member._id || member.id) === (targetMember._id || targetMember.id);
+
+              // Xác định marker của chính mình dựa trên userId
+              const isMe = String(member._id || member.id) === String(userId);
+              if (isMe) return null;
+
+              return typeof member.latitude === 'number' && typeof member.longitude === 'number' && (
+                <Marker
+                  key={member._id || member.id}
+                  coordinate={{
+                    latitude: member.latitude,
+                    longitude: member.longitude
+                  }}
+                  onPress={() => {
+                    if (!isTarget) {
+                      setTargetMemberId(member._id || member.id);
+                    }
+                  }}
+                >
+                  <CustomMarker 
+                    picUrl={member.picUrl} 
+                    isSharing={true}
                   />
-                  <Text style={styles.calloutEmail}>{member.email}</Text>
-                  <Text style={styles.calloutDirection}>Nhấn để chỉ đường</Text>
-                </View>
-              </Callout>
-            </Marker>
-          );
-        })}
+                  <Callout tooltip>
+                    <View style={styles.calloutBox}>
+                      <Image
+                        source={{ uri: member.picUrl ? member.picUrl : 'https://avatar.iran.liara.run/public' }}
+                        style={styles.calloutImage}
+                      />
+                      <Text style={styles.calloutEmail}>{member.email}</Text>
+                      <Text style={styles.calloutDirection}>Nhấn để chỉ đường</Text>
+                    </View>
+                  </Callout>
+                </Marker>
+              );
+            })}
 
 
-        {myLocation && (
-          <Marker coordinate={myLocation}>
-            <CustomMarkerUser />
-            <Callout tooltip>
-              <View style={styles.calloutBox}>
-                <Text style={[styles.calloutName, { color: '#28a745' }]}>Bạn</Text>
-                <Text style={styles.calloutEmail}>Vị trí hiện tại</Text>
-              </View>
-            </Callout>
-          </Marker>
-        )}
+            {myLocation && myLocation.latitude && myLocation.longitude && (
+              <Marker coordinate={myLocation}>
+                <CustomMarkerUser />
+                <Callout tooltip>
+                  <View style={styles.calloutBox}>
+                    <Text style={[styles.calloutName, { color: '#28a745' }]}>Bạn</Text>
+                    <Text style={styles.calloutEmail}>Vị trí hiện tại</Text>
+                  </View>
+                </Callout>
+              </Marker>
+            )}
 
 
-        {myLocation && targetMember && (
-          useStraightLine ? (
-            <Polyline
-              coordinates={[myLocation, targetMember]}
-              strokeColor="#fbbc04"
-              strokeWidth={4}
-            />
-          ) : (
-            routeCoords.length > 1 && (
-              <Polyline
-                coordinates={routeCoords}
-                strokeColor="#007AFF"
-                strokeWidth={4}
-              />
-            )
-          )
-        )}
-      </MapView>
+            {myLocation && myLocation.latitude && myLocation.longitude && 
+             targetMember && targetMember.latitude && targetMember.longitude && 
+             isMountedRef.current && (
+              useStraightLine ? (
+                <Polyline
+                  coordinates={[myLocation, targetMember]}
+                  strokeColor="#fbbc04"
+                  strokeWidth={4}
+                />
+              ) : (
+                routeCoords.length > 1 && (
+                  <Polyline
+                    coordinates={routeCoords}
+                    strokeColor="#007AFF"
+                    strokeWidth={4}
+                  />
+                )
+              )
+            )}
+          </MapView>
+        </>
+      )}
     </View>
   );
 };

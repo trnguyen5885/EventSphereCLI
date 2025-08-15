@@ -21,10 +21,14 @@ const ConnectScreen = ({ navigation }) => {
   const [showGroupForm, setShowGroupForm] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedShowtime, setSelectedShowtime] = useState(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const userId = useSelector(state => state.auth.userId);
-  const [userLocation, setUserLocation] = useState(null);
+  const [userLocation, setUserLocation] = useState({
+    latitude: 21.0285,
+    longitude: 105.8542
+  });
   const [myGroups, setMyGroups] = useState([]);
   const isFocused = useIsFocused();
   const requestLocationPermission = async () => {
@@ -51,32 +55,45 @@ const ConnectScreen = ({ navigation }) => {
   
   useEffect(() => {
     const initLocation = async () => {
-      const granted = await requestLocationPermission();
-      if (granted) {
-        try {
-          await LocationServicesDialogBox.checkLocationServicesIsEnabled({
-            message: 'Bật GPS để tiếp tục sử dụng định vị.',
-            ok: 'Bật',
-            cancel: 'Thoát',
-          });
-          Geolocation.getCurrentPosition(
-            pos => {
-              const { latitude, longitude } = pos.coords;
-              console.log('Vị trí:', latitude, longitude);
-              setUserLocation({ latitude, longitude });
-            },
-            error => {
-              console.log('Lỗi khi lấy vị trí:', error);
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 10000,
-            },
-          );
-        } catch (err) {
-          console.log('GPS không được bật');
+      try {
+        const granted = await requestLocationPermission();
+        if (granted) {
+          try {
+            await LocationServicesDialogBox.checkLocationServicesIsEnabled({
+              message: 'Bật GPS để tiếp tục sử dụng định vị.',
+              ok: 'Bật',
+              cancel: 'Thoát',
+            });
+            
+            Geolocation.getCurrentPosition(
+              pos => {
+                const { latitude, longitude } = pos.coords;
+                // Validate coordinates
+                if (latitude !== 0 && longitude !== 0) {
+                  console.log('Vị trí:', latitude, longitude);
+                  setUserLocation({ latitude, longitude });
+                } else {
+                  console.log('Vị trí không hợp lệ, giữ vị trí mặc định');
+                }
+              },
+              error => {
+                console.log('Lỗi khi lấy vị trí:', error);
+                // Giữ vị trí mặc định nếu không lấy được
+              },
+              {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 10000,
+              },
+            );
+          } catch (err) {
+            console.log('GPS không được bật, giữ vị trí mặc định');
+          }
+        } else {
+          console.log('Không có quyền vị trí, giữ vị trí mặc định');
         }
+      } catch (error) {
+        console.log('Lỗi khởi tạo vị trí:', error);
       }
     };
   
@@ -107,27 +124,67 @@ const ConnectScreen = ({ navigation }) => {
   }, [userId, isFocused]);
 
   const handleCreateGroup = async () => {
-    if (!groupName || !selectedEvent) {
-      alert('Nhập tên nhóm và chọn sự kiện!');
+    if (!groupName || !selectedEvent || !selectedShowtime) {
+      alert('Nhập tên nhóm, chọn sự kiện và showtime!');
       return;
     }
     setLoading(true);
     try {
-      const res = await createGroup(selectedEvent._id, groupName, [], userId);
+      console.log('📝 Creating group with data:', {
+        eventId: selectedEvent._id,
+        groupName,
+        memberIds: [],
+        ownerId: userId,
+        showtimeId: selectedShowtime._id
+      });
+
+      const res = await createGroup(selectedEvent._id, groupName, [], userId, selectedShowtime._id);
+      console.log('📝 Create group response:', res);
+      
       setLoading(false);
       setShowGroupForm(false);
       setGroupName('');
       setSelectedEvent(null);
+      setSelectedShowtime(null);
 
+      // Kiểm tra response đúng cách
       if (res && res._id) {
-        navigation.navigate('GroupScreen', { groupId: res._id, groupName: groupName, userLocation: userLocation });
+        const groupId = res._id;
+        console.log('✅ Group created successfully with ID:', groupId);
+        
+        // Refresh danh sách nhóm
+        const updatedGroups = await getGroupsByUser(userId);
+        setMyGroups(updatedGroups || []);
+        
+        navigation.navigate('GroupScreen', { 
+          groupId: groupId, 
+          groupName: groupName, 
+          userLocation: userLocation,
+          showtimeId: selectedShowtime._id
+        });
       } else {
-        alert('Tạo nhóm thất bại!');
+        console.error('❌ Invalid response format:', res);
+        alert('Tạo nhóm thất bại! Vui lòng thử lại.');
       }
     } catch (error) {
+      console.error('❌ Create group error:', error);
       setLoading(false);
-      alert('Có lỗi khi tạo nhóm!');
+      alert('Có lỗi khi tạo nhóm: ' + (error.message || 'Vui lòng thử lại'));
     }
+  };
+
+  // Reset selected showtime when event changes
+  const handleEventSelection = (event) => {
+    setSelectedEvent(event);
+    setSelectedShowtime(null); // Reset showtime when event changes
+  };
+
+  // Helper function to format showtime information
+  const formatShowtimeInfo = (showtime) => {
+    if (!showtime) return '';
+    const startTime = new Date(showtime.startTime);
+    const endTime = new Date(showtime.endTime);
+    return `${startTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   const renderEmptyState = () => (
@@ -230,7 +287,10 @@ const ConnectScreen = ({ navigation }) => {
                 groupId: item._id, 
                 groupName: item.groupName,
                 userLocation,
-                ownerId: item.ownerId 
+                ownerId: item.ownerId,
+                showtimeId: item.showtimeId,
+                event: item.event,
+                showtime: item.showtime
               })}
             >
               <View style={styles.groupCardContent}>
@@ -245,9 +305,20 @@ const ConnectScreen = ({ navigation }) => {
                 
                 <View style={styles.groupInfo}>
                   <Text style={styles.groupName}>{item.groupName}</Text>
-                  {item.eventId?.name && (
-                    <Text style={styles.groupEvent}>📅 {item.eventId.name}</Text>
+                  {item.event?.name && (
+                    <Text style={styles.groupEvent}>📅 {item.event.name}</Text>
                   )}
+                  {item.showtime && (
+                    <Text style={styles.groupShowtime}>
+                      ⏰ {new Date(item.showtime.startTime).toLocaleTimeString('vi-VN', {
+                       hour: '2-digit',
+                       minute: '2-digit'
+                     })} - {new Date(item.showtime.endTime).toLocaleTimeString('vi-VN', {
+                       hour: '2-digit',
+                       minute: '2-digit'
+                     })} | {new Date(item.showtime.startTime).toLocaleDateString('vi-VN')}
+                   </Text>
+                 )}
                   <View style={styles.groupMeta}>
                     <Icon name="people" size={14} color="#666" />
                     <Text style={styles.groupMembers}>
@@ -256,9 +327,9 @@ const ConnectScreen = ({ navigation }) => {
                   </View>
                 </View>
 
-                {item.eventId?.avatar && (
+                {item.event?.avatar && (
                   <Image
-                    source={{ uri: item.eventId.avatar }}
+                    source={{ uri: item.event.avatar }}
                     style={styles.eventAvatar}
                     resizeMode="cover"
                   />
@@ -321,6 +392,14 @@ const ConnectScreen = ({ navigation }) => {
                   Chọn sự kiện mà bạn muốn tạo nhóm
                 </Text>
                 
+                {selectedEvent && (
+                  <View style={styles.selectedEventInfo}>
+                    <Text style={styles.selectedEventText}>
+                      ✅ Đã chọn: {selectedEvent.name}
+                    </Text>
+                  </View>
+                )}
+                
                 {events.length > 0 ? (
                   <FlatList
                     data={events}
@@ -331,14 +410,14 @@ const ConnectScreen = ({ navigation }) => {
                           styles.eventCard,
                           selectedEvent?._id === item._id && styles.eventCardSelected
                         ]}
-                        onPress={() => setSelectedEvent(item)}
+                        onPress={() => handleEventSelection(item)}
                       >
                         <View style={styles.eventCardContent}>
                           <View style={styles.eventInfo}>
                             <Text style={styles.eventName}>{item.name}</Text>
-                            {item.date && (
+                            {item.timeStart && (
                               <Text style={styles.eventDate}>
-                                📅 {new Date(item.date).toLocaleDateString('vi-VN')}
+                                📅 {new Date(item.timeStart).toLocaleDateString('vi-VN')}
                               </Text>
                             )}
                           </View>
@@ -365,6 +444,71 @@ const ConnectScreen = ({ navigation }) => {
                   </View>
                 )}
               </View>
+
+              {/* Showtime Selection (if event is selected) */}
+              {selectedEvent && (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Chọn showtime</Text>
+                  <Text style={styles.inputSubLabel}>
+                    Chọn thời gian bạn muốn tham gia sự kiện
+                  </Text>
+                  {selectedEvent.showtimes && selectedEvent.showtimes.length > 0 ? (
+                    <FlatList
+                      data={selectedEvent.showtimes}
+                      keyExtractor={(item) => item._id}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[
+                            styles.showtimeCard,
+                            selectedShowtime?._id === item._id && styles.showtimeCardSelected
+                          ]}
+                          onPress={() => setSelectedShowtime(item)}
+                        >
+                          <View style={styles.showtimeInfo}>
+                            <Text style={styles.showtimeName}>
+                              {new Date(item.startTime).toLocaleTimeString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })} - {new Date(item.endTime).toLocaleTimeString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </Text>
+                            <Text style={styles.showtimeDate}>
+                              📅 {new Date(item.startTime).toLocaleDateString('vi-VN', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </Text>
+                            {item.soldTickets && (
+                              <Text style={styles.showtimeTickets}>
+                                🎫 Đã bán: {item.soldTickets} vé
+                              </Text>
+                            )}
+                          </View>
+                          {selectedShowtime?._id === item._id && (
+                            <View style={styles.selectedIndicator}>
+                              <Icon name="check-circle" size={24} color="#00B894" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                      style={styles.showtimesList}
+                      showsVerticalScrollIndicator={false}
+                    />
+                  ) : (
+                    <View style={styles.noShowtimesContainer}>
+                      <Icon name="event-busy" size={48} color="#DDD" />
+                      <Text style={styles.noShowtimesText}>Không có showtime nào</Text>
+                      <Text style={styles.noShowtimesSubtext}>
+                        Sự kiện này chưa có thời gian tham gia.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </ScrollView>
 
             {/* Modal Footer */}
@@ -379,13 +523,13 @@ const ConnectScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.createButton,
-                  (!groupName || !selectedEvent) && styles.createButtonDisabled
+                  (!groupName || !selectedEvent || !selectedShowtime) && styles.createButtonDisabled
                 ]}
                 onPress={handleCreateGroup}
-                disabled={!groupName || !selectedEvent || loading}
+                disabled={!groupName || !selectedEvent || !selectedShowtime || loading}
               >
                 <LinearGradient
-                  colors={(!groupName || !selectedEvent) ? ['#DDD', '#CCC'] : [appColors.primary, appColors.primary]}
+                  colors={(!groupName || !selectedEvent || !selectedShowtime) ? ['#DDD', '#CCC'] : [appColors.primary, appColors.primary]}
                   style={styles.createButtonGradient}
                 >
                   {loading ? (
@@ -555,6 +699,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   groupEvent: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 6,
+  },
+  groupShowtime: {
     fontSize: 14,
     color: '#666',
     marginBottom: 6,
@@ -737,6 +886,57 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  showtimesList: {
+    maxHeight: 200,
+  },
+  showtimeCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+  },
+  showtimeCardSelected: {
+    backgroundColor: '#E8F5E8',
+    borderColor: '#00B894',
+  },
+  showtimeInfo: {
+    flex: 1,
+  },
+  showtimeName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  showtimeDate: {
+    fontSize: 14,
+    color: '#666',
+  },
+  showtimeTickets: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
+  noShowtimesContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noShowtimesText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#999',
+    marginTop: 15,
+  },
+  noShowtimesSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
   modalFooter: {
     flexDirection: 'row',
     padding: 20,
@@ -793,6 +993,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#6C5CE7',
+  },
+  selectedEventInfo: {
+    backgroundColor: '#E8F5E8',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#00B894',
+  },
+  selectedEventText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#00B894',
+    textAlign: 'center',
   },
 });
 

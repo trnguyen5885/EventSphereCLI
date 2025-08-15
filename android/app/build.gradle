@@ -85,6 +85,9 @@ android {
         versionCode 1
         versionName "1.0"
         missingDimensionStrategy 'react-native-camera', 'general'
+        
+        // Thêm cấu hình để tránh crash MapView
+        multiDexEnabled true
     }
     signingConfigs {
         debug {

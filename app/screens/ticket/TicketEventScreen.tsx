@@ -11,6 +11,8 @@ import {
   NativeModules,
   Alert,
   Image,
+  Switch,
+  TextInput,
 } from 'react-native';
 import {RowComponent} from '../../components';
 import {appColors} from '../../constants/appColors';
@@ -26,6 +28,14 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const {ZaloPayModule} = NativeModules;
 
+interface GiftRecipient {
+  userId: string;
+  email: string;
+  username: string;
+  fullName: string;
+  avatar: string;
+}
+
 const TicketEventScreen = ({navigation, route}: any) => {
   const {id, typeBase, totalPrice, quantity, bookingIds, showtimeId, zones} =
     route.params;
@@ -40,12 +50,15 @@ const TicketEventScreen = ({navigation, route}: any) => {
     fullName: '',
     phone: '',
     email: '',
-    // tickets: {
-    //   normal: 0,
-    //   vip: 0,
-    // },
     paymentMethod: '',
   });
+
+  // Gift functionality states
+  const [isGiftMode, setIsGiftMode] = useState(false);
+  const [giftEmail, setGiftEmail] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
+  const [giftRecipient, setGiftRecipient] = useState<GiftRecipient | null>(null);
+  const [isSearchingUser, setIsSearchingUser] = useState(false);
 
   // const ticketTypes = {
   //   normal: {
@@ -92,6 +105,57 @@ const TicketEventScreen = ({navigation, route}: any) => {
     return unsubscribe;
   }, [navigation]);
 
+  // Email validation function
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Search user for gift functionality
+  const searchUser = async (query: string) => {
+    if (!query.trim()) {
+      setGiftRecipient(null);
+      return;
+    }
+
+    // Only search if email format is valid
+    if (!isValidEmail(query)) {
+      setGiftRecipient(null);
+      return;
+    }
+
+    setIsSearchingUser(true);
+    try {
+      const response = await AxiosInstance().get(`/users/search?query=${query}`);
+      if (response.data && response.data.length > 0) {
+        setGiftRecipient(response.data[0]);
+      } else {
+        // User not found - clear recipient and show error
+        setGiftRecipient(null);
+        Alert.alert('Không tìm thấy', 'Email này chưa được đăng ký trong hệ thống. Vui lòng nhập email của người dùng đã đăng ký.');
+      }
+    } catch (error) {
+      console.log('Lỗi khi tìm kiếm người dùng:', error);
+      setGiftRecipient(null);
+      Alert.alert('Lỗi', 'Không thể tìm kiếm người dùng. Vui lòng thử lại.');
+    } finally {
+      setIsSearchingUser(false);
+    }
+  };
+
+  // Debounced search - only trigger when email is valid
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (giftEmail.trim() && isValidEmail(giftEmail)) {
+        searchUser(giftEmail);
+      } else {
+        setGiftRecipient(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [giftEmail]);
+
   // const updateTicketQuantity = (type: string, change: number) => {
   //   const newQuantity = formData.tickets[type] + change;
   //   if (newQuantity >= 0 && newQuantity <= 10) {
@@ -124,6 +188,18 @@ const TicketEventScreen = ({navigation, route}: any) => {
   };
 
   const confirmOrder = async () => {
+    // Validate gift mode
+    if (isGiftMode && !giftRecipient) {
+      Alert.alert('Lỗi', 'Vui lòng chọn người nhận quà');
+      return;
+    }
+
+    // Validate email format for gift mode
+    if (isGiftMode && giftRecipient && !isValidEmail(giftRecipient.email)) {
+      Alert.alert('Lỗi', 'Vui lòng nhập email hợp lệ');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -173,6 +249,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
                   : bookingIds,
               totalPrice,
               showtimeId,
+              // Add gift information if in gift mode
+              ...(isGiftMode && giftRecipient && {
+                giftRecipientUserId: giftRecipient.userId,
+                giftMessage: giftMessage || 'Chúc bạn có một buổi tối tuyệt vời!',
+              }),
             };
 
             const responseOrder = await AxiosInstance().post(
@@ -227,6 +308,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
           totalPrice: totalPrice,
           showtimeId: showtimeId,
           zones: zones,
+          // Add gift information if in gift mode
+          ...(isGiftMode && giftRecipient && {
+            giftRecipientUserId: giftRecipient.userId,
+            giftMessage: giftMessage || 'Chúc bạn có một buổi tối tuyệt vời!',
+          }),
         });
       }
     } catch (error) {
@@ -273,14 +359,95 @@ const TicketEventScreen = ({navigation, route}: any) => {
           </View>
         </View>
 
+        {/* Gift Mode Switch */}
+        <View style={styles.giftContainer}>
+          <View style={styles.giftHeader}>
+            <View style={styles.giftTitleContainer}>
+              <Ionicons name="gift" size={24} color={appColors.primary} />
+              <Text style={styles.giftTitle}>Tặng vé cho bạn bè</Text>
+            </View>
+            <Switch
+              value={isGiftMode}
+              onValueChange={setIsGiftMode}
+              trackColor={{false: '#CBD5E0', true: appColors.primary}}
+              thumbColor={isGiftMode ? '#FFFFFF' : '#FFFFFF'}
+            />
+          </View>
+          
+          {isGiftMode && (
+            <View style={styles.giftFormContainer}>
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Email người nhận</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Nhập email người nhận"
+                  value={giftEmail}
+                  onChangeText={setGiftEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {isSearchingUser && (
+                  <Text style={styles.searchingText}>Đang tìm kiếm...</Text>
+                )}
+              </View>
+
+                                            {/* Recipient Info */}
+                {giftRecipient && (
+                  <View style={styles.recipientContainer}>
+                    <View style={styles.recipientInfo}>
+                      <Image
+                        source={
+                          giftRecipient.avatar 
+                            ? {uri: giftRecipient.avatar}
+                            : require('../../../assets/images/icon-avatar.png')
+                        }
+                        style={styles.recipientAvatar}
+                      />
+                      <View style={styles.recipientDetails}>
+                        <Text style={styles.recipientName}>{giftRecipient.fullName}</Text>
+                        <Text style={styles.recipientEmail}>{giftRecipient.email}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.recipientCheck}>
+                      <Ionicons 
+                        name="checkmark-circle" 
+                        size={24} 
+                        color={appColors.primary} 
+                      />
+                    </View>
+                  </View>
+                )}
+
+              {/* Gift Message */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Lời nhắn (tùy chọn)</Text>
+                <TextInput
+                  style={[styles.textInput, styles.messageInput]}
+                  placeholder="Viết lời nhắn cho người nhận..."
+                  value={giftMessage}
+                  onChangeText={setGiftMessage}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </View>
+          )}
+        </View>
+
         {/* Ticket Information */}
         <View style={styles.ticketInfoContainer}>
-          <Text style={styles.sectionTitle}>Thông tin nhận vé</Text>
+          <Text style={styles.sectionTitle}>
+            {isGiftMode ? 'Thông tin nhận vé (người nhận)' : 'Thông tin nhận vé'}
+          </Text>
           <Text style={styles.ticketInfoText}>
             Vé điện tử sẽ được hiển thị trong mục "Vé của tôi" của tài khoản
           </Text>
           <Text style={styles.userEmail}>
-            {userInfo?.email || 'trungnguyenk4.it@gmail.com'}
+            {isGiftMode && giftRecipient 
+              ? giftRecipient.email 
+              : userInfo?.username || 'trungnguyenk4.it@gmail.com'
+            }
           </Text>
         </View>
 
@@ -349,11 +516,13 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <TouchableOpacity
           style={[
             styles.paymentButton,
-            !formData.paymentMethod && styles.paymentButtonDisabled,
+            (!formData.paymentMethod || (isGiftMode && !giftRecipient)) && styles.paymentButtonDisabled,
           ]}
-          disabled={!formData.paymentMethod}
+          disabled={!formData.paymentMethod || (isGiftMode && !giftRecipient)}
           onPress={confirmOrder}>
-          <Text style={styles.paymentButtonText}>Thanh toán</Text>
+          <Text style={styles.paymentButtonText}>
+            {isGiftMode ? 'Tặng vé' : 'Thanh toán'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -453,6 +622,109 @@ const styles = StyleSheet.create({
   eventTime: {
     color: '#4A5568',
     fontSize: 14,
+    marginLeft: 8,
+  },
+  // Gift container styles
+  giftContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  giftHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  giftTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  giftTitle: {
+    color: '#2D3748',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  giftFormContainer: {
+    marginTop: 16,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    color: '#2D3748',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#2D3748',
+    backgroundColor: '#FFFFFF',
+  },
+  messageInput: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  searchingText: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  recipientContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0F9FF',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0F2FE',
+  },
+  recipientInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  recipientAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  recipientDetails: {
+    flex: 1,
+  },
+  recipientName: {
+    color: '#2D3748',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  recipientEmail: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  recipientCheck: {
     marginLeft: 8,
   },
   ticketInfoContainer: {

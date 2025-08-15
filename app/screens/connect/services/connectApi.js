@@ -5,10 +5,13 @@ import { AxiosInstance } from "../../../services";
 // Tìm kiếm user theo email hoặc phone
 export const searchUserByEmail = async (q) => {
   try {
+    console.log('🔍 Searching user with email:', q);
     const res = await AxiosInstance().get(`/connects/searchUser?q=${encodeURIComponent(q)}`);
+    console.log('✅ Search result:', res);
     return res;
   } catch (error) {
-    console.log(error);
+    console.error('❌ Search user error:', error);
+    console.error('Error details:', error.response?.data || error.message);
     return null;
   }
 };
@@ -20,14 +23,23 @@ export const sendFriendRequest = async (userId) => {
 };
 
 // Tạo nhóm mới
-export const createGroup = async (eventId, groupName, memberIds, ownerId) => {
+export const createGroup = async (eventId, groupName, memberIds, ownerId, showtimeId) => {
   try {
-    const body = { eventId, groupName, ownerId, memberIds };
+    console.log('📝 Creating group with data:', { eventId, groupName, memberIds, ownerId, showtimeId });
+    const body = { eventId, groupName, ownerId, memberIds, showtimeId };
+    console.log('📤 Request body:', body);
+    
     const res = await AxiosInstance().post(`/connects/createGroup`, body);
+    console.log('✅ Create group response:', res);
+    console.log('✅ Response type:', typeof res);
+    console.log('✅ Response keys:', res ? Object.keys(res) : 'null');
+    
+    // AxiosInstance đã trả về response.data rồi
     return res;
   } catch (error) {
-    console.log(error);
-    return null;
+    console.error('❌ Create group error:', error);
+    console.error('Error details:', error.response?.data || error.message);
+    throw error; // Throw error để component có thể handle
   }
 };
 
@@ -125,10 +137,15 @@ export const getGroupsByEvent = async (eventId) => {
 // Lấy group của user
 export const getGroupsByUser = async (userId) => {
   try {
+    console.log('📋 Getting groups by user:', userId);
     const res = await AxiosInstance().get(`/connects/user/${userId}/groups`);
+    console.log('✅ Groups by user response:', res);
+    console.log('✅ Response type:', typeof res);
+    console.log('✅ Response length:', Array.isArray(res) ? res.length : 'not array');
     return res;
   } catch (error) {
-    console.log(error);
+    console.error('❌ Get groups by user error:', error);
+    console.error('Error details:', error.response?.data || error.message);
     return [];
   }
 };

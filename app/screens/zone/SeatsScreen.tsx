@@ -69,12 +69,16 @@ const SeatsScreen = ({navigation, route}: any) => {
     socket.emit('joinRoom', `event_${id}_showtime_${showtimeId}`);
 
     // Khi có sự kiện cập nhật ghế hoặc zone, gọi lại fetchSeatsFromApi
-    const handleSeatUpdated = (data: any) => {
-      console.log('[SOCKET] seat_updated:', data);
+    const handleSeatStateChanged = (data: any) => {
+      console.log('[SOCKET] seat_state_changed:', data);
       fetchSeatsFromApi();
     };
-    const handleZoneChanged = (data: any) => {
-      console.log('[SOCKET] zone_data_changed:', data);
+    const handleBatchSeatUpdates = (data: any) => {
+      console.log('[SOCKET] batch_seat_updates:', data);
+      fetchSeatsFromApi();
+    };
+    const handleAllSeatsCancelled = (data: any) => {
+      console.log('[SOCKET] all_seats_cancelled:', data);
       fetchSeatsFromApi();
     };
     const handlePeriodicMessage = (data: any) => {
@@ -86,15 +90,17 @@ const SeatsScreen = ({navigation, route}: any) => {
       console.log(`[SOCKET][ANY] Event: ${event}`, ...args);
     };
 
-    socket.on('seat_updated', handleSeatUpdated);
-    socket.on('zone_data_changed', handleZoneChanged);
+    socket.on('seat_state_changed', handleSeatStateChanged);
+    socket.on('batch_seat_updates', handleBatchSeatUpdates);
+    socket.on('zone_data_changed', handleAllSeatsCancelled);
     socket.on('periodicMessage', handlePeriodicMessage);
     socket.onAny(handleAnyEvent);
 
     // Cleanup khi rời màn
     return () => {
-      socket.off('seat_updated', handleSeatUpdated);
-      socket.off('zone_data_changed', handleZoneChanged);
+      socket.off('seat_state_changed', handleSeatStateChanged);
+      socket.off('batch_seat_updates', handleBatchSeatUpdates);
+      socket.off('zone_data_changed', handleAllSeatsCancelled);
       socket.off('periodicMessage', handlePeriodicMessage);
       socket.offAny(handleAnyEvent);
       socket.emit('leave', {room: `event_${id}_showtime_${showtimeId}`});
