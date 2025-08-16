@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Platform,
   NativeModules,
-  Alert,
   Image,
   Switch,
   TextInput,
@@ -21,6 +20,8 @@ import {AxiosInstance} from '../../services';
 import {formatDate} from '../../services/utils/date';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LoadingModal from '../../modals/LoadingModal';
+import CommonModal from '../../modals/CommonModal';
+import {useCommonModal} from '../../hooks/useCommonModal';
 import {UserModel} from '@/app/models/user/UserModel';
 import {EventModel} from '@/app/models';
 import {useSelector} from 'react-redux';
@@ -59,6 +60,9 @@ const TicketEventScreen = ({navigation, route}: any) => {
   const [giftMessage, setGiftMessage] = useState('');
   const [giftRecipient, setGiftRecipient] = useState<GiftRecipient | null>(null);
   const [isSearchingUser, setIsSearchingUser] = useState(false);
+
+  // Common Modal Hook
+  const {visible: modalVisible, modalConfig, showError, showSuccess, showConfirm, hideModal} = useCommonModal();
 
   // const ticketTypes = {
   //   normal: {
@@ -128,16 +132,31 @@ const TicketEventScreen = ({navigation, route}: any) => {
     try {
       const response = await AxiosInstance().get(`/users/search?query=${query}`);
       if (response.data && response.data.length > 0) {
-        setGiftRecipient(response.data[0]);
+        const foundUser = response.data[0];
+        
+        // Kiểm tra xem có phải chính user hiện tại không
+        if (foundUser._id === userId) {
+          setGiftRecipient(null);
+          showError(
+            'Bạn không thể tặng vé cho chính mình. Vui lòng nhập email của người khác.',
+            'Không thể tặng cho chính mình'
+          );
+          return;
+        }
+        
+        setGiftRecipient(foundUser);
       } else {
         // User not found - clear recipient and show error
         setGiftRecipient(null);
-        Alert.alert('Không tìm thấy', 'Email này chưa được đăng ký trong hệ thống. Vui lòng nhập email của người dùng đã đăng ký.');
+        showError(
+          'Email này chưa được đăng ký trong hệ thống. Vui lòng nhập email của người dùng đã đăng ký.',
+          'Không tìm thấy'
+        );
       }
     } catch (error) {
       console.log('Lỗi khi tìm kiếm người dùng:', error);
       setGiftRecipient(null);
-      Alert.alert('Lỗi', 'Không thể tìm kiếm người dùng. Vui lòng thử lại.');
+      showError('Không thể tìm kiếm người dùng. Vui lòng thử lại.', 'Lỗi');
     } finally {
       setIsSearchingUser(false);
     }
@@ -190,13 +209,13 @@ const TicketEventScreen = ({navigation, route}: any) => {
   const confirmOrder = async () => {
     // Validate gift mode
     if (isGiftMode && !giftRecipient) {
-      Alert.alert('Lỗi', 'Vui lòng chọn người nhận quà');
+      showError('Vui lòng chọn người nhận quà', 'Lỗi');
       return;
     }
 
     // Validate email format for gift mode
     if (isGiftMode && giftRecipient && !isValidEmail(giftRecipient.email)) {
-      Alert.alert('Lỗi', 'Vui lòng nhập email hợp lệ');
+      showError('Vui lòng nhập email hợp lệ', 'Lỗi');
       return;
     }
 
@@ -297,18 +316,18 @@ const TicketEventScreen = ({navigation, route}: any) => {
               });
             }, 500);
           }
-        } catch (error: any) {
-          // ❌ Huỷ hoặc lỗi
-          setIsLoading(false);
-          if (error.code === 'PAYMENT_CANCELLED') {
-            Alert.alert('Thanh toán bị hủy', 'Bạn đã huỷ thanh toán.');
-          } else if (error.code === 'PAYMENT_ERROR') {
-            Alert.alert('Thanh toán thất bại', 'Có lỗi khi xử lý thanh toán.');
-          } else {
-            Alert.alert('Lỗi', 'Không thể thực hiện thanh toán.');
-          }
-          console.log('Chi tiết lỗi ZaloPay:', error);
-        }
+                 } catch (error: any) {
+           // ❌ Huỷ hoặc lỗi
+           setIsLoading(false);
+           if (error.code === 'PAYMENT_CANCELLED') {
+             showError('Bạn đã huỷ thanh toán.', 'Thanh toán bị hủy');
+           } else if (error.code === 'PAYMENT_ERROR') {
+             showError('Có lỗi khi xử lý thanh toán.', 'Thanh toán thất bại');
+           } else {
+             showError('Không thể thực hiện thanh toán.', 'Lỗi');
+           }
+           console.log('Chi tiết lỗi ZaloPay:', error);
+         }
       }
 
       if (formData.paymentMethod === 'banking') {
@@ -333,11 +352,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
           }),
         });
       }
-    } catch (error) {
-      console.log('Lỗi khi thanh toán:', error);
-      setIsLoading(false);
-      Alert.alert('Lỗi', 'Có lỗi xảy ra trong quá trình thanh toán');
-    }
+         } catch (error) {
+       console.log('Lỗi khi thanh toán:', error);
+       setIsLoading(false);
+       showError('Có lỗi xảy ra trong quá trình thanh toán', 'Lỗi');
+     }
   };
 
   if (isLoading) {
@@ -398,7 +417,10 @@ const TicketEventScreen = ({navigation, route}: any) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Email người nhận</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[
+                    styles.textInput,
+                    giftEmail && userInfo?.username === giftEmail && styles.errorInput
+                  ]}
                   placeholder="Nhập email người nhận"
                   value={giftEmail}
                   onChangeText={setGiftEmail}
@@ -407,6 +429,11 @@ const TicketEventScreen = ({navigation, route}: any) => {
                 />
                 {isSearchingUser && (
                   <Text style={styles.searchingText}>Đang tìm kiếm...</Text>
+                )}
+                {giftEmail && userInfo?.email === giftEmail && (
+                  <Text style={styles.errorText}>
+                    ⚠️ Bạn không thể tặng vé cho chính mình
+                  </Text>
                 )}
               </View>
 
@@ -534,18 +561,37 @@ const TicketEventScreen = ({navigation, route}: any) => {
         <TouchableOpacity
           style={[
             styles.paymentButton,
-            (!formData.paymentMethod || (isGiftMode && !giftRecipient)) && styles.paymentButtonDisabled,
+            (!formData.paymentMethod || 
+             (isGiftMode && !giftRecipient) || 
+             (isGiftMode && giftEmail && userInfo?.username === giftEmail)) && styles.paymentButtonDisabled,
           ]}
-          disabled={!formData.paymentMethod || (isGiftMode && !giftRecipient)}
+          disabled={!formData.paymentMethod || 
+                   (isGiftMode && !giftRecipient) || 
+                   (isGiftMode && giftEmail && userInfo?.username === giftEmail)}
           onPress={confirmOrder}>
           <Text style={styles.paymentButtonText}>
             {isGiftMode ? 'Tặng vé' : 'Thanh toán'}
           </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
+                 </TouchableOpacity>
+       </View>
+
+       {/* Common Modal */}
+       <CommonModal
+         visible={modalVisible}
+         title={modalConfig?.title}
+         message={modalConfig?.message || ''}
+         type={modalConfig?.type}
+         showCancelButton={modalConfig?.showCancelButton}
+         cancelText={modalConfig?.cancelText}
+         confirmText={modalConfig?.confirmText}
+         onConfirm={modalConfig?.onConfirm}
+         onCancel={modalConfig?.onCancel}
+         onClose={hideModal}
+         showIcon={modalConfig?.showIcon}
+       />
+     </View>
+   );
+ };
 
 export default TicketEventScreen;
 
@@ -1113,5 +1159,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#2D3748',
+  },
+  errorInput: {
+    borderColor: '#E53E3E',
+    backgroundColor: '#FED7D7',
+  },
+  errorText: {
+    color: '#E53E3E',
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: '500',
   },
 });

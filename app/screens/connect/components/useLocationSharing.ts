@@ -27,8 +27,8 @@ const throttle = (func: Function, delay: number) => {
 
 // Fallback coordinates (Hà Nội) nếu không lấy được vị trí
 const FALLBACK_COORDINATES: LocationCoordinates = {
-  latitude: 21.0285,
-  longitude: 105.8542
+  latitude: 10.853852729704256,
+  longitude: 106.62619825275381, 
 };
 
 interface UseLocationSharingProps {

@@ -1,0 +1,1 @@
+export {useCommonModal} from './useCommonModal';
