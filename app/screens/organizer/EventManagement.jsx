@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   ScrollView,
   Dimensions,
+  Animated,
+  RefreshControl,
 } from 'react-native';
 import OrganizerHeaderComponent from '../../components/OrganizerHeaderComponent';
 import AxiosInstance from '../../services/api/AxiosInstance';
@@ -22,8 +24,65 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { appColors } from '../../constants/appColors';
 
-
 const { width } = Dimensions.get('window');
+
+// Skeleton Loading Component cho EventCard
+const EventCardSkeleton = () => {
+  const [shimmerAnimation] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    const shimmer = () => {
+      Animated.sequence([
+        Animated.timing(shimmerAnimation, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnimation, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]).start(() => shimmer());
+    };
+    shimmer();
+  }, []);
+
+  const opacity = shimmerAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.8],
+  });
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Animated.View style={[styles.skeletonImage, { opacity }]} />
+        <View style={styles.eventInfo}>
+          <Animated.View style={[styles.skeletonTitle, { opacity }]} />
+          <Animated.View style={[styles.skeletonSubtitle, { opacity }]} />
+        </View>
+      </View>
+      
+      <Animated.View style={[styles.skeletonShowtimes, { opacity }]} />
+      
+      <View style={styles.buttonContainer}>
+        <Animated.View style={[styles.skeletonButton, { opacity }]} />
+        <Animated.View style={[styles.skeletonButton, { opacity }]} />
+      </View>
+    </View>
+  );
+};
+
+// Component hiển thị nhiều skeleton cards
+const SkeletonLoader = () => {
+  return (
+    <View style={styles.scrollContent}>
+      {[1, 2, 3].map((item) => (
+        <EventCardSkeleton key={item} />
+      ))}
+    </View>
+  );
+};
 
 const EventCard = ({
   name,
@@ -34,9 +93,41 @@ const EventCard = ({
   image,
   showtimes,
   navigation,
-  eventId
+  eventId,
+  approvalStatus
 }) => {
-  const validShowtime = showtimes?.length > 0 ? getValidShowtime(showtimes) : null;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [animation] = useState(new Animated.Value(0));
+
+  // Kiểm tra sự kiện đã qua hay chưa
+  const now = new Date();
+  const eventEndDate = new Date(timeEnd);
+  const isPastEvent = eventEndDate < now;
+
+  // Sắp xếp showtimes theo thời gian bắt đầu
+  const sortedShowtimes = showtimes?.sort((a, b) => new Date(a.startTime) - new Date(b.startTime)) || [];
+
+  const toggleExpanded = () => {
+    const toValue = isExpanded ? 0 : 1;
+    setIsExpanded(!isExpanded);
+
+    Animated.timing(animation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  // Tăng chiều cao tối đa và thêm padding
+  const maxHeight = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, Math.min(sortedShowtimes.length * 85 + 40, 300)], // Giới hạn chiều cao tối đa là 300px
+  });
+
+  const rotateIcon = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   return (
     <View style={styles.card}>
@@ -44,42 +135,129 @@ const EventCard = ({
         <Image source={{ uri: image }} style={styles.eventImage} />
         <View style={styles.eventInfo}>
           <Text style={styles.eventTitle} numberOfLines={2}>{name}</Text>
-
-          <Text style={styles.eventDate}>
-            {validShowtime
-              ? `${formatTime(validShowtime.startTime)} - ${formatTime(validShowtime.endTime)}, ${formatDate(validShowtime.startTime)}`
-              : 'Chưa xác định'}
-          </Text>
-          <Text style={styles.soldTickets}>Đã bán: {soldTickets} vé</Text>
+          <Text style={styles.totalSoldTickets}>Tổng đã bán: {soldTickets} vé</Text>
         </View>
       </View>
+
+      {/* Dropdown toggle cho suất diễn */}
+      {sortedShowtimes.length > 0 ? (
+        <View style={styles.showtimesSection}>
+          <TouchableOpacity
+            style={styles.showtimesToggle}
+            onPress={toggleExpanded}
+            activeOpacity={0.7}
+          >
+            <View style={styles.showtimesToggleContent}>
+              <Text style={styles.showtimesTitle}>
+                Suất diễn ({sortedShowtimes.length})
+              </Text>
+              <View style={styles.showtimesSummary}>
+                <Text style={styles.showtimesSummaryText}>
+                  {isExpanded ? 'Thu gọn' : `${sortedShowtimes.length} suất diễn`}
+                </Text>
+              </View>
+            </View>
+            <Animated.View style={{ transform: [{ rotate: rotateIcon }] }}>
+              <Ionicons name="chevron-down" size={20} color="#666" />
+            </Animated.View>
+          </TouchableOpacity>
+
+          <Animated.View style={[styles.showtimesContent, { maxHeight }]}>
+            {/* Thêm ScrollView để có thể cuộn khi có nhiều suất diễn */}
+            <ScrollView
+              style={styles.showtimesScrollView}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              <View style={styles.showtimesContainer}>
+                {sortedShowtimes.map((showtime, index) => {
+                  const remainingTickets = showtime.totalTickets - showtime.soldTickets;
+                  return (
+                    <View key={showtime._id || index} style={styles.showtimeItem}>
+                      <View style={styles.showtimeHeader}>
+                        <Text style={styles.showtimeTime}>
+                          {formatTime(showtime.startTime)} - {formatTime(showtime.endTime)}
+                        </Text>
+                        <Text style={[
+                          styles.remainingTickets,
+                          remainingTickets === 0 && styles.soldOut
+                        ]}>
+                          {remainingTickets === 0 ? 'Hết vé' : `Còn ${remainingTickets}`}
+                        </Text>
+                      </View>
+                      <Text style={styles.showtimeDate}>
+                        {formatDate(showtime.startTime)}
+                      </Text>
+                      <View style={styles.ticketProgress}>
+                        <View style={styles.progressBar}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${(showtime.soldTickets / showtime.totalTickets) * 100}%`,
+                                backgroundColor: remainingTickets === 0 ? '#EF4444' : '#10B981'
+                              }
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.ticketCount}>
+                          {showtime.soldTickets}/{showtime.totalTickets}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      ) : (
+        <View style={styles.noShowtimesContainer}>
+          <Ionicons name="calendar-outline" size={16} color="#92400E" />
+          <Text style={styles.noShowtimesText}>Chưa có suất diễn</Text>
+        </View>
+      )}
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.manageButton}
           onPress={() => navigation.navigate('EventDetailOrganizer', { eventId })}
         >
-          <FontAwesome5 name="chart-bar" color={appColors.primary} size={20} />
+          <FontAwesome5 name="chart-bar" color={appColors.primary} size={16} />
           <Text style={styles.manageButtonText}>Quản lý</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.scanButton}
-          onPress={() =>
-            navigation.navigate('ScanShowTime', {
-              eventId: eventId,
-              eventName: name,
-            })
-          }
+          style={[
+            styles.scanButton,
+            isPastEvent && styles.disabledButton
+          ]}
+          onPress={() => {
+            if (!isPastEvent) {
+              navigation.navigate('ScanShowTime', {
+                eventId: eventId,
+                eventName: name,
+              });
+            }
+          }}
+          disabled={isPastEvent}
         >
-          <MaterialIcons name="qr-code-scanner" color="#fff" size={20} />
-          <Text style={styles.scanButtonText}>Quét vé</Text>
+          <MaterialIcons
+            name="qr-code-scanner"
+            color={isPastEvent ? "#999" : "#fff"}
+            size={16}
+          />
+          <Text style={[
+            styles.scanButtonText,
+            isPastEvent && styles.disabledButtonText
+          ]}>
+            Quét vé
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
 
 // Sửa FilterTabs component - thêm navigation vào props
 const FilterTabs = ({ activeTab, setActiveTab, navigation }) => (
@@ -129,7 +307,7 @@ const formatTime = (timestamp) => {
   });
 };
 
-const getValidShowtime = (showtimes: any[]) => {
+const getValidShowtime = (showtimes) => {
   const now = new Date();
 
   // Tìm xuất chiếu đang diễn ra (startTime <= now <= endTime)
@@ -160,23 +338,38 @@ const getValidShowtime = (showtimes: any[]) => {
 const EventManagement = ({ navigation }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('upcoming');
 
   const validShowtime =
     events?.showtimes ? getValidShowtime(events.showtimes) : null;
 
-
-  const fetchEvents = async () => {
+  const fetchEvents = async (isRefresh = false) => {
     try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
       const axiosJWT = AxiosInstance();
       const res = await axiosJWT.get('users/eventOfOrganization');
       setEvents(res.events || []);
     } catch (error) {
       console.error('Lỗi khi lấy sự kiện:', error);
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
+
+  // Hàm xử lý pull to refresh
+  const onRefresh = useCallback(() => {
+    fetchEvents(true);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -184,19 +377,22 @@ const EventManagement = ({ navigation }) => {
     }, [])
   );
 
-  const filteredEvents = events.filter(event => {
-    const now = new Date();
-    const eventStartDate = new Date(event.timeStart);
-    const eventEndDate = new Date(event.timeEnd);
+  // Lọc sự kiện theo approvalStatus và thời gian
+  const filteredEvents = events
+    .filter(event => event.approvalStatus === 'approved') // Chỉ hiển thị sự kiện đã được duyệt
+    .filter(event => {
+      const now = new Date();
+      const eventStartDate = new Date(event.timeStart);
+      const eventEndDate = new Date(event.timeEnd);
 
-    if (activeTab === 'upcoming') {
-      return eventStartDate > now;
-    } else if (activeTab === 'ongoing') {
-      return eventStartDate <= now && eventEndDate >= now;
-    } else {
-      return eventEndDate < now;
-    }
-  });
+      if (activeTab === 'upcoming') {
+        return eventStartDate > now;
+      } else if (activeTab === 'ongoing') {
+        return eventStartDate <= now && eventEndDate >= now;
+      } else {
+        return eventEndDate < now;
+      }
+    });
 
   return (
     <View style={styles.container}>
@@ -216,24 +412,52 @@ const EventManagement = ({ navigation }) => {
       <FilterTabs activeTab={activeTab} setActiveTab={setActiveTab} navigation={navigation} />
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#00D4AA" />
-        </View>
+        <ScrollView 
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          <SkeletonLoader />
+        </ScrollView>
       ) : filteredEvents.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {activeTab === 'upcoming'
-              ? 'Không có sự kiện sắp tới'
-              : activeTab === 'ongoing'
-                ? 'Không có sự kiện đang diễn ra'
-                : 'Không có sự kiện đã qua'}
-          </Text>
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[appColors.primary]}
+              tintColor={appColors.primary}
+              title="Đang tải..."
+              titleColor={appColors.primary}
+            />
+          }
+        >
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {activeTab === 'upcoming'
+                ? 'Không có sự kiện sắp tới'
+                : activeTab === 'ongoing'
+                  ? 'Không có sự kiện đang diễn ra'
+                  : 'Không có sự kiện đã qua'}
+            </Text>
+          </View>
+        </ScrollView>
       ) : (
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[appColors.primary]}
+              tintColor={appColors.primary}
+              title="Đang tải..."
+              titleColor={appColors.primary}
+            />
+          }
         >
           {filteredEvents.map((item) => (
             <EventCard
@@ -247,6 +471,7 @@ const EventManagement = ({ navigation }) => {
               eventId={item._id}
               showtimes={item.showtimes}
               navigation={navigation}
+              approvalStatus={item.approvalStatus} // Truyền thêm approvalStatus
             />
           ))}
         </ScrollView>
@@ -359,39 +584,42 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1.5,
-    borderColor: appColors.primary + '40', // thêm độ đậm cho viền
-    elevation: 8,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    position: 'relative',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-
   cardHeader: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   eventImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    marginRight: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
   },
   eventInfo: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   eventTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '600',
     color: 'black',
     marginBottom: 4,
-    lineHeight: 22,
+    lineHeight: 20,
+  },
+  totalSoldTickets: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   eventDate: {
     fontSize: 13,
@@ -439,16 +667,187 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  // Thêm styles cho trạng thái vô hiệu hóa
+  disabledButton: {
+    backgroundColor: '#E0E0E0',
+    opacity: 0.6,
+  },
+  disabledButtonText: {
+    color: '#999999',
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+    minHeight: 400,
   },
   emptyText: {
     fontSize: 16,
     color: '#888888',
     textAlign: 'center',
     lineHeight: 24,
+  },
+
+  // Styles mới cho dropdown
+  showtimesSection: {
+    marginBottom: 16,
+  },
+
+  showtimesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+
+  showtimesToggleContent: {
+    flex: 1,
+  },
+
+  showtimesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'black',
+    marginBottom: 2,
+  },
+
+  showtimesSummary: {
+    marginTop: 2,
+  },
+
+  showtimesSummaryText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
+  showtimesContent: {
+    overflow: 'hidden',
+  },
+
+  showtimesContainer: {
+    paddingTop: 12,
+  },
+
+  showtimeItem: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+
+  showtimeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+
+  showtimeTime: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'black',
+  },
+
+  showtimeDate: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+
+  ticketProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+
+  ticketCount: {
+    fontSize: 12,
+    color: '#6B7280',
+    minWidth: 45,
+    textAlign: 'right',
+  },
+
+  remainingTickets: {
+    fontSize: 13,
+    color: '#10B981',
+    fontWeight: '600',
+  },
+
+  soldOut: {
+    color: '#EF4444',
+  },
+
+  noShowtimesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+
+  noShowtimesText: {
+    fontSize: 13,
+    color: '#92400E',
+    fontStyle: 'italic',
+  },
+  showtimesScrollView: {
+    maxHeight: 250,
+  },
+
+  // Skeleton Loading Styles
+  skeletonImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB',
+    marginRight: 12,
+  },
+  skeletonTitle: {
+    height: 16,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    marginBottom: 8,
+    width: '80%',
+  },
+  skeletonSubtitle: {
+    height: 12,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    width: '60%',
+  },
+  skeletonShowtimes: {
+    height: 40,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  skeletonButton: {
+    flex: 1,
+    height: 44,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+    marginHorizontal: 6,
   },
 });

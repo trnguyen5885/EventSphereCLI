@@ -292,137 +292,41 @@ const PayOSQRScreen = ({ route, navigation }) => {
 
 
   // Kiểm tra thanh toán định kỳ mỗi 5 giây
-  useEffect(() => {
-    let interval;
-    if (orderCode && paymentStatus === 'PENDING') {
-      console.log("🔄 Bắt đầu kiểm tra trạng thái đơn hàng:", orderCode);
-
-      interval = setInterval(async () => {
-        try {
-          console.log("🔍 Đang kiểm tra trạng thái...");
-          setPaymentStatus('CHECKING');
-
-          const { status, fullResponse } = await checkPaymentStatus(orderCode);
-          console.log("📡 Trạng thái đơn hàng:", status);
-
-          if (status === 'PAID') {
-            console.log("✅ Phát hiện đơn hàng đã thanh toán!");
-            setPaymentStatus('PAID');
-            clearInterval(interval);
-            setIntervalRef(null);
-
-            // Tạo đơn hàng và vé sau khi thanh toán thành công
-            try {
-              let reservations = [];
-              if (typeBase === 'zone') {
-              const requestData = {
-                eventId: eventId,
-                zones,
-                showtimeId,
-                amount,
-              };
-              const zoneRes = await AxiosInstance().post(
-                '/zones/reserveZoneTicket',
-                requestData,
-              );
-              reservations = zoneRes.reservations;
-            }
-              const bodyOrder = {
-                eventId: eventId,
-                userId: userId,
-                bookingType: typeBase ?? 'none',
-                totalAmount: amount,
-                bookingIds: typeBase === 'zone' ? reservations.map((r: any) => r.bookingId) : bookingIds,
-                totalPrice: totalPrice,
-                showtimeId: showtimeId,
-              };
-
-              const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
-              console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
-
-              const bodyOrderTicket = {
-                orderId: responseOrder.data,
-                paymentId: "67bbc5a3ac06033b9e2ab3e9",
-              };
-
-              const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
-              console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
-
-              setTimeout(() => {
-                navigation.navigate('PaymentSuccess', {
-                  amount: amount,
-                  eventName: eventName,
-                  orderCode: orderCode,
-                  transactionId: fullResponse?.transactionId || null,
-                  paymentMethod: 'QR Code PayOS',
-                  timestamp: Date.now(),
-                  orderId: responseOrder.data,
-                  ticketId: responseOrderTicket.data,
-                  totalPrice: totalPrice,
-                  bookingType: bookingType,
-                  showtimeId: showtimeId
-                });
-              }, 500);
-
-            } catch (orderError) {
-              console.log('❌ Lỗi khi tạo đơn hàng/vé:', orderError);
-              setPaymentStatus('ERROR');
-              Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng liên hệ hỗ trợ.');
-            }
-          } else {
-            setPaymentStatus('PENDING');
-          }
-        } catch (err) {
-          console.log('❌ Lỗi khi kiểm tra đơn hàng:', err);
-          setPaymentStatus('ERROR');
-        }
-      }, 2000);
-
-      setIntervalRef(interval);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-        setIntervalRef(null);
-      }
-    };
-  }, [orderCode, paymentStatus]);
-
-
-
-
-  // Tự động tạo đơn hàng sau 5 giây
   // useEffect(() => {
-  //   let timeout;
+  //   let interval;
+  //   if (orderCode && paymentStatus === 'PENDING') {
+  //     console.log("🔄 Bắt đầu kiểm tra trạng thái đơn hàng:", orderCode);
 
-  //   console.log("⏰ Bắt đầu đếm ngược 5 giây để tạo đơn hàng (thanh toán ảo)...");
+  //     interval = setInterval(async () => {
+  //       try {
+  //         console.log("🔍 Đang kiểm tra trạng thái...");
+  //         setPaymentStatus('CHECKING');
 
-  //   timeout = setTimeout(async () => {
-  //     try {
-  //       console.log("🚀 Bắt đầu tạo đơn hàng sau 5 giây (thanh toán ảo)...");
+  //         const { status, fullResponse } = await checkPaymentStatus(orderCode);
+  //         console.log("📡 Trạng thái đơn hàng:", status);
 
-  //       // Cập nhật trạng thái thành PAID để dừng việc kiểm tra
-  //       setPaymentStatus('PAID');
-  //       if (intervalRef) {
-  //         clearInterval(intervalRef);
-  //         setIntervalRef(null);
-  //       }
+  //         if (status === 'PAID') {
+  //           console.log("✅ Phát hiện đơn hàng đã thanh toán!");
+  //           setPaymentStatus('PAID');
+  //           clearInterval(interval);
+  //           setIntervalRef(null);
 
-  //       let reservations = [];
-  //       if (typeBase === 'zone') {
-  //          const requestData = {
-  //           eventId: eventId,
-  //           zones,
-  //           showtimeId,
-  //           amount,
-  //           };
-  //       const zoneRes = await AxiosInstance().post(
+  //           // Tạo đơn hàng và vé sau khi thanh toán thành công
+  //           try {
+  //             let reservations = [];
+  //             if (typeBase === 'zone') {
+  //             const requestData = {
+  //               eventId: eventId,
+  //               zones,
+  //               showtimeId,
+  //               amount,
+  //             };
+  //             const zoneRes = await AxiosInstance().post(
   //               '/zones/reserveZoneTicket',
   //               requestData,
   //             );
-  //       reservations = zoneRes.reservations;
-  //       }
+  //             reservations = zoneRes.reservations;
+  //           }
   //             const bodyOrder = {
   //               eventId: eventId,
   //               userId: userId,
@@ -433,53 +337,149 @@ const PayOSQRScreen = ({ route, navigation }) => {
   //               showtimeId: showtimeId,
   //             };
 
-  //       console.log("BookingIds: " + bookingIds);
-  //       console.log("Body: " + JSON.stringify(bodyOrder));
+  //             const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
+  //             console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
 
-  //       const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
-  //       console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
+  //             const bodyOrderTicket = {
+  //               orderId: responseOrder.data,
+  //               paymentId: "67bbc5a3ac06033b9e2ab3e9",
+  //             };
 
-  //       // Tạo vé
-  //       const bodyOrderTicket = {
-  //         orderId: responseOrder.data,
-  //         paymentId: "67bbc5a3ac06033b9e2ab3e9",
-  //       };
+  //             const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
+  //             console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
 
-  //       const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
-  //       console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
+  //             setTimeout(() => {
+  //               navigation.navigate('PaymentSuccess', {
+  //                 amount: amount,
+  //                 eventName: eventName,
+  //                 orderCode: orderCode,
+  //                 transactionId: fullResponse?.transactionId || null,
+  //                 paymentMethod: 'QR Code PayOS',
+  //                 timestamp: Date.now(),
+  //                 orderId: responseOrder.data,
+  //                 ticketId: responseOrderTicket.data,
+  //                 totalPrice: totalPrice,
+  //                 bookingType: bookingType,
+  //                 showtimeId: showtimeId
+  //               });
+  //             }, 500);
 
-  //       // THAY ĐỔI: Chuyển hướng đến trang thanh toán thành công thay vì Alert
-  //       setTimeout(() => {
-  //         navigation.navigate('PaymentSuccess', {
-  //           amount: amount,
-  //           eventName: eventName,
-  //           orderCode: orderCode,
-  //           transactionId: `VIRTUAL_${Date.now()}`, // Tạo mã giao dịch ảo
-  //           paymentMethod: 'Thanh toán ảo (Test)',
-  //           timestamp: Date.now(),
-  //           orderId: responseOrder.data,
-  //           ticketId: responseOrderTicket.data,
-  //           totalPrice: totalPrice,
-  //           bookingType: bookingType,
-  //           showtimeId: showtimeId,
-  //           isVirtualPayment: true // Flag để phân biệt thanh toán ảo
-  //         });
-  //       }, 1000); // Delay 1 giây để người dùng thấy trạng thái PAID
+  //           } catch (orderError) {
+  //             console.log('❌ Lỗi khi tạo đơn hàng/vé:', orderError);
+  //             setPaymentStatus('ERROR');
+  //             Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng liên hệ hỗ trợ.');
+  //           }
+  //         } else {
+  //           setPaymentStatus('PENDING');
+  //         }
+  //       } catch (err) {
+  //         console.log('❌ Lỗi khi kiểm tra đơn hàng:', err);
+  //         setPaymentStatus('ERROR');
+  //       }
+  //     }, 2000);
 
-  //     } catch (error) {
-  //       console.log('❌ Lỗi khi tạo đơn hàng/vé (thanh toán ảo):', error);
-  //       setPaymentStatus('ERROR');
-  //       Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
-  //     }
-  //   }, 2000); // 5 giây
+  //     setIntervalRef(interval);
+  //   }
 
-  //   // Cleanup function
   //   return () => {
-  //     if (timeout) {
-  //       clearTimeout(timeout);
+  //     if (interval) {
+  //       clearInterval(interval);
+  //       setIntervalRef(null);
   //     }
   //   };
-  // }, []); // Chỉ chạy 1 lần khi component mount
+  // }, [orderCode, paymentStatus]);
+
+
+
+
+  // Tự động tạo đơn hàng sau 5 giây
+  useEffect(() => {
+    let timeout;
+
+    console.log("⏰ Bắt đầu đếm ngược 5 giây để tạo đơn hàng (thanh toán ảo)...");
+
+    timeout = setTimeout(async () => {
+      try {
+        console.log("🚀 Bắt đầu tạo đơn hàng sau 5 giây (thanh toán ảo)...");
+
+        // Cập nhật trạng thái thành PAID để dừng việc kiểm tra
+        setPaymentStatus('PAID');
+        if (intervalRef) {
+          clearInterval(intervalRef);
+          setIntervalRef(null);
+        }
+
+        let reservations = [];
+        if (typeBase === 'zone') {
+           const requestData = {
+            eventId: eventId,
+            zones,
+            showtimeId,
+            amount,
+            };
+        const zoneRes = await AxiosInstance().post(
+                '/zones/reserveZoneTicket',
+                requestData,
+              );
+        reservations = zoneRes.reservations;
+        }
+              const bodyOrder = {
+                eventId: eventId,
+                userId: userId,
+                bookingType: typeBase ?? 'none',
+                totalAmount: amount,
+                bookingIds: typeBase === 'zone' ? reservations.map((r: any) => r.bookingId) : bookingIds,
+                totalPrice: totalPrice,
+                showtimeId: showtimeId,
+              };
+
+        console.log("BookingIds: " + bookingIds);
+        console.log("Body: " + JSON.stringify(bodyOrder));
+
+        const responseOrder = await AxiosInstance().post('orders/createOrder', bodyOrder);
+        console.log("📦 Tạo đơn hàng thành công:", responseOrder.data);
+
+        // Tạo vé
+        const bodyOrderTicket = {
+          orderId: responseOrder.data,
+          paymentId: "67bbc5a3ac06033b9e2ab3e9",
+        };
+
+        const responseOrderTicket = await AxiosInstance().post('orders/createTicket', bodyOrderTicket);
+        console.log("🎫 Tạo vé thành công:", responseOrderTicket.data);
+
+        // THAY ĐỔI: Chuyển hướng đến trang thanh toán thành công thay vì Alert
+        setTimeout(() => {
+          navigation.navigate('PaymentSuccess', {
+            amount: amount,
+            eventName: eventName,
+            orderCode: orderCode,
+            transactionId: `VIRTUAL_${Date.now()}`, // Tạo mã giao dịch ảo
+            paymentMethod: 'Thanh toán ảo (Test)',
+            timestamp: Date.now(),
+            orderId: responseOrder.data,
+            ticketId: responseOrderTicket.data,
+            totalPrice: totalPrice,
+            bookingType: bookingType,
+            showtimeId: showtimeId,
+            isVirtualPayment: true // Flag để phân biệt thanh toán ảo
+          });
+        }, 1000); // Delay 1 giây để người dùng thấy trạng thái PAID
+
+      } catch (error) {
+        console.log('❌ Lỗi khi tạo đơn hàng/vé (thanh toán ảo):', error);
+        setPaymentStatus('ERROR');
+        Alert.alert('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
+      }
+    }, 2000); // 5 giây
+
+    // Cleanup function
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, []); // Chỉ chạy 1 lần khi component mount
 
 
 
